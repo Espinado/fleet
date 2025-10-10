@@ -1,15 +1,15 @@
 @section('title', $driver->first_name . ' ' . $driver->last_name)
 
-<div class="w-full bg-white shadow-md rounded-lg p-8 space-y-8 text-lg">
+<div class="w-full bg-white shadow-md rounded-lg p-8 space-y-10 text-lg">
 
-    {{-- Основная информация и кнопка Edit --}}
+    {{-- Основная информация --}}
     <div class="flex flex-col md:flex-row gap-8">
-        {{-- Фото водителя --}}
+        {{-- Фото --}}
         <div class="w-full md:w-1/4 h-64">
             @if($driver->photo && file_exists(storage_path('app/public/' . $driver->photo)))
                 <a href="{{ asset('storage/' . $driver->photo) }}" target="_blank">
                     <img src="{{ asset('storage/' . $driver->photo) }}"
-                         class="w-full h-full object-cover rounded-lg border">
+                         class="w-full h-full object-cover rounded-lg border shadow">
                 </a>
             @else
                 <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
@@ -19,71 +19,104 @@
         </div>
 
         {{-- Личные данные --}}
-        <div class="flex-1 space-y-2">
-            <div class="flex items-center justify-between mb-2">
+        <div class="flex-1 space-y-4">
+            <div class="flex items-center justify-between">
                 <h1 class="text-3xl font-bold">{{ $driver->first_name }} {{ $driver->last_name }}</h1>
-                <a href=""
+                <a href="{{ route('drivers.edit', $driver) }}"
                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">
                    ✏️ Edit
                 </a>
             </div>
 
-            <p>👤 Personal Code: {{ $driver->pers_code ?? $driver->pers_code }}</p>
-            <p>📞 Phone: {{ $driver->phone ?? '-' }}</p>
-            <p>📧 Email: {{ $driver->email ?? '-' }}</p>
-            <p>🛂 Citizenship: {{ $driver->citizenship ?? '-' }}</p>
-            <p>📍 Declared Address:
-                {{ $driver->declared_country ?? '-' }}, {{ $driver->declared_city ?? '-' }},
-                {{ $driver->declared_street ?? '-' }} {{ $driver->declared_building ?? '' }}
-                {{ $driver->declared_room ?? '' }}, {{ $driver->declared_postcode ?? '' }}
-            </p>
-            <p>📍 Actual Address:
-                {{ $driver->actual_country ?? '-' }}, {{ $driver->actual_city ?? '-' }},
-                {{ $driver->actual_street ?? '-' }} {{ $driver->actual_building ?? '' }}
-                {{ $driver->actual_room ?? '' }}
-            </p>
-            <p>🚦 License: {{ $driver->license_number ?? '-' }}
-               ({{ $driver->license_issued ?? '-' }} – {{ $driver->license_end ?? '-' }})</p>
-            <p>95 Code: {{ $driver->{"code95_issued"} ?? '-' }} – {{ $driver->{"code95_end"} ?? '-' }}</p>
-            <p>Permit: {{ $driver->permit_issued ?? '-' }} – {{ $driver->permit_expired ?? '-' }}</p>
-            <p>Medical Exam: {{ $driver->medical_exam_passed ?? $driver->medical_issued ?? '-' }} – {{ $driver->medical_exam_expired ?? $driver->medical_expired ?? '-' }}</p>
-            <p>Declaration: {{ $driver->declaration_issued ?? '-' }} – {{ $driver->declaration_expired ?? '-' }}</p>
-            <p>Status:    {{ $driver->status_label }}</p>
+            <div>
+                <h2 class="text-xl font-semibold mb-2 border-b pb-1">👤 Personal Info</h2>
+                <p><span class="font-semibold">Personal Code:</span> <span class="text-gray-700">{{ $driver->pers_code ?? '-' }}</span></p>
+                <p><span class="font-semibold">Phone:</span> <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span></p>
+                <p><span class="font-semibold">Email:</span> <span class="text-gray-700">{{ $driver->email ?? '-' }}</span></p>
+                <p><span class="font-semibold">Citizenship:</span> <span class="text-gray-700">{{ $driver->citizenship ?? '-' }}</span></p>
+            </div>
 
+            <div>
+                <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 Addresses</h2>
+                <p><span class="font-semibold">Declared:</span>
+                    <span class="text-gray-700">
+                        {{ $driver->declared_country ?? '-' }}, {{ $driver->declared_city ?? '-' }},
+                        {{ $driver->declared_street ?? '-' }} {{ $driver->declared_building ?? '' }}
+                        {{ $driver->declared_room ?? '' }}, {{ $driver->declared_postcode ?? '' }}
+                    </span>
+                </p>
+                <p><span class="font-semibold">Actual:</span>
+                    <span class="text-gray-700">
+                        {{ $driver->actual_country ?? '-' }}, {{ $driver->actual_city ?? '-' }},
+                        {{ $driver->actual_street ?? '-' }} {{ $driver->actual_building ?? '' }}
+                        {{ $driver->actual_room ?? '' }}
+                    </span>
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 Documents</h2>
+                <p><span class="font-semibold">License:</span>
+                    <span class="text-gray-700">{{ $driver->license_number ?? '-' }}
+                    ({{ $driver->license_issued ?? '-' }} – {{ $driver->license_end ?? '-' }})</span>
+                </p>
+                <p><span class="font-semibold">95 Code:</span>
+                    <span class="text-gray-700">{{ $driver->code95_issued ?? '-' }} – {{ $driver->code95_end ?? '-' }}</span>
+                </p>
+                <p><span class="font-semibold">Permit:</span>
+                    <span class="text-gray-700">{{ $driver->permit_issued ?? '-' }} – {{ $driver->permit_expired ?? '-' }}</span>
+                </p>
+                <p><span class="font-semibold">Medical Exam:</span>
+                    <span class="text-gray-700">{{ $driver->medical_exam_passed ?? $driver->medical_issued ?? '-' }}
+                    – {{ $driver->medical_exam_expired ?? $driver->medical_expired ?? '-' }}</span>
+                </p>
+                <p><span class="font-semibold">Declaration:</span>
+                    <span class="text-gray-700">{{ $driver->declaration_issued ?? '-' }} – {{ $driver->declaration_expired ?? '-' }}</span>
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-xl font-semibold mb-2 border-b pb-1">📌 Status</h2>
+                <p><span class="font-semibold">Current Status:</span> <span class="text-gray-700">{{ $driver->status_label }}</span></p>
+            </div>
         </div>
     </div>
 
     {{-- Фото документов --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        @php
-            $photos = [
-                'License Photo' => $driver->license_photo,
-                'Medical Certificate' => $driver->medical_certificate_photo,
-                'Driver Photo' => $driver->photo
-            ];
-        @endphp
+    <div>
+        <h2 class="text-2xl font-bold mb-4">📷 Documents</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            @php
+                $photos = [
+                    'License Photo' => $driver->license_photo,
+                    'Medical Certificate' => $driver->medical_certificate_photo,
+                    'Driver Photo' => $driver->photo
+                ];
+            @endphp
 
-        @foreach($photos as $title => $path)
-            <div>
-                <h2 class="font-semibold mb-2 text-lg">{{ $title }}</h2>
-                @if($path && file_exists(storage_path('app/public/' . $path)))
-                    <a href="{{ asset('storage/' . $path) }}" target="_blank">
-                        <img src="{{ asset('storage/' . $path) }}" class="rounded-lg border shadow w-full h-52 object-cover">
-                    </a>
-                @else
-                    <div class="w-full h-52 bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
-                        No {{ $title }}
-                    </div>
-                @endif
-            </div>
-        @endforeach
+            @foreach($photos as $title => $path)
+                <div>
+                    <h3 class="font-semibold mb-2 text-lg">{{ $title }}</h3>
+                    @if($path && file_exists(storage_path('app/public/' . $path)))
+                        <a href="{{ asset('storage/' . $path) }}" target="_blank">
+                            <img src="{{ asset('storage/' . $path) }}" class="rounded-lg border shadow w-full h-52 object-cover">
+                        </a>
+                    @else
+                        <div class="w-full h-52 bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
+                            No {{ $title }}
+                        </div>
+                    @endif
+                </div>
+            @endforeach
+        </div>
     </div>
 
-    {{-- Кнопка "Назад" --}}
-    <div>
-        <a href="{{ route('drivers.index') }}" class="px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-lg font-semibold">
+    {{-- Кнопки --}}
+    <div class="flex justify-between">
+        <a href="{{ route('drivers.index') }}"
+           class="px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-lg font-semibold">
             ⬅ Back to Drivers
         </a>
+     
     </div>
-
 </div>

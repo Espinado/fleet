@@ -22,7 +22,6 @@ namespace App\Models{
  * @property string|null $medical_certificate_photo
  * @property string|null $medical_exam_passed
  * @property string|null $medical_exam_expired
- * @property string $personal_code
  * @property string|null $citizenship
  * @property string|null $declared_country
  * @property string|null $declared_city
@@ -92,7 +91,6 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePermitExpired($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePermitIssued($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePersCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePersonalCode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePhone($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver wherePhoto($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereStatus($value)

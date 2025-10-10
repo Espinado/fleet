@@ -64,6 +64,7 @@ class Driver extends Model
         'is_active'          => 'boolean',
         'status' => DriverStatus::class,
     ];
+    
 
     /**
      * Удобный аксессор для ФИО

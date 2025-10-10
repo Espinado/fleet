@@ -1,116 +1,273 @@
-@section('title', 'Edit ' . $driver->first_name . ' ' . $driver->last_name)
+<div class="max-w-5xl mx-auto bg-white p-6 rounded shadow space-y-6">
+    <h2 class="text-xl font-bold">✏️ Edit Driver</h2>
 
-<div class="max-w-6xl mx-auto bg-white shadow-md rounded-lg p-8 space-y-8">
-
-    @if (session()->has('message'))
-        <div class="bg-green-100 text-green-800 p-3 rounded">
-            {{ session('message') }}
+    @if(session()->has('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+            {{ session('success') }}
         </div>
     @endif
 
-    <form wire:submit.prevent="save" enctype="multipart/form-data" class="space-y-6">
+    <form wire:submit.prevent="save" class="space-y-6">
 
-        {{-- Основная информация --}}
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">Personal Info</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {{-- Personal Information --}}
+        <h3 class="font-semibold text-lg border-b pb-1">Personal Information</h3>
+        <div class="grid grid-cols-3 gap-4">
             <div>
-                <label class="font-semibold">First Name</label>
-                <input type="text" wire:model.defer="driver.first_name" class="w-full border rounded px-3 py-2">
+                <label>First Name</label>
+                <input type="text" wire:model="first_name" class="w-full border rounded p-2">
+                @error('first_name') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="font-semibold">Last Name</label>
-                <input type="text" wire:model.defer="driver.last_name" class="w-full border rounded px-3 py-2">
+                <label>Last Name</label>
+                <input type="text" wire:model="last_name" class="w-full border rounded p-2">
+                @error('last_name') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="font-semibold">Personal Code</label>
-                <input type="text" wire:model.defer="driver.personal_code" class="w-full border rounded px-3 py-2">
+                <label>Personal Code</label>
+                <input type="text" wire:model="pers_code" class="w-full border rounded p-2">
+                @error('pers_code') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
         </div>
 
-        {{-- Адреса --}}
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">Addresses</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-3 gap-4">
             <div>
-                <h3 class="font-semibold mb-1">Declared Address</h3>
-                <input type="text" wire:model.defer="driver.declared_country" placeholder="Country" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.declared_city" placeholder="City" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.declared_street" placeholder="Street" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.declared_building" placeholder="Building" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.declared_room" placeholder="Room" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.declared_postcode" placeholder="Postcode" class="w-full border rounded px-3 py-2">
+                <label>Citizenship</label>
+                <input type="text" wire:model="citizenship" class="w-full border rounded p-2">
+                @error('citizenship') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <h3 class="font-semibold mb-1">Actual Address</h3>
-                <input type="text" wire:model.defer="driver.actual_country" placeholder="Country" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.actual_city" placeholder="City" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.actual_street" placeholder="Street" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.actual_building" placeholder="Building" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.actual_room" placeholder="Room" class="w-full border rounded px-3 py-2">
+                <label>Phone</label>
+                <input type="text" wire:model="phone" class="w-full border rounded p-2">
+                @error('phone') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Email</label>
+                <input type="email" wire:model="email" class="w-full border rounded p-2">
+                @error('email') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
         </div>
 
-        {{-- Лицензии и медсправка --}}
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">License & Medical</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {{-- Declared Address --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Declared Address</h3>
+        <div class="grid grid-cols-3 gap-4">
             <div>
-                <label class="font-semibold">License Number</label>
-                <input type="text" wire:model.defer="driver.license_number" class="w-full border rounded px-3 py-2">
-                <div class="flex gap-2 mt-2">
-                    <div>
-                        <label class="font-semibold">Issued</label>
-                        <input type="date" wire:model.defer="driver.license_issued" class="w-full border rounded px-3 py-2">
-                    </div>
-                    <div>
-                        <label class="font-semibold">Expires</label>
-                        <input type="date" wire:model.defer="driver.license_end" class="w-full border rounded px-3 py-2">
-                    </div>
-                </div>
+                <label>Country</label>
+                <input type="text" wire:model="declared_country" class="w-full border rounded p-2">
+                @error('declared_country') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="font-semibold">95 Code</label>
-                <input type="text" wire:model.defer="driver.code95_issued" placeholder="Issued" class="w-full border rounded px-3 py-2 mb-1">
-                <input type="text" wire:model.defer="driver.code95_end" placeholder="Expires" class="w-full border rounded px-3 py-2">
+                <label>City</label>
+                <input type="text" wire:model="declared_city" class="w-full border rounded p-2">
+                @error('declared_city') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Street</label>
+                <input type="text" wire:model="declared_street" class="w-full border rounded p-2">
+                @error('declared_street') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
         </div>
 
-        {{-- Фото --}}
-        <h2 class="text-xl font-semibold border-b pb-2 mb-4">Photos</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-3 gap-4">
             <div>
-                <label class="font-semibold">Driver Photo</label>
-                <input type="file" wire:model="photo" class="mt-1">
-                @if ($photo)
-                    <img src="{{ $photo->temporaryUrl() }}" class="w-full h-40 object-cover mt-2 rounded">
-                @elseif ($driver->photo)
-                    <img src="{{ asset('storage/' . $driver->photo) }}" class="w-full h-40 object-cover mt-2 rounded">
+                <label>Building</label>
+                <input type="text" wire:model="declared_building" class="w-full border rounded p-2">
+                @error('declared_building') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Room</label>
+                <input type="text" wire:model="declared_room" class="w-full border rounded p-2">
+                @error('declared_room') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Postcode</label>
+                <input type="text" wire:model="declared_postcode" class="w-full border rounded p-2">
+                @error('declared_postcode') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Actual Address --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Actual Address</h3>
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label>Country</label>
+                <input type="text" wire:model="actual_country" class="w-full border rounded p-2">
+                @error('actual_country') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>City</label>
+                <input type="text" wire:model="actual_city" class="w-full border rounded p-2">
+                @error('actual_city') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Street</label>
+                <input type="text" wire:model="actual_street" class="w-full border rounded p-2">
+                @error('actual_street') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label>Building</label>
+                <input type="text" wire:model="actual_building" class="w-full border rounded p-2">
+                @error('actual_building') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Room</label>
+                <input type="text" wire:model="actual_room" class="w-full border rounded p-2">
+                @error('actual_room') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Status</label>
+                <select wire:model="status" class="w-full border rounded p-2">
+                    @foreach(\App\Enums\DriverStatus::options() as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('status') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 mt-2">
+            <input type="checkbox" wire:model="is_active" class="mr-2">
+            <span>Active</span>
+        </div>
+
+        {{-- License --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">License</h3>
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label>License Number</label>
+                <input type="text" wire:model="license_number" class="w-full border rounded p-2">
+                @error('license_number') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Issued</label>
+                <input type="date" wire:model="license_issued" class="w-full border rounded p-2">
+                @error('license_issued') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>End</label>
+                <input type="date" wire:model="license_end" class="w-full border rounded p-2">
+                @error('license_end') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- 95 Code --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">95 Code</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>Issued</label>
+                <input type="date" wire:model="code95_issued" class="w-full border rounded p-2">
+                @error('code95_issued') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>End</label>
+                <input type="date" wire:model="code95_end" class="w-full border rounded p-2">
+                @error('code95_end') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Permit --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Permit</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>Issued</label>
+                <input type="date" wire:model="permit_issued" class="w-full border rounded p-2">
+                @error('permit_issued') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Expired</label>
+                <input type="date" wire:model="permit_expired" class="w-full border rounded p-2">
+                @error('permit_expired') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+              {{-- Medical --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Medical</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>Issued</label>
+                <input type="date" wire:model="medical_issued" class="w-full border rounded p-2">
+                @error('medical_issued') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Expired</label>
+                <input type="date" wire:model="medical_expired" class="w-full border rounded p-2">
+                @error('medical_expired') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Medical OVP --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Medical OVP</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>Passed</label>
+                <input type="date" wire:model="medical_exam_passed" class="w-full border rounded p-2">
+                @error('medical_exam_passed') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Expired</label>
+                <input type="date" wire:model="medical_exam_expired" class="w-full border rounded p-2">
+                @error('medical_exam_expired') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Road Declaration --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Road Declaration</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label>Issued</label>
+                <input type="date" wire:model="declaration_issued" class="w-full border rounded p-2">
+                @error('declaration_issued') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Expired</label>
+                <input type="date" wire:model="declaration_expired" class="w-full border rounded p-2">
+                @error('declaration_expired') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+        </div>
+
+        {{-- Photos --}}
+        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Photos</h3>
+        <div class="grid grid-cols-3 gap-4">
+            <div>
+                <label>Driver Photo</label>
+                <input type="file" wire:model="photo" class="w-full border rounded p-2">
+                @if($photo)
+                    <img src="{{ $photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
+                @elseif($driver->photo)
+                    <img src="{{ asset('storage/' . $driver->photo) }}" class="w-32 mt-2 rounded">
                 @endif
+                @error('photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="font-semibold">License Photo</label>
-                <input type="file" wire:model="license_photo" class="mt-1">
-                @if ($license_photo)
-                    <img src="{{ $license_photo->temporaryUrl() }}" class="w-full h-40 object-cover mt-2 rounded">
-                @elseif ($driver->license_photo)
-                    <img src="{{ asset('storage/' . $driver->license_photo) }}" class="w-full h-40 object-cover mt-2 rounded">
+                <label>License Photo</label>
+                <input type="file" wire:model="license_photo" class="w-full border rounded p-2">
+                @if($license_photo)
+                    <img src="{{ $license_photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
+                @elseif($driver->license_photo)
+                    <img src="{{ asset('storage/' . $driver->license_photo) }}" class="w-32 mt-2 rounded">
                 @endif
+                @error('license_photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
             <div>
-                <label class="font-semibold">Medical Certificate</label>
-                <input type="file" wire:model="medical_certificate_photo" class="mt-1">
-                @if ($medical_certificate_photo)
-                    <img src="{{ $medical_certificate_photo->temporaryUrl() }}" class="w-full h-40 object-cover mt-2 rounded">
-                @elseif ($driver->medical_certificate_photo)
-                    <img src="{{ asset('storage/' . $driver->medical_certificate_photo) }}" class="w-full h-40 object-cover mt-2 rounded">
+                <label>Medical Certificate Photo</label>
+                <input type="file" wire:model="medical_certificate_photo" class="w-full border rounded p-2">
+                @if($medical_certificate_photo)
+                    <img src="{{ $medical_certificate_photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
+                @elseif($driver->medical_certificate_photo)
+                    <img src="{{ asset('storage/' . $driver->medical_certificate_photo) }}" class="w-32 mt-2 rounded">
                 @endif
+                @error('medical_certificate_photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
         </div>
 
-        {{-- Кнопка Сохранить --}}
-        <div class="mt-6">
-            <button type="submit" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded hover:bg-blue-700">
-                💾 Save Changes
-            </button>
-        </div>
-
+        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded mt-4">💾 Save</button>
+          <button type="button"
+        wire:click="destroy"
+        onclick="confirm('Are you sure you want to delete this driver?') || event.stopImmediatePropagation()"
+        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        🗑 Delete
+    </button>
     </form>
 </div>
