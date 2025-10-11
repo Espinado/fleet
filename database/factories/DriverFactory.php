@@ -28,7 +28,7 @@ class DriverFactory extends Factory
         return [
              'first_name' => $this->faker->firstName(),
             'last_name' => $this->faker->lastName(),
-            'personal_code' => $this->faker->unique()->numerify('######-#####'),
+            
             'citizenship' => $this->faker->country(),
             'declared_country' => $this->faker->country(),
             'declared_city' => $this->faker->city(),
