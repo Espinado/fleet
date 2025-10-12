@@ -6,7 +6,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class ExpiringDocumentsNotification extends Mailable
+class ExpiringDocumentsReport extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -19,7 +19,7 @@ class ExpiringDocumentsNotification extends Mailable
 
     public function build()
     {
-        return $this->subject('Expiring Documents Alert')
-                    ->view('emails.expiring-documents');
+        return $this->subject('Документы с истекающим сроком (30 дней)')
+                    ->markdown('emails.expiring-docs');
     }
 }

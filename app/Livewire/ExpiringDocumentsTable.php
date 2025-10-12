@@ -66,7 +66,7 @@ class ExpiringDocumentsTable extends Component
     }
 
     // Собираем элементы (Driver, Truck, Trailer) с документами, истекающими <= 30 дней
-    protected function collectItems(): Collection
+    public function collectItems(): Collection
     {
         $today = Carbon::today();
         $deadline = $today->copy()->addDays(30);

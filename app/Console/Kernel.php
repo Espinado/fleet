@@ -18,15 +18,11 @@ class Kernel extends ConsoleKernel
      * Определяет планировщик команд.
      */
     protected function schedule(Schedule $schedule)
-    {
-        // Для теста запускаем каждую минуту
-        $schedule->command('expiring-docs:send')->everyMinute();
-
-        // Для реального использования можно так:
-        // $schedule->command('expiring-docs:send')->dailyAt('08:00');
-        // $schedule->command('expiring-docs:send')->dailyAt('14:00');
-        // $schedule->command('expiring-docs:send')->dailyAt('20:00');
-    }
+{
+    // 3 раза в день: 8:00, 14:00, 20:00
+    $schedule->command('expiring-docs:notify')->twiceDaily(8, 14);
+    $schedule->command('expiring-docs:notify')->dailyAt('20:00');
+}
 
     /**
      * Регистрация всех команд Artisan.
