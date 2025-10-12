@@ -60,6 +60,6 @@ class TrucksTable extends Component
 
         return view('livewire.trucks-table', [
             'items' => $trucks,
-        ]);
+        ])->layout('layouts.app');
     }
 }
