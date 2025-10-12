@@ -14,6 +14,8 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\SendExpiringDocsEmails::class,
     ];
 
+    protected $signature = 'expiring-docs:notify';
+
     /**
      * Определяет планировщик команд.
      */
