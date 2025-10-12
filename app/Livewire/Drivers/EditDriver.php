@@ -111,19 +111,19 @@ $this->declaration_expired = $driver->declaration_expired ? Carbon::parse($drive
 
         // Save photos
         if ($this->photo) {
-            $this->driver->photo = $this->photo->store('drivers');
+            $this->driver->photo = $this->photo->store('drivers', 'public');
         } else {
             $this->driver->photo = $this->old_photo;
         }
 
         if ($this->license_photo) {
-            $this->driver->license_photo = $this->license_photo->store('drivers');
+            $this->driver->license_photo = $this->license_photo->store('drivers', 'public');
         } else {
             $this->driver->license_photo = $this->old_license_photo;
         }
 
         if ($this->medical_certificate_photo) {
-            $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers');
+            $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers', 'public');
         } else {
             $this->driver->medical_certificate_photo = $this->old_medical_certificate_photo;
         }
