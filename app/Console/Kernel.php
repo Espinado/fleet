@@ -22,6 +22,8 @@ class Kernel extends ConsoleKernel
     // 3 раза в день: 8:00, 14:00, 20:00
     $schedule->command('expiring-docs:notify')->twiceDaily(8, 14);
     $schedule->command('expiring-docs:notify')->dailyAt('20:00');
+    $schedule->command('expiring-docs:notify')->dailyAt('01:00');
+
 }
 
     /**
