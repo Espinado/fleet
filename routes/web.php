@@ -11,6 +11,9 @@ use App\Livewire\Drivers\CreateDriver;
 use App\Livewire\Trucks\ShowTruck;
 use App\Livewire\Trucks\EditTruck;
 use App\Livewire\Trucks\CreateTruck;
+use App\Livewire\Trucks\ShowTrailer;
+use App\Livewire\Trucks\EditTrailer;
+use App\Livewire\Trucks\CreateTrailer;
 
 
 Route::get('/', function () {
@@ -25,7 +28,7 @@ Route::get('/drivers', DriversTable::class)->name('drivers.index');
 
 
 
-Route::get('/trailers', TrailersTable::class)->name('trailers.index');
+
 
 // Сначала создание водителя
 
@@ -39,5 +42,10 @@ Route::post('/drivers/destroy', \App\Livewire\Drivers\EditDriver::class)->name('
 Route::get('/trucks/create', \App\Livewire\Trucks\CreateTruck::class)->name('trucks.create');
 Route::get('/trucks/{truck}', \App\Livewire\Trucks\ShowTruck::class)->name('trucks.show');
 Route::get('/trucks/{truck}/edit', \App\Livewire\Trucks\EditTruck::class)->name('trucks.edit');
+
+ Route::get('/trailers', \App\Livewire\TrailersTable::class)->name('trailers.index');
+Route::get('/trailers/create', \App\Livewire\Trailers\CreateTrailer::class)->name('trailers.create');
+Route::get('/trailers/{trailer}', \App\Livewire\Trailers\ShowTrailer::class)->name('trailers.show');
+Route::get('/trailers/{trailer}/edit', \App\Livewire\Trailers\EditTrailer::class)->name('trailers.edit');
 
 
