@@ -7,21 +7,27 @@
 
     @livewireStyles
 
-    {{-- Используем собранные файлы в продакшене, Vite в dev --}}
+    {{-- Продакшн: подключаем готовую сборку Tailwind + JS --}}
     @if(app()->environment('production'))
-        <link rel="stylesheet" href="{{ asset('build/assets/app.css') }}">
-        <script defer src="{{ asset('build/assets/app.js') }}"></script>
+        @php
+            $manifestPath = public_path('build/manifest.json');
+            $manifest = file_exists($manifestPath) ? json_decode(file_get_contents($manifestPath), true) : [];
+        @endphp
+
+        @if(!empty($manifest))
+            <link rel="stylesheet" href="{{ asset('build/' . $manifest['resources/css/app.css']['file']) }}">
+            <script defer src="{{ asset('build/' . $manifest['resources/js/app.js']['file']) }}"></script>
+        @endif
     @else
+        {{-- Локальная разработка --}}
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endif
 </head>
 <body class="bg-gray-100 h-screen flex overflow-hidden">
 
-    <!-- Sidebar -->
+    {{-- Sidebar --}}
     <aside class="w-64 bg-white shadow-md hidden md:block">
-        <div class="p-4 text-xl font-bold border-b">
-            🚚 Fleet Manager
-        </div>
+        <div class="p-4 text-xl font-bold border-b">🚚 Fleet Manager</div>
         <nav class="p-4 space-y-2">
             <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Dashboard</a>
             <a href="{{ route('drivers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">👨‍✈️ Drivers</a>
@@ -30,9 +36,9 @@
         </nav>
     </aside>
 
-    <!-- Main content -->
+    {{-- Main content --}}
     <div class="flex-1 flex flex-col">
-        <!-- Top bar -->
+        {{-- Top bar --}}
         <header class="h-16 bg-white shadow flex items-center justify-between px-6">
             <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
             <div class="relative group">
@@ -44,7 +50,7 @@
                     </svg>
                 </button>
 
-                <!-- Подменю -->
+                {{-- Подменю --}}
                 <div class="absolute right-0 mt-2 w-40 bg-white border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition ease-out duration-200 z-50">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -56,7 +62,7 @@
             </div>
         </header>
 
-        <!-- Content -->
+        {{-- Content --}}
         <main class="flex-1 overflow-y-auto p-6">
             @if (isset($slot))
                 {{ $slot }}
