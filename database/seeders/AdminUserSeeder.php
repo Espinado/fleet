@@ -15,10 +15,10 @@ class AdminUserSeeder extends Seeder
     public function run(): void
     {
         User::updateOrCreate(
-            ['email' => 'admin@arguss.lv'],
+            ['email' => 'sovsem@deneg.net'],
             [
-                'name' => 'bambarija',
-                'password' => Hash::make('Kergudu'), // можно поменять позже
+                'name' => 'Vini Puh',
+                'password' => Hash::make('KakUkrastjMillion'), // можно поменять позже
                 'email_verified_at' => now(),
             ]
         );

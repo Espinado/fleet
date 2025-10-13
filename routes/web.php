@@ -1,51 +1,56 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Livewire\ExpiringDocumentsTable;
 use App\Livewire\DriversTable;
 use App\Livewire\TrucksTable;
 use App\Livewire\TrailersTable;
-use App\Http\Controllers\DriverController;
-use App\Livewire\Drivers\ShowDriver;
-use App\Livewire\Drivers\EditDriver;
-use App\Livewire\Drivers\CreateDriver;
-use App\Livewire\Trucks\ShowTruck;
-use App\Livewire\Trucks\EditTruck;
-use App\Livewire\Trucks\CreateTruck;
-use App\Livewire\Trucks\ShowTrailer;
-use App\Livewire\Trucks\EditTrailer;
-use App\Livewire\Trucks\CreateTrailer;
+use App\Livewire\Drivers\{ShowDriver, EditDriver, CreateDriver};
+use App\Livewire\Trucks\{ShowTruck, EditTruck, CreateTruck};
+use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
+
+// Главная страница → редирект на дашборд
+Route::redirect('/', '/dashboard');
+
+// === Защищённые маршруты (требуют авторизацию) ===
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    // Dashboard (твоя таблица истекающих документов)
+    Route::get('/dashboard', ExpiringDocumentsTable::class)
+        ->name('dashboard');
+
+    // Drivers
+    Route::get('/drivers', DriversTable::class)->name('drivers.index');
+    Route::get('/drivers/create', CreateDriver::class)->name('drivers.create');
+    Route::get('/drivers/{driver}', ShowDriver::class)->name('drivers.show');
+    Route::get('/drivers/{driver}/edit', EditDriver::class)->name('drivers.edit');
+    Route::post('/drivers/destroy', EditDriver::class)->name('drivers.destroy');
+
+    // Trucks
+    Route::get('/trucks', TrucksTable::class)->name('trucks.index');
+    Route::get('/trucks/create', CreateTruck::class)->name('trucks.create');
+    Route::get('/trucks/{truck}', ShowTruck::class)->name('trucks.show');
+    Route::get('/trucks/{truck}/edit', EditTruck::class)->name('trucks.edit');
+    Route::post('/trucks/destroy', ShowTruck::class)->name('trucks.destroy');
+
+    // Trailers
+    Route::get('/trailers', TrailersTable::class)->name('trailers.index');
+    Route::get('/trailers/create', CreateTrailer::class)->name('trailers.create');
+    Route::get('/trailers/{trailer}', ShowTrailer::class)->name('trailers.show');
+    Route::get('/trailers/{trailer}/edit', EditTrailer::class)->name('trailers.edit');
+     Route::post('/trailers/destroy', ShowTrailer::class)->name('trailers.destroy');
 
 
-Route::get('/', function () {
-    return redirect()->route('dashboard');
+    Route::post('/logout', function () {
+    Auth::logout();
+    return redirect('/login');
+})->name('logout');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->name('dashboard');
+// === Профиль (опционально) ===
+Route::view('profile', 'profile')
+    ->middleware(['auth'])
+    ->name('profile');
 
-Route::get('/drivers', DriversTable::class)->name('drivers.index');
-
-
-
-
-
-// Сначала создание водителя
-
-
-Route::get('/drivers/create', \App\Livewire\Drivers\CreateDriver::class)->name('drivers.create');
-Route::get('/drivers/{driver}/edit', \App\Livewire\Drivers\EditDriver::class)->name('drivers.edit');
-Route::get('/drivers/{driver}', \App\Livewire\Drivers\ShowDriver::class)->name('drivers.show');
-Route::post('/drivers/destroy', \App\Livewire\Drivers\EditDriver::class)->name('drivers.destroy');
-
- Route::get('/trucks', \App\Livewire\TrucksTable::class)->name('trucks.index');
-Route::get('/trucks/create', \App\Livewire\Trucks\CreateTruck::class)->name('trucks.create');
-Route::get('/trucks/{truck}', \App\Livewire\Trucks\ShowTruck::class)->name('trucks.show');
-Route::get('/trucks/{truck}/edit', \App\Livewire\Trucks\EditTruck::class)->name('trucks.edit');
-
- Route::get('/trailers', \App\Livewire\TrailersTable::class)->name('trailers.index');
-Route::get('/trailers/create', \App\Livewire\Trailers\CreateTrailer::class)->name('trailers.create');
-Route::get('/trailers/{trailer}', \App\Livewire\Trailers\ShowTrailer::class)->name('trailers.show');
-Route::get('/trailers/{trailer}/edit', \App\Livewire\Trailers\EditTrailer::class)->name('trailers.edit');
-
-
+// === Breeze аутентификация ===
+require __DIR__.'/auth.php';

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Services;
 
 use App\Models\Driver;
 use App\Models\Truck;

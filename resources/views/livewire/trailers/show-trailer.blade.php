@@ -70,13 +70,19 @@
             </div>
         </div>
 
-        {{-- Кнопка "Назад" в самом низу --}}
-        <div class="flex justify-start mt-6">
-            <a href="{{ route('trailers.index') }}"
-               class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition shadow-md">
-                ← Back
-            </a>
-        </div>
+       <div class="flex justify-between items-center mt-6">
+    <a href="{{ route('trailers.index') }}"
+       class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition shadow-md">
+        ← Back
+    </a>
+
+    <button type="button"
+        wire:click="destroy"
+        onclick="confirm('Are you sure you want to delete this driver?') || event.stopImmediatePropagation()"
+        class="px-4 py-2 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition shadow-md">
+        🗑 Delete
+    </button>
+</div>
 
     </div>
 

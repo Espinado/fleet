@@ -34,4 +34,22 @@ class ShowTrailer extends Component
     {
         return view('livewire.trailers.show-trailer') ->layout('layouts.app');
     }
+
+       public function destroy()
+{
+    if ($this->trailer) {
+        $this->trailer->delete();
+
+        // Можно сбросить поля формы, если остаёмся на этой странице
+        $this->reset();
+
+        // Сообщение пользователю
+        session()->flash('success', 'Trailer deleted successfully.');
+
+        // При желании — редирект на список водителей
+        return redirect()->route('trailers.index');
+    }
+
+    session()->flash('error', 'Trailer not found.');
+}
 }

@@ -1,15 +1,15 @@
 <div class="max-w-5xl mx-auto bg-white p-6 rounded shadow space-y-6">
-    <h2 class="text-xl font-bold">✏️ Edit Driver</h2>
+    <h2 class="text-xl font-bold">➕ Create Driver</h2>
 
-    @if(session()->has('success'))
+    @if($successMessage)
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-            {{ session('success') }}
+            {{ $successMessage }}
         </div>
     @endif
 
     <form wire:submit.prevent="save" class="space-y-4">
 
-        {{-- Личные данные --}}
+        {{-- Personal Information --}}
         <h3 class="font-semibold">Personal Information</h3>
         <div class="grid grid-cols-3 gap-4">
             <div>
@@ -50,27 +50,82 @@
         {{-- Declared Address --}}
         <h3 class="font-semibold mt-4">Declared Address</h3>
         <div class="grid grid-cols-3 gap-4">
-            <div><label>Country</label><input type="text" wire:model="declared_country" class="w-full border rounded p-2">@error('declared_country') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>City</label><input type="text" wire:model="declared_city" class="w-full border rounded p-2">@error('declared_city') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Street</label><input type="text" wire:model="declared_street" class="w-full border rounded p-2">@error('declared_street') <span class="text-red-500">{{ $message }}</span> @enderror</div>
+            <div>
+                <label>Country</label>
+                <select wire:model="declared_country" class="w-full border rounded p-2">
+                    <option value="">Select country</option>
+                    @foreach($countries as $country)
+                        <option value="{{ $country['code'] }}">{{ $country['name'] }}</option>
+                    @endforeach
+                </select>
+                @error('declared_country') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>City</label>
+                <input type="text" wire:model="declared_city" class="w-full border rounded p-2">
+                @error('declared_city') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Street</label>
+                <input type="text" wire:model="declared_street" class="w-full border rounded p-2">
+                @error('declared_street') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
         </div>
         <div class="grid grid-cols-3 gap-4">
-            <div><label>Building</label><input type="text" wire:model="declared_building" class="w-full border rounded p-2">@error('declared_building') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Room</label><input type="text" wire:model="declared_room" class="w-full border rounded p-2">@error('declared_room') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Postcode</label><input type="text" wire:model="declared_postcode" class="w-full border rounded p-2">@error('declared_postcode') <span class="text-red-500">{{ $message }}</span> @enderror</div>
+            <div>
+                <label>Building</label>
+                <input type="text" wire:model="declared_building" class="w-full border rounded p-2">
+                @error('declared_building') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Room</label>
+                <input type="text" wire:model="declared_room" class="w-full border rounded p-2">
+                @error('declared_room') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Postcode</label>
+                <input type="text" wire:model="declared_postcode" class="w-full border rounded p-2">
+                @error('declared_postcode') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
         </div>
 
         {{-- Actual Address --}}
         <h3 class="font-semibold mt-4">Actual Address</h3>
         <div class="grid grid-cols-3 gap-4">
-            <div><label>Country</label><input type="text" wire:model="actual_country" class="w-full border rounded p-2">@error('actual_country') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>City</label><input type="text" wire:model="actual_city" class="w-full border rounded p-2">@error('actual_city') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Street</label><input type="text" wire:model="actual_street" class="w-full border rounded p-2">@error('actual_street') <span class="text-red-500">{{ $message }}</span> @enderror</div>
+            <div>
+                <label>Country</label>
+                <select wire:model="actual_country" class="w-full border rounded p-2">
+                    <option value="">Select country</option>
+                    @foreach($countries as $country)
+                        <option value="{{ $country['code'] }}">{{ $country['name'] }}</option>
+                    @endforeach
+                </select>
+                @error('actual_country') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>City</label>
+                <input type="text" wire:model="actual_city" class="w-full border rounded p-2">
+                @error('actual_city') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Street</label>
+                <input type="text" wire:model="actual_street" class="w-full border rounded p-2">
+                @error('actual_street') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
         </div>
         <div class="grid grid-cols-3 gap-4">
-            <div><label>Building</label><input type="text" wire:model="actual_building" class="w-full border rounded p-2">@error('actual_building') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Room</label><input type="text" wire:model="actual_room" class="w-full border rounded p-2">@error('actual_room') <span class="text-red-500">{{ $message }}</span> @enderror</div>
-            <div><label>Status</label>
+            <div>
+                <label>Building</label>
+                <input type="text" wire:model="actual_building" class="w-full border rounded p-2">
+                @error('actual_building') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Room</label>
+                <input type="text" wire:model="actual_room" class="w-full border rounded p-2">
+                @error('actual_room') <span class="text-red-500">{{ $message }}</span> @enderror
+            </div>
+            <div>
+                <label>Status</label>
                 <select wire:model="status" class="w-full border rounded p-2">
                     @foreach(\App\Enums\DriverStatus::options() as $value => $label)
                         <option value="{{ $value }}">{{ $label }}</option>
@@ -85,10 +140,10 @@
             <span>Active</span>
         </div>
 
-        {{-- Документы и даты --}}
-        @include('livewire.drivers.partials.documents-edit') {{-- Вставляем все поля License, 95 Code, Permit, Medical, Declaration как отдельный partial --}}
+        {{-- Документы --}}
+        @includeIf('livewire.drivers.partials.documents-edit')
 
-        {{-- Фото --}}
+        {{-- Photos --}}
         <h3 class="font-semibold mt-4">Photos</h3>
         <div class="grid grid-cols-3 gap-4">
             <div>
@@ -96,8 +151,6 @@
                 <input type="file" wire:model="photo" class="w-full border rounded p-2">
                 @if($photo instanceof \Livewire\TemporaryUploadedFile)
                     <img src="{{ $photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
-                @elseif($photo)
-                    <img src="{{ Storage::url($photo) }}" class="w-32 mt-2 rounded">
                 @endif
                 @error('photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
@@ -106,8 +159,6 @@
                 <input type="file" wire:model="license_photo" class="w-full border rounded p-2">
                 @if($license_photo instanceof \Livewire\TemporaryUploadedFile)
                     <img src="{{ $license_photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
-                @elseif($license_photo)
-                    <img src="{{ Storage::url($license_photo) }}" class="w-32 mt-2 rounded">
                 @endif
                 @error('license_photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>
@@ -116,8 +167,6 @@
                 <input type="file" wire:model="medical_certificate_photo" class="w-full border rounded p-2">
                 @if($medical_certificate_photo instanceof \Livewire\TemporaryUploadedFile)
                     <img src="{{ $medical_certificate_photo->temporaryUrl() }}" class="w-32 mt-2 rounded">
-                @elseif($medical_certificate_photo)
-                    <img src="{{ Storage::url($medical_certificate_photo) }}" class="w-32 mt-2 rounded">
                 @endif
                 @error('medical_certificate_photo') <span class="text-red-500">{{ $message }}</span> @enderror
             </div>

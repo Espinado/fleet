@@ -73,6 +73,13 @@
            class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
             ← Back
         </a>
+         {{-- Кнопка удаления --}}
+        <button type="button"
+        wire:click="destroy"
+        onclick="confirm('Are you sure you want to delete this driver?') || event.stopImmediatePropagation()"
+        class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+        🗑 Delete
+    </button>
     </div>
 </div>
 

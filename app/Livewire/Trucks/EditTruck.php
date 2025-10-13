@@ -80,21 +80,5 @@ class EditTruck extends Component
             ->layout('layouts.app');
     }
 
-     public function destroy()
-{
-    if ($this->truck) {
-        $this->truck->delete();
-
-        // Можно сбросить поля формы, если остаёмся на этой странице
-        $this->reset();
-
-        // Сообщение пользователю
-        session()->flash('success', 'Truck deleted successfully.');
-
-        // При желании — редирект на список водителей
-        return redirect()->route('trucks.index');
-    }
-
-    session()->flash('error', 'Truck not found.');
-}
+   
 }

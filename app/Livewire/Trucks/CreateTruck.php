@@ -7,6 +7,7 @@ use Livewire\WithFileUploads;
 use App\Models\Truck;
 use Illuminate\Validation\Rule;
 
+
 class CreateTruck extends Component
 {
     use WithFileUploads;
@@ -101,4 +102,6 @@ class CreateTruck extends Component
     {
         return view('livewire.trucks.create-truck')->layout('layouts.app');
     }
+
+
 }

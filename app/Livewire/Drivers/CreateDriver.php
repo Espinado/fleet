@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Driver;
 use App\Enums\DriverStatus;
+use Illuminate\Support\Facades\Http;
 
 class CreateDriver extends Component
 {
@@ -19,45 +20,62 @@ class CreateDriver extends Component
     public $status = DriverStatus::ON_WORK->value;
     public $is_active = true;
 
-    // Документы: License
+    // Документы
     public $license_number, $license_issued, $license_end;
-    // Документы: 95 Code
     public $code95_issued, $code95_end;
-    // Документы: Permission
     public $permit_issued, $permit_expired;
-    // Документы: Medical
     public $medical_issued, $medical_expired, $medical_exam_passed, $medical_exam_expired;
-    // Документы: Declaration
     public $declaration_issued, $declaration_expired;
 
     // Фото
     public $photo, $license_photo, $medical_certificate_photo;
 
     public $successMessage;
+    public $countries = [];
+
+    public function mount()
+    {
+        // Загружаем список стран
+        $response = Http::get('https://restcountries.com/v3.1/all?fields=name,cca2');
+
+        if ($response->successful()) {
+            $this->countries = collect($response->json())
+                ->map(fn($c) => [
+                    'name' => $c['name']['common'] ?? 'Unknown',
+                    'code' => $c['cca2'] ?? '',
+                ])
+                ->sortBy('name')
+                ->values()
+                ->toArray();
+        } else {
+            $this->countries = [];
+        }
+    }
 
     protected function rules()
     {
         return [
             'first_name' => 'required|string|max:255',
             'last_name'  => 'required|string|max:255',
-            'pers_code' => 'required|string|unique:drivers,pers_code',
-            'phone' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-               'citizenship' => 'required|string|max:255',
+            'pers_code'  => 'required|string|unique:drivers,pers_code',
+            'phone'      => 'required|string|max:20',
+            'email'      => 'required|email|max:255',
+            'citizenship' => 'required|string|max:255',
 
-        // Адреса
-        'declared_country' => 'required|string|max:255',
-        'declared_city' => 'required|string|max:255',
-        'declared_street' => 'required|string|max:255',
-        'declared_building' => 'required|string|max:20',
-        'declared_room' => 'nullable|string|max:20',
-        'declared_postcode' => 'required|string|max:20',
-        'actual_country' => 'required|string|max:255',
-        'actual_city' => 'required|string|max:255',
-        'actual_street' => 'required|string|max:255',
-        'actual_building' => 'required|string|max:20',
-        'actual_room' => 'nullable|string|max:20',
+            // Адреса
+            'declared_country' => 'required|string|max:255',
+            'declared_city' => 'required|string|max:255',
+            'declared_street' => 'required|string|max:255',
+            'declared_building' => 'required|string|max:20',
+            'declared_room' => 'nullable|string|max:20',
+            'declared_postcode' => 'required|string|max:20',
+            'actual_country' => 'required|string|max:255',
+            'actual_city' => 'required|string|max:255',
+            'actual_street' => 'required|string|max:255',
+            'actual_building' => 'required|string|max:20',
+            'actual_room' => 'nullable|string|max:20',
 
+            // Документы
             'license_number' => 'required|string|unique:drivers,license_number',
             'license_issued' => 'required|date',
             'license_end'    => 'required|date|after:license_issued',
@@ -76,6 +94,7 @@ class CreateDriver extends Component
             'declaration_issued' => 'required|date',
             'declaration_expired'=> 'required|date|after:declaration_issued',
 
+            // Фото
             'photo' => 'nullable|image',
             'license_photo' => 'nullable|image',
             'medical_certificate_photo' => 'nullable|image',
@@ -121,6 +140,7 @@ class CreateDriver extends Component
             'declaration_expired' => $this->declaration_expired,
         ]);
 
+        // Фото
         if ($this->photo) {
             $driver->photo = $this->photo->store('drivers/photos', 'public');
         }

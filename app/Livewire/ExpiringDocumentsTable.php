@@ -217,6 +217,6 @@ class ExpiringDocumentsTable extends Component
 
         return view('livewire.expiring-documents-table', [
             'items' => $paginator,
-        ]);
+        ])->layout('layouts.app');
     }
 }

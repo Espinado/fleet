@@ -28,9 +28,27 @@
         <!-- Top bar -->
         <header class="h-16 bg-white shadow flex items-center justify-between px-6">
             <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
-            <div>
-                <span class="text-gray-600">Hello, Admin</span>
-            </div>
+            <div class="relative group">
+    <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
+        <span>Hello, {{ Auth::user()->name }}</span>
+        <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" stroke="currentColor" stroke-width="2"
+             viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- Подменю -->
+    <div
+        class="absolute right-0 mt-2 w-40 bg-white border rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition ease-out duration-200 z-50">
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit"
+                    class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                Logout
+            </button>
+        </form>
+    </div>
+</div>
         </header>
 
         <!-- Content -->

@@ -54,6 +54,6 @@ class DriversTable extends Component
 
         return view('livewire.drivers-table', [
             'items' => $drivers,
-        ])->layout('layouts.app');;
+        ])->layout('layouts.app');
     }
 }
