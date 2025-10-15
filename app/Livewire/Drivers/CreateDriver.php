@@ -33,25 +33,7 @@ class CreateDriver extends Component
     public $successMessage;
     public $countries = [];
 
-    public function mount()
-    {
-        // Загружаем список стран
-        $response = Http::get('https://restcountries.com/v3.1/all?fields=name,cca2');
-
-        if ($response->successful()) {
-            $this->countries = collect($response->json())
-                ->map(fn($c) => [
-                    'name' => $c['name']['common'] ?? 'Unknown',
-                    'code' => $c['cca2'] ?? '',
-                ])
-                ->sortBy('name')
-                ->values()
-                ->toArray();
-        } else {
-            $this->countries = [];
-        }
-    }
-
+   
     protected function rules()
     {
         return [
