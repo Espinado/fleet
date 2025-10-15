@@ -18,7 +18,7 @@ class EditDriver extends Component
     public $first_name, $last_name, $pers_code, $citizenship, $phone, $email;
     public $declared_country, $declared_city, $declared_street, $declared_building, $declared_room, $declared_postcode;
     public $actual_country, $actual_city, $actual_street, $actual_building, $actual_room, $status, $is_active;
-
+     public $company;
     // Documents
     public $license_number, $license_issued, $license_end;
     public $code95_issued, $code95_end;
@@ -37,6 +37,7 @@ class EditDriver extends Component
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
         'pers_code' => 'required|string|max:50',
+        'company' => 'required',
         'email' => 'nullable|email',
         'phone' => 'nullable|string|max:50',
         'license_number' => 'nullable|string|max:50',
@@ -61,6 +62,7 @@ class EditDriver extends Component
     {
         $this->driver = $driver;
 
+
         // Personal info
         $this->first_name = $driver->first_name;
         $this->last_name = $driver->last_name;
@@ -68,6 +70,7 @@ class EditDriver extends Component
         $this->citizenship = $driver->citizenship;
         $this->phone = $driver->phone;
         $this->email = $driver->email;
+        $this->company = $driver->company;
 
         $this->declared_country = $driver->declared_country;
         $this->declared_city = $driver->declared_city;
@@ -134,6 +137,7 @@ $this->declaration_expired = $driver->declaration_expired ? Carbon::parse($drive
             'last_name' => $this->last_name,
             'pers_code' => $this->pers_code,
             'citizenship' => $this->citizenship,
+            'company' => $this->company,
             'phone' => $this->phone,
             'email' => $this->email,
             'declared_country' => $this->declared_country,

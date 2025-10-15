@@ -14,6 +14,7 @@
 namespace App\Models{
 /**
  * @property int $id
+ * @property int|null $company
  * @property string $first_name
  * @property string $last_name
  * @property string|null $pers_code
@@ -65,6 +66,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCitizenship($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCode95End($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCode95Issued($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCompany($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereDeclarationExpired($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Driver whereDeclarationIssued($value)
@@ -102,6 +104,7 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int|null $company
  * @property string $brand
  * @property string $plate
  * @property string $year
@@ -127,6 +130,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer whereBrand($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer whereCompany($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Trailer whereInspectionExpired($value)
@@ -154,6 +158,7 @@ namespace App\Models{
 namespace App\Models{
 /**
  * @property int $id
+ * @property int|null $company
  * @property string $brand
  * @property string $model
  * @property string $plate
@@ -179,6 +184,7 @@ namespace App\Models{
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck query()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck whereBrand($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck whereCompany($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck whereCreatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Truck whereInspectionExpired($value)

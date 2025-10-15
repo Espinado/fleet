@@ -17,6 +17,7 @@ class Driver extends Model
         'first_name',
         'last_name',
         'personal_code',
+        'company',
         'citizenship',
         'declared_country',
         'declared_city',
@@ -64,7 +65,7 @@ class Driver extends Model
         'is_active'          => 'boolean',
         'status' => DriverStatus::class,
     ];
-    
+
 
     /**
      * Удобный аксессор для ФИО

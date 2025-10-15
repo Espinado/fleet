@@ -28,7 +28,7 @@ class CreateTruck extends Component
     public $vin;
     public $status = 1;
     public $is_active = true;
-
+    public $company;
     public $tech_passport_nr;
     public $tech_passport_issued;
     public $tech_passport_expired;
@@ -41,7 +41,7 @@ class CreateTruck extends Component
             'model' => 'required|string|max:255',
             'plate' => ['required','string','max:255', Rule::unique('trucks','plate')],
             'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
-
+            'company' => 'required|',
             'inspection_issued' => 'required|date',
             'inspection_expired' => 'required|date|after_or_equal:inspection_issued',
 
@@ -74,7 +74,7 @@ class CreateTruck extends Component
             'model' => $this->model,
             'plate' => $this->plate,
             'year' => $this->year,
-
+            'company' => $this->company,
             'inspection_issued' => $this->inspection_issued,
             'inspection_expired' => $this->inspection_expired,
 

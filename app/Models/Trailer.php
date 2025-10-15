@@ -23,6 +23,7 @@ class Trailer extends Model
         'insurance_company',
         'tir_issued',
         'tir_expired',
+        'company',
         'vin',
         'status',
         'is_active',

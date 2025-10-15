@@ -50,7 +50,7 @@
                     <td class="px-4 py-2">{{ $trailer->inspection_expired }}</td>
                     <td class="px-4 py-2">{{ $trailer->insurance_expired }}</td>
                     <td class="px-4 py-2">{{ $trailer->status == 1 ? '✅ Active' : '❌ Inactive' }}</td>
-                    <td class="px-4 py-2">{{ $trailer->is_active ? '✅Yes' : '❌No' }}</td>
+                 <td class="px-4 py-2">{{ $trailer->company_name }}</td>
                     <td class="p-3 border text-center">
                         <a href="{{ route('trailers.show', $trailer->id) }}" class="text-blue-600">👁️</a>
                     </td>

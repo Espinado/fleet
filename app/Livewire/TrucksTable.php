@@ -58,6 +58,14 @@ class TrucksTable extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
+
+              $trucks->getCollection()->transform(function ($truck) {
+            $truck->company_name = config('companies')[$truck->company]['name'] ?? '-';
+            return $truck;
+        });
+
+
+
         return view('livewire.trucks-table', [
             'items' => $trucks,
         ])->layout('layouts.app');

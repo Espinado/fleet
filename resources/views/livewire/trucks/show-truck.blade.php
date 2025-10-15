@@ -25,6 +25,7 @@
             <p><strong>Status:</strong> {{ $truck->status ? '✅ Active' : '❌ Inactive' }}</p>
             <p><strong>Active:</strong> {{ $truck->is_active ? '✅ Yes' : '❌ No' }}</p>
             <p><strong>VIN:</strong> {{ $truck->vin }}</p>
+            <p><strong>Company:</strong> {{config('companies')[$truck->company]['name']}}</p>
         </div>
 
         <div class="space-y-2">

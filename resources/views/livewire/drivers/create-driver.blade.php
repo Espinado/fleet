@@ -227,6 +227,17 @@
             </div>
         </div>
 
+        <div>
+    <label>Company</label>
+    <select wire:model="company" class="w-full border rounded p-2">
+        <option value="">Select company</option>
+        @foreach(config('companies') as $id => $company)
+            <option value="{{ $id }}">{{ $company['name'] }}</option>
+        @endforeach
+    </select>
+    @error('company') <span class="text-red-500">{{ $message }}</span> @enderror
+</div>
+
         {{-- Photos --}}
         <h3 class="font-semibold text-lg border-b pb-1 mt-4">Photos</h3>
         <div class="grid grid-cols-3 gap-4">

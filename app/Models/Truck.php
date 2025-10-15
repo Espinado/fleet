@@ -16,6 +16,7 @@ class Truck extends Model
         'model',
         'plate',
         'year',
+        'company',
         'inspection_issued',
         'inspection_expired',
         'insurance_number',

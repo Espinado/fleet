@@ -46,7 +46,7 @@
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('first_name')">First Name</th>
                     {{--  <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('last_name')">Last Name</th>  --}}
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('personal_code')">Personal Code</th>
-
+                      <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('company')">Company</th>
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('status')">Status</th>
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('is_active')">Active</th>
                       <th class="p-3 text-left">Action</th>
@@ -58,7 +58,7 @@
                         <td class="px-4 py-2">{{ $driver->first_name }} {{ $driver->last_name }}</td>
                         {{--  <td class="px-4 py-2">{{ $driver->last_name }}</td>  --}}
                         <td class="px-4 py-2">{{ $driver->pers_code }}</td>
-
+                          <td class="px-4 py-2">{{ $driver->company_name }}</td>
                         <td class="px-4 py-2">
                              {{ $driver->status_label }}
                         </td>

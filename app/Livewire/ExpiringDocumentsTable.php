@@ -67,110 +67,120 @@ class ExpiringDocumentsTable extends Component
 
     // Собираем элементы (Driver, Truck, Trailer) с документами, истекающими <= 30 дней
     public function collectItems(): Collection
-    {
-        $today = Carbon::today();
-        $deadline = $today->copy()->addDays(30);
+{
+    $today = Carbon::today();
+    $deadline = $today->copy()->addDays(30);
+    $companies = config('companies');
 
-        $driversDocs = collect();
-        Driver::select(
-            'id','first_name','last_name','pers_code','status','is_active',
-            'license_end','code95_end','permit_expired','medical_expired','declaration_expired'
-        )->get()->each(function($d) use (&$driversDocs, $today, $deadline) {
-            $docs = [
-                'License'     => $d->license_end,
-                '95 Code'     => $d->{'95code_end'} ?? null,
-                'Permit'      => $d->permit_expired,
-                'Medical'     => $d->medical_expired,
-                'Declaration' => $d->declaration_expired,
-            ];
+    $driversDocs = collect();
+    Driver::select(
+        'id','first_name','last_name','pers_code','status','is_active','company',
+        'license_end','code95_end','permit_expired','medical_expired','declaration_expired'
+    )->get()->each(function($d) use (&$driversDocs, $today, $deadline, $companies) {
+        $docs = [
+            'License'     => $d->license_end,
+            '95 Code'     => $d->{'95code_end'} ?? null,
+            'Permit'      => $d->permit_expired,
+            'Medical'     => $d->medical_expired,
+            'Declaration' => $d->declaration_expired,
+        ];
 
-            foreach ($docs as $docName => $dateVal) {
-                $expiry = $this->safeParseDate($dateVal);
-                if (!$expiry) continue;
-                if ($expiry->gt($deadline)) continue;
+        $companyName = $companies[$d->company]['name'] ?? '-';
 
-                $daysLeft = $today->diffInDays($expiry, false);
-                if (abs($daysLeft) > 10000) continue;
+        foreach ($docs as $docName => $dateVal) {
+            $expiry = $this->safeParseDate($dateVal);
+            if (!$expiry) continue;
+            if ($expiry->gt($deadline)) continue;
 
-                $driversDocs->push((object)[
-                    'type' => 'Driver',
-                    'name' => "{$d->first_name} {$d->last_name} ({$d->pers_code})",
-                    'document' => $docName,
-                    'expiry_date' => $expiry,
-                    'days_left' => $daysLeft,
-                    'status' => $d->status,
-                    'is_active' => (bool)$d->is_active,
-                    'id' => $d->id,
-                ]);
-            }
-        });
+            $daysLeft = $today->diffInDays($expiry, false);
+            if (abs($daysLeft) > 10000) continue;
 
-        $trucksDocs = collect();
-        Truck::select(
-            'id','brand','model','plate','status','is_active',
-            'inspection_expired','insurance_expired','tech_passport_expired'
-        )->get()->each(function($t) use (&$trucksDocs, $today, $deadline) {
-            $docs = [
-                'Inspection' => $t->inspection_expired,
-                'Insurance'  => $t->insurance_expired,
-                'Tech passport' => $t->tech_passport_expired,
-            ];
+            $driversDocs->push((object)[
+                'type' => 'Driver',
+                'name' => "{$d->first_name} {$d->last_name} ({$d->pers_code})",
+                'document' => $docName,
+                'expiry_date' => $expiry,
+                'company' => $companyName,
+                'days_left' => $daysLeft,
+                'status' => $d->status,
+                'is_active' => (bool)$d->is_active,
+                'id' => $d->id,
+            ]);
+        }
+    });
 
-            foreach ($docs as $docName => $dateVal) {
-                $expiry = $this->safeParseDate($dateVal);
-                if (!$expiry) continue;
-                if ($expiry->gt($deadline)) continue;
-                $daysLeft = $today->diffInDays($expiry, false);
-                if (abs($daysLeft) > 10000) continue;
+    $trucksDocs = collect();
+    Truck::select(
+        'id','brand','model','plate','status','is_active',
+        'inspection_expired','insurance_expired','tech_passport_expired','company'
+    )->get()->each(function($t) use (&$trucksDocs, $today, $deadline, $companies) {
+        $docs = [
+            'Inspection' => $t->inspection_expired,
+            'Insurance'  => $t->insurance_expired,
+            'Tech passport' => $t->tech_passport_expired,
+        ];
 
-                $trucksDocs->push((object)[
-                    'type' => 'Truck',
-                    'name' => "{$t->brand} {$t->model} ({$t->plate})",
-                    'document' => $docName,
-                    'expiry_date' => $expiry,
-                    'days_left' => $daysLeft,
-                    'status' => $t->status,
-                    'is_active' => (bool)$t->is_active,
-                    'id' => $t->id,
-                ]);
-            }
-        });
+        $companyName = $companies[$t->company]['name'] ?? '-';
 
-        $trailersDocs = collect();
-        Trailer::select(
-            'id','brand','plate','status','is_active',
-            'inspection_expired','insurance_expired','tir_expired','tech_passport_expired'
-        )->get()->each(function($tr) use (&$trailersDocs, $today, $deadline) {
-            $docs = [
-                'Inspection' => $tr->inspection_expired,
-                'Insurance'  => $tr->insurance_expired,
-                'TIR'        => $tr->tir_expired,
-                'Tech passport' => $tr->tech_passport_expired,
-            ];
+        foreach ($docs as $docName => $dateVal) {
+            $expiry = $this->safeParseDate($dateVal);
+            if (!$expiry) continue;
+            if ($expiry->gt($deadline)) continue;
+            $daysLeft = $today->diffInDays($expiry, false);
+            if (abs($daysLeft) > 10000) continue;
 
-            foreach ($docs as $docName => $dateVal) {
-                $expiry = $this->safeParseDate($dateVal);
-                if (!$expiry) continue;
-                if ($expiry->gt($deadline)) continue;
-                $daysLeft = $today->diffInDays($expiry, false);
-                if (abs($daysLeft) > 10000) continue;
+            $trucksDocs->push((object)[
+                'type' => 'Truck',
+                'name' => "{$t->brand} {$t->model} ({$t->plate})",
+                'document' => $docName,
+                'expiry_date' => $expiry,
+                'days_left' => $daysLeft,
+                'company' => $companyName,
+                'status' => $t->status,
+                'is_active' => (bool)$t->is_active,
+                'id' => $t->id,
+            ]);
+        }
+    });
 
-                $trailersDocs->push((object)[
-                    'type' => 'Trailer',
-                    'name' => "{$tr->brand} ({$tr->plate})",
-                    'document' => $docName,
-                    'expiry_date' => $expiry,
-                    'days_left' => $daysLeft,
-                    'status' => $tr->status,
-                    'is_active' => (bool)$tr->is_active,
-                    'id' => $tr->id,
-                ]);
-            }
-        });
+    $trailersDocs = collect();
+    Trailer::select(
+        'id','brand','plate','status','is_active',
+        'inspection_expired','insurance_expired','tir_expired','tech_passport_expired','company'
+    )->get()->each(function($tr) use (&$trailersDocs, $today, $deadline, $companies) {
+        $docs = [
+            'Inspection' => $tr->inspection_expired,
+            'Insurance'  => $tr->insurance_expired,
+            'TIR'        => $tr->tir_expired,
+            'Tech passport' => $tr->tech_passport_expired,
+        ];
 
-        // concat — безопасно добавляет элементы в одну коллекцию; затем values() очищает ключи
-        return $driversDocs->concat($trucksDocs)->concat($trailersDocs)->values();
-    }
+        $companyName = $companies[$tr->company]['name'] ?? '-';
+
+        foreach ($docs as $docName => $dateVal) {
+            $expiry = $this->safeParseDate($dateVal);
+            if (!$expiry) continue;
+            if ($expiry->gt($deadline)) continue;
+            $daysLeft = $today->diffInDays($expiry, false);
+            if (abs($daysLeft) > 10000) continue;
+
+            $trailersDocs->push((object)[
+                'type' => 'Trailer',
+                'name' => "{$tr->brand} ({$tr->plate})",
+                'document' => $docName,
+                'expiry_date' => $expiry,
+                'days_left' => $daysLeft,
+                'company' => $companyName,
+                'status' => $tr->status,
+                'is_active' => (bool)$tr->is_active,
+                'id' => $tr->id,
+            ]);
+        }
+    });
+
+    return $driversDocs->concat($trucksDocs)->concat($trailersDocs)->values();
+}
+
 
     public function render()
     {

@@ -24,6 +24,7 @@
                 <p><strong>Status:</strong> {{ $trailer->status ? '✅ Active' : '❌ Inactive' }}</p>
                 <p><strong>Active:</strong> {{ $trailer->is_active ? '✅ Yes' : '❌ No' }}</p>
                 <p><strong>VIN:</strong> {{ $trailer->vin }}</p>
+                 <p><strong>Company:</strong>  {{config('companies')[$trailer->company]['name']}}</p>
             </div>
 
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-2xl shadow-inner space-y-3">

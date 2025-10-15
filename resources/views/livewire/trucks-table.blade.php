@@ -38,7 +38,7 @@
                 <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('inspection_expired')">Inspection till</th>
                 <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('insurance_expired')">Insurance till</th>
                 <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('status')">Status</th>
-                <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('is_active')">Active</th>
+                <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('company')">Company</th>
                 <th class="p-3 text-left">Action</th>
             </tr>
         </thead>
@@ -50,7 +50,7 @@
                     <td class="px-4 py-2">{{ $truck->inspection_expired }}</td>
                     <td class="px-4 py-2">{{ $truck->insurance_expired }}</td>
                     <td class="px-4 py-2">{{ $truck->status == 1 ? '✅ Active' : '❌ Inactive' }}</td>
-                    <td class="px-4 py-2">{{ $truck->is_active ? '✅Yes' : '❌No' }}</td>
+                 <td class="px-4 py-2">{{ $truck->company_name }}</td>
                     <td class="p-3 border text-center">
                         <a href="{{ route('trucks.show', $truck->id) }}" class="text-blue-600">👁️</a>
                     </td>

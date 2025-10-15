@@ -16,7 +16,7 @@ class CreateTrailer extends Component
     public $insurance_company, $insurance_number, $insurance_issued, $insurance_expired;
     public $tir_issued, $tir_expired;
     public $vin, $status = 1, $is_active = true;
-    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired;
+    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired, $company;
     public $tech_passport_photo;
 
     protected function rules()
@@ -28,7 +28,7 @@ class CreateTrailer extends Component
 
             'inspection_issued' => 'required|date',
             'inspection_expired' => 'required|date|after_or_equal:inspection_issued',
-
+            'company' => 'required',
             'insurance_company' => 'required|string|max:255',
             'insurance_number' => 'required|string|max:255',
             'insurance_issued' => 'required|date',
@@ -66,6 +66,7 @@ class CreateTrailer extends Component
             'insurance_expired' => $this->insurance_expired,
             'tir_issued' => $this->tir_issued,
             'tir_expired' => $this->tir_expired,
+            'company' => $this->company,
             'vin' => $this->vin,
             'status' => $this->status,
             'is_active' => $this->is_active,

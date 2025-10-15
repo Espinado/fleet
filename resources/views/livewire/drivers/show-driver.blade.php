@@ -34,6 +34,9 @@
                 <p><span class="font-semibold">Phone:</span> <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span></p>
                 <p><span class="font-semibold">Email:</span> <span class="text-gray-700">{{ $driver->email ?? '-' }}</span></p>
                 <p><span class="font-semibold">Citizenship:</span> <span class="text-gray-700">{{ $driver->citizenship ?? '-' }}</span></p>
+                  <p><span class="font-semibold">Company:</span> <span class="text-gray-700">{{ config('companies')[$driver->company]['name'] ?? '-' }}</span></p>
+
+
             </div>
 
             <div>
@@ -117,6 +120,6 @@
            class="px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-lg font-semibold">
             ⬅ Back to Drivers
         </a>
-     
+
     </div>
 </div>

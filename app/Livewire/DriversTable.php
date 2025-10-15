@@ -52,6 +52,11 @@ class DriversTable extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
+              $drivers->getCollection()->transform(function ($driver) {
+            $driver->company_name = config('companies')[$driver->company]['name'] ?? '-';
+            return $driver;
+        });
+
         return view('livewire.drivers-table', [
             'items' => $drivers,
         ])->layout('layouts.app');

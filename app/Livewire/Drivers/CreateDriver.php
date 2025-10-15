@@ -26,6 +26,7 @@ class CreateDriver extends Component
     public $permit_issued, $permit_expired;
     public $medical_issued, $medical_expired, $medical_exam_passed, $medical_exam_expired;
     public $declaration_issued, $declaration_expired;
+      public $company;
 
     // Фото
     public $photo, $license_photo, $medical_certificate_photo;
@@ -33,7 +34,7 @@ class CreateDriver extends Component
     public $successMessage;
     public $countries = [];
 
-   
+
     protected function rules()
     {
         return [
@@ -43,6 +44,7 @@ class CreateDriver extends Component
             'phone'      => 'required|string|max:20',
             'email'      => 'required|email|max:255',
             'citizenship' => 'required|string|max:255',
+            'company' => 'required',
 
             // Адреса
             'declared_country' => 'required|string|max:255',
@@ -120,6 +122,7 @@ class CreateDriver extends Component
             'medical_exam_expired' => $this->medical_exam_expired,
             'declaration_issued' => $this->declaration_issued,
             'declaration_expired' => $this->declaration_expired,
+            'company' => $this->company,
         ]);
 
         // Фото

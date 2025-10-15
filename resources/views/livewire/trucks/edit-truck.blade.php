@@ -117,6 +117,16 @@
                 @error('tech_passport_expired') <p class="text-red-500 text-sm mt-1" data-error>{{ $message }}</p> @enderror
             </div>
         </div>
+          <div>
+    <label>Company</label>
+    <select wire:model="company" class="w-full border rounded p-2">
+        <option value="">Select company</option>
+        @foreach(config('companies') as $id => $company)
+            <option value="{{ $id }}">{{ $company['name'] }}</option>
+        @endforeach
+    </select>
+    @error('company') <span class="text-red-500">{{ $message }}</span> @enderror
+</div>
 
         {{-- Photo --}}
         <div>

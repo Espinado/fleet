@@ -109,6 +109,16 @@
                 </div>
             </div>
 
+                <div>
+    <label>Company</label>
+    <select wire:model="company" class="w-full border rounded p-2">
+        <option value="">Select company</option>
+        @foreach(config('companies') as $id => $company)
+            <option value="{{ $id }}">{{ $company['name'] }}</option>
+        @endforeach
+    </select>
+    @error('company') <span class="text-red-500">{{ $message }}</span> @enderror
+</div>
             {{-- Tech Passport Photo --}}
             <div>
                 <label>Tech Passport Photo</label>

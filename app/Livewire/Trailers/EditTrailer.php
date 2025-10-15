@@ -19,7 +19,7 @@ class EditTrailer extends Component
     public $insurance_company, $insurance_number, $insurance_issued, $insurance_expired;
     public $tir_issued, $tir_expired;
     public $vin, $status, $is_active;
-    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired;
+    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired, $company;
     public $tech_passport_photo, $current_photo;
 
    public function mount(Trailer $trailer)
@@ -30,6 +30,7 @@ class EditTrailer extends Component
     $this->brand = $trailer->brand;
     $this->plate = $trailer->plate;
     $this->year = $trailer->year;
+    $this->company = $trailer->company;
 
      $this->insurance_number = $trailer->insurance_number;
       $this->insurance_company = $trailer->insurance_company;
@@ -71,6 +72,7 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
             'insurance_number' => 'required|string|max:255',
             'insurance_issued' => 'required|date',
             'insurance_expired' => 'required|date|after_or_equal:insurance_issued',
+            'company' => 'required',
 
             'tir_issued' => 'required|date',
             'tir_expired' => 'required|date|after_or_equal:tir_issued',
@@ -101,6 +103,7 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
             'brand' => $this->brand,
             'plate' => $this->plate,
             'year' => $this->year,
+            'company' => $this->company,
             'inspection_issued' => $this->inspection_issued,
             'inspection_expired' => $this->inspection_expired,
             'insurance_company' => $this->insurance_company,

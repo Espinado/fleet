@@ -60,6 +60,11 @@ class TrailersTable extends Component
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
+              $trailers->getCollection()->transform(function ($trailer) {
+            $trailer->company_name = config('companies')[$trailer->company]['name'] ?? '-';
+            return $trailer;
+        });
+
 
         return view('livewire.trailers-table', [
             'items' => $trailers,

@@ -19,7 +19,7 @@ class EditTruck extends Component
     public $vin, $tech_passport_nr, $tech_passport_issued, $tech_passport_expired;
     public $tech_passport_photo; // новое фото (temporary)
     public $existing_photo;      // старое фото (из базы)
-
+    public $company;
     public function mount(Truck $truck)
     {
         $this->truck = $truck;
@@ -28,6 +28,7 @@ class EditTruck extends Component
         $this->model = $truck->model;
         $this->plate = $truck->plate;
         $this->year = $truck->year;
+        $this->company = $truck->company;
         $this->inspection_issued = $truck->inspection_issued;
         $this->inspection_expired = $truck->inspection_expired;
         $this->insurance_company = $truck->insurance_company;
@@ -53,6 +54,7 @@ class EditTruck extends Component
             'insurance_company' => 'required|string|max:255',
             'insurance_number' => 'required|string|max:255',
             'insurance_issued' => 'required|date',
+            'company' => 'required',
             'insurance_expired' => 'required|date|after_or_equal:insurance_issued',
             'vin' => ['required', 'string', Rule::unique('trucks', 'vin')->ignore($this->truck->id)],
             'tech_passport_nr' => 'required|string|max:255',
@@ -80,5 +82,5 @@ class EditTruck extends Component
             ->layout('layouts.app');
     }
 
-   
+
 }

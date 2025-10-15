@@ -31,7 +31,7 @@
             <thead class="bg-gray-100">
                 <tr>
                     @php
-                        $cols = ['type'=>'Type','name'=>'Name','document'=>'Document','expiry_date'=>'Expiry date','status'=>'Status','is_active'=>'Active'];
+                        $cols = ['type'=>'Type','name'=>'Name','document'=>'Document','expiry_date'=>'Expiry date','company'=>'Company','status'=>'Status','is_active'=>'Active'];
                     @endphp
 
                     @foreach($cols as $field => $label)
@@ -72,6 +72,7 @@
                                 (in {{ $item->days_left }} days)
                             @endif
                         </td>
+                         <td class="p-3 border">{{ $item->company }}</td>
                         <td class="p-3 border">{{ $item->status }}</td>
                         <td class="p-3 border">{{ $item->is_active ? 'Yes' : 'No' }}</td>
                         <td class="p-3 border text-center">
