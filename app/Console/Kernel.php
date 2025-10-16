@@ -25,6 +25,7 @@ class Kernel extends ConsoleKernel
     $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
     $schedule->command('expiring-docs:notify')->dailyAt('12:30');
     $schedule->command('expiring-docs:notify')->dailyAt('14:00');
+      \Log::info('✅ Scheduler is running fine: ' . now());
 
 }
 
