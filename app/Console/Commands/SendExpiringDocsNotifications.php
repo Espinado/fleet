@@ -11,19 +11,14 @@ use Illuminate\Support\Facades\Log;
 
 class SendExpiringDocsNotifications extends Command
 {
-    
     protected $signature = 'expiring-docs:notify';
     protected $description = 'Send notification about documents expiring in <= 30 days';
 
     public function handle()
     {
-        // Лог старта
         Log::info('[Cron] Starting SendExpiringDocsNotifications at ' . now());
 
-        // Создаём компонент корректно
         $component = new ExpiringDocumentsTable();
-
-        // Получаем элементы
         $items = $component->collectItems();
 
         if ($items->isEmpty()) {
@@ -34,14 +29,12 @@ class SendExpiringDocsNotifications extends Command
 
         $today = Carbon::today()->toDateString();
 
-        // Для теста — выводим в консоль и в лог
         Log::info("[Cron] Found {$items->count()} expiring documents on {$today}.");
         $this->info("Найдено {$items->count()} документов с истекающим сроком:");
         foreach ($items->take(5) as $item) {
             $this->line("{$item->type}: {$item->name} — {$item->document} ({$item->expiry_date->toDateString()})");
         }
 
-        // Отправляем письмо и логируем результат
         try {
             Mail::to('rvr@arguss.lv')->send(new ExpiringDocumentsReport($items));
             Log::info('[Cron] Expiring documents email sent successfully.');

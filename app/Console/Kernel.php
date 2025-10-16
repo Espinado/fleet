@@ -11,7 +11,7 @@ class Kernel extends ConsoleKernel
      * Зарегистрированные Artisan команды.
      */
     protected $commands = [
-        \App\Console\Commands\SendExpiringDocsEmails::class,
+        \App\Console\Commands\SendExpiringDocsNotifications::class,
     ];
 
     /**
@@ -26,8 +26,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('expiring-docs:notify')->dailyAt('23:10');
         $schedule->command('expiring-docs:notify')->dailyAt('23:25');
         $schedule->command('expiring-docs:notify')->dailyAt('23:30');
-        $schedule->command('expiring-docs:notify')->dailyAt('23:36');
-        $schedule->command('expiring-docs:notify')->dailyAt('23:40');
 
         \Log::info('✅ Scheduler is running fine: ' . now());
     }
@@ -37,9 +35,8 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        // Загружаем команды из папки app/Console/Commands
         $this->load(__DIR__.'/Commands');
 
-        parent::commands(); // обязательно вызывать
+        parent::commands();
     }
 }
