@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 
 class SendExpiringDocsNotifications extends Command
 {
+    
     protected $signature = 'expiring-docs:notify';
     protected $description = 'Send notification about documents expiring in <= 30 days';
 

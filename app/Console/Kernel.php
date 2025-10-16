@@ -14,29 +14,30 @@ class Kernel extends ConsoleKernel
         \App\Console\Commands\SendExpiringDocsEmails::class,
     ];
 
-    protected $signature = 'expiring-docs:notify';
-
     /**
      * Определяет планировщик команд.
      */
     protected function schedule(Schedule $schedule)
-{
-    // 3 раза в день: 8:00, 14:00, 20:00
-    $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
-    $schedule->command('expiring-docs:notify')->dailyAt('12:30');
-    $schedule->command('expiring-docs:notify')->dailyAt('14:00');
-    $schedule->command('expiring-docs:notify')->dailyAt('23:10');
-    $schedule->command('expiring-docs:notify')->dailyAt('23:25');
-    $schedule->command('expiring-docs:notify')->dailyAt('23:30');
-      \Log::info('✅ Scheduler is running fine: ' . now());
+    {
+        // Запуск команды несколько раз в день
+        $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
+        $schedule->command('expiring-docs:notify')->dailyAt('12:30');
+        $schedule->command('expiring-docs:notify')->dailyAt('14:00');
+        $schedule->command('expiring-docs:notify')->dailyAt('23:10');
+        $schedule->command('expiring-docs:notify')->dailyAt('23:25');
+        $schedule->command('expiring-docs:notify')->dailyAt('23:30');
+        $schedule->command('expiring-docs:notify')->dailyAt('23:36');
+        $schedule->command('expiring-docs:notify')->dailyAt('23:40');
 
-}
+        \Log::info('✅ Scheduler is running fine: ' . now());
+    }
 
     /**
      * Регистрация всех команд Artisan.
      */
     protected function commands()
     {
+        // Загружаем команды из папки app/Console/Commands
         $this->load(__DIR__.'/Commands');
 
         parent::commands(); // обязательно вызывать
