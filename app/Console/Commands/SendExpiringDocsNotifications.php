@@ -7,6 +7,8 @@ use App\Livewire\ExpiringDocumentsTable;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ExpiringDocumentsReport;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Log; // ✅ добавляем Log
+
 
 class SendExpiringDocsNotifications extends Command
 {
@@ -15,7 +17,9 @@ class SendExpiringDocsNotifications extends Command
 
     public function handle()
     {
-        $component = new ExpiringDocumentsTable();
+        $component = n
+
+        Log::info('🕒 [Cron] Starting SendExpiringDocsNotifications at ' . now());ew ExpiringDocumentsTable();
         $items = $component->collectItems();
 
         if ($items->isEmpty()) {
