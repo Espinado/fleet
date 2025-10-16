@@ -22,9 +22,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
 {
     // 3 раза в день: 8:00, 14:00, 20:00
-    $schedule->command('expiring-docs:notify')->twiceDaily(8, 14);
-    $schedule->command('expiring-docs:notify')->dailyAt('20:00');
-    $schedule->command('expiring-docs:notify')->dailyAt('01:00');
+    $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
+    $schedule->command('expiring-docs:notify')->dailyAt('12:30');
+    $schedule->command('expiring-docs:notify')->dailyAt('14:00');
 
 }
 
