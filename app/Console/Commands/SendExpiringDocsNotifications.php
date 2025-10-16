@@ -7,8 +7,7 @@ use App\Livewire\ExpiringDocumentsTable;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ExpiringDocumentsReport;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; // ✅ добавляем Log
-
+use Illuminate\Support\Facades\Log;
 
 class SendExpiringDocsNotifications extends Command
 {
@@ -17,27 +16,40 @@ class SendExpiringDocsNotifications extends Command
 
     public function handle()
     {
-        $component = n
+        // Лог старта
+        Log::info('[Cron] Starting SendExpiringDocsNotifications at ' . now());
 
-        Log::info('🕒 [Cron] Starting SendExpiringDocsNotifications at ' . now());ew ExpiringDocumentsTable();
+        // Создаём компонент корректно
+        $component = new ExpiringDocumentsTable();
+
+        // Получаем элементы
         $items = $component->collectItems();
 
         if ($items->isEmpty()) {
+            Log::info('[Cron] No expiring documents found.');
             $this->info('Нет документов, истекающих в ближайшие 30 дней.');
             return;
         }
 
         $today = Carbon::today()->toDateString();
 
-        // Для теста — выводим в консоль
+        // Для теста — выводим в консоль и в лог
+        Log::info("[Cron] Found {$items->count()} expiring documents on {$today}.");
         $this->info("Найдено {$items->count()} документов с истекающим сроком:");
         foreach ($items->take(5) as $item) {
             $this->line("{$item->type}: {$item->name} — {$item->document} ({$item->expiry_date->toDateString()})");
         }
 
-        // Отправляем письмо
-        Mail::to('rvr@arguss.lv')->send(new ExpiringDocumentsReport($items));
+        // Отправляем письмо и логируем результат
+        try {
+            Mail::to('rvr@arguss.lv')->send(new ExpiringDocumentsReport($items));
+            Log::info('[Cron] Expiring documents email sent successfully.');
+        } catch (\Throwable $e) {
+            Log::error('[Cron] Mail send failed: ' . $e->getMessage());
+            $this->error('Ошибка при отправке письма: ' . $e->getMessage());
+        }
 
-        $this->info("Уведомление отправлено администратору.");
+        Log::info('[Cron] Finished SendExpiringDocsNotifications at ' . now());
+        $this->info("Уведомление обработано.");
     }
 }
