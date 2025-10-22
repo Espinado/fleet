@@ -33,6 +33,9 @@
             <a href="{{ route('drivers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">👨‍✈️ Drivers</a>
             <a href="{{ route('trucks.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚛 Trucks</a>
             <a href="{{ route('trailers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚚 Trailers</a>
+             <a href="{{ route('clients.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚚 Clients</a>
+              <a href="{{ route('trips.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚚 Trips</a>
+        
         </nav>
     </aside>
 

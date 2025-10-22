@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
         TruckSeeder::class,
         TrailerSeeder::class,
         FleetExtraSeeder::class,
+        ClientsTableSeeder::class,
+        AdminUserSeeder::class,
     ]);
     }
 }

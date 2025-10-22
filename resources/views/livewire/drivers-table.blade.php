@@ -45,7 +45,7 @@
                 <tr class="bg-gray-100 text-left">
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('first_name')">First Name</th>
                     {{--  <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('last_name')">Last Name</th>  --}}
-                    <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('personal_code')">Personal Code</th>
+                    <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('pers_code')">Personal Code</th>
                       <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('company')">Company</th>
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('status')">Status</th>
                     <th class="px-4 py-2 cursor-pointer" wire:click="sortBy('is_active')">Active</th>
