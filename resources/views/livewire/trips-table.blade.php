@@ -65,7 +65,11 @@
           <td class="px-3 py-2">{{ ($t->driver->first_name ?? '') . ' ' . ($t->driver->last_name ?? '') }}</td>
           <td class="px-3 py-2">{{ $t->truck->plate ?? '-' }}</td>
           <td class="px-3 py-2">{{ $t->trailer->plate ?? '-' }}</td>
-          <td class="px-3 py-2">{{ $t->route_from }} → {{ $t->route_to }}</td>
+        <td class="px-3 py-2">
+    {{ config('countries.' . $t->origin_country)['iso'] ?? '—' }}
+    →
+    {{ config('countries.' . $t->destination_country)['iso'] ?? '—' }}
+</td>
           <td class="px-3 py-2">
             <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
               {{ $t->status->label() }}

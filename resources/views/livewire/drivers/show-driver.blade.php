@@ -33,29 +33,49 @@
                 <p><span class="font-semibold">Personal Code:</span> <span class="text-gray-700">{{ $driver->pers_code ?? '-' }}</span></p>
                 <p><span class="font-semibold">Phone:</span> <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span></p>
                 <p><span class="font-semibold">Email:</span> <span class="text-gray-700">{{ $driver->email ?? '-' }}</span></p>
-                <p><span class="font-semibold">Citizenship:</span> <span class="text-gray-700">{{ $driver->citizenship ?? '-' }}</span></p>
+               <span class="font-semibold">Citizenship:</span>
+               <span class="text-gray-700">{{ config('countries')[$driver->citizenship]['name'] ?? '-' }} </span>
                   <p><span class="font-semibold">Company:</span> <span class="text-gray-700">{{ config('companies')[$driver->company]['name'] ?? '-' }}</span></p>
 
 
             </div>
 
-            <div>
-                <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 Addresses</h2>
-                <p><span class="font-semibold">Declared:</span>
-                    <span class="text-gray-700">
-                        {{ $driver->declared_country ?? '-' }}, {{ $driver->declared_city ?? '-' }},
-                        {{ $driver->declared_street ?? '-' }} {{ $driver->declared_building ?? '' }}
-                        {{ $driver->declared_room ?? '' }}, {{ $driver->declared_postcode ?? '' }}
-                    </span>
-                </p>
-                <p><span class="font-semibold">Actual:</span>
-                    <span class="text-gray-700">
-                        {{ $driver->actual_country ?? '-' }}, {{ $driver->actual_city ?? '-' }},
-                        {{ $driver->actual_street ?? '-' }} {{ $driver->actual_building ?? '' }}
-                        {{ $driver->actual_room ?? '' }}
-                    </span>
-                </p>
-            </div>
+          <div>
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 Addresses</h2>
+    <p>
+        <span class="font-semibold">Declared:</span>
+        <span class="text-gray-700">
+            @php
+                $declaredCountry = config('countries')[$driver->declared_country_id]['name'] ?? '-';
+                $declaredCities = getCitiesByCountryId($driver->declared_country_id);
+                $declaredCity = $declaredCities[$driver->declared_city_id]['name'] ?? '-';
+            @endphp
+
+            {{ $declaredCountry }}, {{ $declaredCity }},
+            {{ $driver->declared_street ?? '-' }}
+            {{ $driver->declared_building ?? '' }}
+            {{ $driver->declared_room ?? '' }},
+            {{ $driver->declared_postcode ?? '' }}
+        </span>
+    </p>
+
+    <p>
+        <span class="font-semibold">Actual:</span>
+        <span class="text-gray-700">
+            @php
+                $actualCountry = config('countries')[$driver->actual_country_id]['name'] ?? '-';
+                $actualCities = getCitiesByCountryId($driver->actual_country_id);
+                $actualCity = $actualCities[$driver->actual_city_id]['name'] ?? '-';
+            @endphp
+
+            {{ $actualCountry }}, {{ $actualCity }},
+            {{ $driver->actual_street ?? '-' }}
+            {{ $driver->actual_building ?? '' }}
+            {{ $driver->actual_room ?? '' }}
+        </span>
+    </p>
+</div>
+
 
             <div>
                 <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 Documents</h2>

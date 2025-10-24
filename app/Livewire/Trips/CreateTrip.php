@@ -11,6 +11,8 @@ class CreateTrip extends Component
 {
     public $expeditorId, $driverId, $truckId, $trailerId, $clientId;
     public $selectedClient = null;
+    public $origin_country, $origin_address;
+public $destination_country, $destination_address;
 
     public $route_from, $route_to, $start_date, $end_date, $cargo, $price, $currency = 'EUR';
     public $status = TripStatus::PLANNED;
@@ -23,16 +25,19 @@ class CreateTrip extends Component
         'expeditorId' => 'required|integer',
         'driverId'    => 'required|integer|exists:drivers,id',
         'truckId'     => 'required|integer|exists:trucks,id',
-        'trailerId'   => 'nullable|integer|exists:trailers,id',
+        'trailerId'   => 'required|integer|exists:trailers,id',
         'clientId'    => 'required|integer|exists:clients,id',
-        'route_from'  => 'nullable|string|max:255',
-        'route_to'    => 'nullable|string|max:255',
-        'start_date'  => 'nullable|date',
-        'end_date'    => 'nullable|date|after_or_equal:start_date',
-        'cargo'       => 'nullable|string|max:255',
-        'price'       => 'nullable|numeric|min:0',
+       
+        'start_date'  => 'required|date',
+        'end_date'    => 'required|date|after_or_equal:start_date',
+        'cargo'       => 'required|string|max:255',
+        'price'       => 'required|numeric|min:0',
         'currency'    => 'required|string|max:10',
         'status'      => 'required',
+        'origin_country'       => 'required|integer',
+        'origin_address'       => 'required|string|max:255',
+        'destination_country'  => 'required|integer',
+        'destination_address'  => 'required|string|max:255',
     ];
 
     public function updatedExpeditorId($value)
@@ -63,6 +68,7 @@ class CreateTrip extends Component
 
     public function save()
     {
+        $this->price = str_replace(',', '.', $this->price);
         try {
             $this->validate();
 
@@ -83,9 +89,12 @@ class CreateTrip extends Component
                 'truck_id'   => $this->truckId,
                 'trailer_id' => $this->trailerId,
                 'client_id'  => $this->clientId,
+                 'origin_country'      => $this->origin_country,
+                'origin_address'      => $this->origin_address,
+                'destination_country' => $this->destination_country,
+                'destination_address' => $this->destination_address,
 
-                'route_from' => $this->route_from,
-                'route_to'   => $this->route_to,
+               
                 'start_date' => $this->start_date,
                 'end_date'   => $this->end_date,
                 'cargo'      => $this->cargo,

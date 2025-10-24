@@ -169,6 +169,7 @@ $this->declaration_expired = $driver->declaration_expired ? Carbon::parse($drive
         ]);
 
         session()->flash('success', 'Driver updated successfully!');
+         return redirect()->route('drivers.index');
     }
 
     public function render()
