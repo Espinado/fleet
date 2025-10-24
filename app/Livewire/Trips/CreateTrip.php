@@ -11,10 +11,14 @@ class CreateTrip extends Component
 {
     public $expeditorId, $driverId, $truckId, $trailerId, $clientId;
     public $selectedClient = null;
-    public $origin_country, $origin_address;
-public $destination_country, $destination_address;
-
+  
     public $route_from, $route_to, $start_date, $end_date, $cargo, $price, $currency = 'EUR';
+    public ?int $origin_country_id = null;
+public ?int $origin_city_id = null;
+public ?int $destination_country_id = null;
+public ?int $destination_city_id = null;
+public ?string $origin_address = null;
+public ?string $destination_address = null;
     public $status = TripStatus::PLANNED;
 
     public $drivers = [];
@@ -34,9 +38,11 @@ public $destination_country, $destination_address;
         'price'       => 'required|numeric|min:0',
         'currency'    => 'required|string|max:10',
         'status'      => 'required',
-        'origin_country'       => 'required|integer',
+        'origin_country_id'       => 'required|integer',
+         'origin_city_id'       => 'required|integer',
         'origin_address'       => 'required|string|max:255',
-        'destination_country'  => 'required|integer',
+        'destination_country_id'  => 'required|integer',
+         'destination_city_id'  => 'required|integer',
         'destination_address'  => 'required|string|max:255',
     ];
 
@@ -89,9 +95,11 @@ public $destination_country, $destination_address;
                 'truck_id'   => $this->truckId,
                 'trailer_id' => $this->trailerId,
                 'client_id'  => $this->clientId,
-                 'origin_country'      => $this->origin_country,
+                 'origin_country_id'      => $this->origin_country_id,
+                  'origin_city_id'      => $this->origin_city_id,
                 'origin_address'      => $this->origin_address,
-                'destination_country' => $this->destination_country,
+                'destination_country_id' => $this->destination_country_id,
+                  'destination_city_id' => $this->destination_city_id,
                 'destination_address' => $this->destination_address,
 
                

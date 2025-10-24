@@ -59,16 +59,16 @@
       <tbody>
       @forelse($trips as $t)
         <tr class="border-b hover:bg-gray-50">
-          <td class="px-3 py-2">{{ optional($t->start_date)->format('Y-m-d') ?? '-' }}</td>
+          <td class="px-3 py-2">{{ optional($t->start_date)->format('d-m-Y') ?? '-' }}</td>
           <td class="px-3 py-2">{{ $t->expeditor_name }}</td>
           <td class="px-3 py-2">{{ $t->client->company_name ?? '-' }}</td>
           <td class="px-3 py-2">{{ ($t->driver->first_name ?? '') . ' ' . ($t->driver->last_name ?? '') }}</td>
           <td class="px-3 py-2">{{ $t->truck->plate ?? '-' }}</td>
           <td class="px-3 py-2">{{ $t->trailer->plate ?? '-' }}</td>
-        <td class="px-3 py-2">
-    {{ config('countries.' . $t->origin_country)['iso'] ?? '—' }}
+       <td class="px-3 py-2">
+    {{ config('countries.' . $t->origin_country_id)['iso'] ?? '—' }}
     →
-    {{ config('countries.' . $t->destination_country)['iso'] ?? '—' }}
+    {{ config('countries.' . $t->destination_country_id)['iso'] ?? '—' }}
 </td>
           <td class="px-3 py-2">
             <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">

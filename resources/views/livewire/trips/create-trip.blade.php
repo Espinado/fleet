@@ -128,41 +128,121 @@
             </div>
 
             {{-- === Маршрут === --}}
-            <div class="grid md:grid-cols-2 gap-4">
-                {{-- FROM --}}
-                <div>
-                    <label class="block text-sm font-medium mb-1">From *</label>
-                    <select wire:model="origin_country" class="w-full border rounded px-3 py-2 mb-2">
-                        <option value="">Select country</option>
-                        @foreach(config('countries') as $id => $country)
-                            <option value="{{ $id }}">{{ $country['name'] }}</option>
-                        @endforeach
-                    </select>
-                    @error('origin_country') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+         {{-- === Маршрут === --}}
+<div>
+    <h3 class="text-lg font-semibold border-b pb-1 mt-6">Route</h3>
 
-                    <input type="text" wire:model="origin_address"
-                           placeholder="Enter origin address"
-                           class="w-full border rounded px-3 py-2">
-                    @error('origin_address') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+    <div class="space-y-8"> {{-- ✅ вертикальный стек вместо grid --}}
+        {{-- FROM --}}
+        <div>
+            <h4 class="font-semibold mb-2">From:</h4>
+
+            {{-- Страна --}}
+            <div class="relative mb-3">
+                <label class="block text-sm font-medium mb-1">Country *</label>
+                <select wire:model.live="origin_country_id" class="w-full border rounded px-3 py-2">
+                    <option value="">Select country</option>
+                    @foreach(config('countries') as $id => $country)
+                        <option value="{{ $id }}">{{ $country['name'] }}</option>
+                    @endforeach
+                </select>
+
+                <div wire:loading wire:target="origin_country_id"
+                     class="absolute right-3 top-9">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
                 </div>
 
-                {{-- TO --}}
-                <div>
-                    <label class="block text-sm font-medium mb-1">To *</label>
-                    <select wire:model="destination_country" class="w-full border rounded px-3 py-2 mb-2">
-                        <option value="">Select country</option>
-                        @foreach(config('countries') as $id => $country)
-                            <option value="{{ $id }}">{{ $country['name'] }}</option>
-                        @endforeach
-                    </select>
-                    @error('destination_country') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-
-                    <input type="text" wire:model="destination_address"
-                           placeholder="Enter destination address"
-                           class="w-full border rounded px-3 py-2">
-                    @error('destination_address') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
-                </div>
+                @error('origin_country_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
             </div>
+
+            {{-- Город --}}
+            <div class="relative mb-3">
+                <label class="block text-sm font-medium mb-1">City *</label>
+                <select wire:model.live="origin_city_id"
+                        class="w-full border rounded px-3 py-2"
+                        @disabled(empty($origin_country_id))>
+                    <option value="">Select city</option>
+                    @if(!empty($origin_country_id))
+                        @foreach(getCitiesByCountryId($origin_country_id) as $id => $city)
+                            <option value="{{ $id }}">{{ $city['name'] }}</option>
+                        @endforeach
+                    @endif
+                </select>
+
+                <div wire:loading wire:target="origin_country_id"
+                     class="absolute right-3 top-9">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+
+                @error('origin_city_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Адрес --}}
+            <div>
+                <label class="block text-sm font-medium mb-1">Address</label>
+                <input type="text" wire:model="origin_address"
+                       placeholder="Enter origin address"
+                       class="w-full border rounded px-3 py-2">
+                @error('origin_address') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+        </div>
+
+        {{-- TO --}}
+        <div>
+            <h4 class="font-semibold mb-2">To:</h4>
+
+            {{-- Страна --}}
+            <div class="relative mb-3">
+                <label class="block text-sm font-medium mb-1">Country *</label>
+                <select wire:model.live="destination_country_id" class="w-full border rounded px-3 py-2">
+                    <option value="">Select country</option>
+                    @foreach(config('countries') as $id => $country)
+                        <option value="{{ $id }}">{{ $country['name'] }}</option>
+                    @endforeach
+                </select>
+
+                <div wire:loading wire:target="destination_country_id"
+                     class="absolute right-3 top-9">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+
+                @error('destination_country_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Город --}}
+            <div class="relative mb-3">
+                <label class="block text-sm font-medium mb-1">City *</label>
+                <select wire:model.live="destination_city_id"
+                        class="w-full border rounded px-3 py-2"
+                        @disabled(empty($destination_country_id))>
+                    <option value="">Select city</option>
+                    @if(!empty($destination_country_id))
+                        @foreach(getCitiesByCountryId($destination_country_id) as $id => $city)
+                            <option value="{{ $id }}">{{ $city['name'] }}</option>
+                        @endforeach
+                    @endif
+                </select>
+
+                <div wire:loading wire:target="destination_country_id"
+                     class="absolute right-3 top-9">
+                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                </div>
+
+                @error('destination_city_id') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            {{-- Адрес --}}
+            <div>
+                <label class="block text-sm font-medium mb-1">Address</label>
+                <input type="text" wire:model="destination_address"
+                       placeholder="Enter destination address"
+                       class="w-full border rounded px-3 py-2">
+                @error('destination_address') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+        </div>
+    </div>
+</div>
+
 
             {{-- === Даты === --}}
             <div class="grid md:grid-cols-2 gap-4">
@@ -206,6 +286,7 @@
                     Save Trip
                 </button>
             </div>
+
         </form>
     </div>
 </div>

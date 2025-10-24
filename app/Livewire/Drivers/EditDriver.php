@@ -15,9 +15,9 @@ class EditDriver extends Component
     public Driver $driver;
 
     // Personal info
-    public $first_name, $last_name, $pers_code, $citizenship, $phone, $email;
-    public $declared_country, $declared_city, $declared_street, $declared_building, $declared_room, $declared_postcode;
-    public $actual_country, $actual_city, $actual_street, $actual_building, $actual_room, $status, $is_active;
+    public $first_name, $last_name, $pers_code, $phone, $email;
+    public  $declared_street, $declared_building, $declared_room, $declared_postcode;
+    public  $actual_street, $actual_building, $actual_room, $status, $is_active;
      public $company;
     // Documents
     public $license_number, $license_issued, $license_end;
@@ -26,6 +26,12 @@ class EditDriver extends Component
     public $medical_issued, $medical_expired;
     public $medical_exam_passed, $medical_exam_expired;
     public $declaration_issued, $declaration_expired;
+    public ?int $citizenship = null;
+   public ?int $declared_country_id = null;
+   public ?int $declared_city_id = null;
+   public ?int $actual_country_id = null;
+   public ?int $actual_city_id = null;
+
 
     // Photos
     public $photo, $license_photo, $medical_certificate_photo;
@@ -58,6 +64,16 @@ class EditDriver extends Component
         'medical_certificate_photo' => 'nullable|image|max:2048',
     ];
 
+    public function updatedDeclaredCountryId()
+{
+    $this->declared_city_id = null;
+}
+
+public function updatedActualCountryId()
+{
+    $this->actual_city_id = null;
+}
+
     public function mount(Driver $driver)
     {
         $this->driver = $driver;
@@ -72,15 +88,15 @@ class EditDriver extends Component
         $this->email = $driver->email;
         $this->company = $driver->company;
 
-        $this->declared_country = $driver->declared_country;
-        $this->declared_city = $driver->declared_city;
+        $this->declared_country_id = $driver->declared_country_id;
+        $this->declared_city_id = $driver->declared_city_id;
         $this->declared_street = $driver->declared_street;
         $this->declared_building = $driver->declared_building;
         $this->declared_room = $driver->declared_room;
         $this->declared_postcode = $driver->declared_postcode;
 
-        $this->actual_country = $driver->actual_country;
-        $this->actual_city = $driver->actual_city;
+        $this->actual_country_id = $driver->actual_country_id;
+        $this->actual_city_id = $driver->actual_city_id;
         $this->actual_street = $driver->actual_street;
         $this->actual_building = $driver->actual_building;
         $this->actual_room = $driver->actual_room;
@@ -140,14 +156,14 @@ $this->declaration_expired = $driver->declaration_expired ? Carbon::parse($drive
             'company' => $this->company,
             'phone' => $this->phone,
             'email' => $this->email,
-            'declared_country' => $this->declared_country,
-            'declared_city' => $this->declared_city,
+            'declared_country_id' => $this->declared_country_id,
+            'declared_city_id' => $this->declared_city_id,
             'declared_street' => $this->declared_street,
             'declared_building' => $this->declared_building,
             'declared_room' => $this->declared_room,
             'declared_postcode' => $this->declared_postcode,
-            'actual_country' => $this->actual_country,
-            'actual_city' => $this->actual_city,
+            'actual_country_id' => $this->actual_country_id,
+            'actual_city_id' => $this->actual_city_id,
             'actual_street' => $this->actual_street,
             'actual_building' => $this->actual_building,
             'actual_room' => $this->actual_room,

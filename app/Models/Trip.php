@@ -14,7 +14,7 @@ class Trip extends Model
         'expeditor_id','expeditor_name','expeditor_reg_nr','expeditor_country','expeditor_city',
         'expeditor_address','expeditor_post_code','expeditor_email','expeditor_phone',
         'driver_id','truck_id','trailer_id','client_id',
-        'origin_address','origin_country','destination_country', 'destination_address','start_date','end_date','cargo',
+        'origin_address','origin_country_id','origin_city_id','destination_country_id', 'destination_city_id','destination_address','start_date','end_date','cargo',
         'price','currency','status',
     ];
 
