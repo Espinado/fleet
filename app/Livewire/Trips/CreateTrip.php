@@ -3,146 +3,201 @@
 namespace App\Livewire\Trips;
 
 use Livewire\Component;
-use App\Models\{Trip, Driver, Truck, Trailer, Client};
-use App\Enums\TripStatus;
-use Illuminate\Support\Facades\Log;
+use App\Models\{Driver, Truck, Trailer, Client, Trip};
 
 class CreateTrip extends Component
 {
-    public $expeditorId, $driverId, $truckId, $trailerId, $clientId;
-    public $selectedClient = null;
-  
-    public $route_from, $route_to, $start_date, $end_date, $cargo, $price, $currency = 'EUR';
-    public ?int $origin_country_id = null;
-public ?int $origin_city_id = null;
-public ?int $destination_country_id = null;
-public ?int $destination_city_id = null;
-public ?string $origin_address = null;
-public ?string $destination_address = null;
-    public $status = TripStatus::PLANNED;
+    public $expeditor_id, $expeditorData = [];
 
-    public $drivers = [];
-    public $trucks = [];
-    public $trailers = [];
+    // Transport
+    public $driver_id, $truck_id, $trailer_id;
+    public $drivers = [], $trucks = [], $trailers = [];
+
+    // Clients
+    public $clients = [], $shipperId, $consigneeId;
+    public $shipperData = [], $consigneeData = [];
+
+    // Route
+    public $origin_country_id, $origin_city_id, $origin_address, $originCities = [];
+    public $destination_country_id, $destination_city_id, $destination_address, $destinationCities = [];
+
+    // Cargo
+    public $cargo_description, $cargo_packages, $cargo_weight, $cargo_volume, $cargo_marks, $cargo_instructions, $cargo_remarks;
+
+    // Payment
+    public $price, $currency = 'EUR', $payment_terms, $payer_type_id;
+
+    // Trip
+    public $start_date, $end_date, $status = 'planned', $successMessage;
 
     protected $rules = [
-        'expeditorId' => 'required|integer',
-        'driverId'    => 'required|integer|exists:drivers,id',
-        'truckId'     => 'required|integer|exists:trucks,id',
-        'trailerId'   => 'required|integer|exists:trailers,id',
-        'clientId'    => 'required|integer|exists:clients,id',
-       
-        'start_date'  => 'required|date',
-        'end_date'    => 'required|date|after_or_equal:start_date',
-        'cargo'       => 'required|string|max:255',
-        'price'       => 'required|numeric|min:0',
-        'currency'    => 'required|string|max:10',
-        'status'      => 'required',
-        'origin_country_id'       => 'required|integer',
-         'origin_city_id'       => 'required|integer',
-        'origin_address'       => 'required|string|max:255',
-        'destination_country_id'  => 'required|integer',
-         'destination_city_id'  => 'required|integer',
-        'destination_address'  => 'required|string|max:255',
+        'expeditor_id' => 'required',
+        'driver_id' => 'required',
+        'truck_id' => 'required',
+        'shipperId' => 'required',
+        'consigneeId' => 'required',
+        'origin_country_id' => 'required',
+        'origin_city_id' => 'required',
+        'origin_address' => 'required|string|max:255',
+        'destination_country_id' => 'required',
+        'destination_city_id' => 'required',
+        'destination_address' => 'required|string|max:255',
+        'start_date' => 'required|date',
+        'payment_terms' => 'nullable|date',
     ];
 
-    public function updatedExpeditorId($value)
+    /** === При выборе Expeditor === */
+    public function updatedExpeditorId($id)
     {
-        if (!$value) {
-            $this->drivers = $this->trucks = $this->trailers = [];
-            $this->driverId = $this->truckId = $this->trailerId = null;
-            return;
-        }
+        $this->expeditorData = config("companies.$id") ?? [];
 
-        $this->drivers  = Driver::where('company', $value)->orderBy('first_name')->get();
-        $this->trucks   = Truck::where('company', $value)->orderBy('plate')->get();
-        $this->trailers = Trailer::where('company', $value)->orderBy('plate')->get();
+        // фильтруем транспорт по компании
+        $this->drivers = Driver::where('company', $id)
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name'])
+            ->mapWithKeys(fn($d) => [$d->id => "{$d->first_name} {$d->last_name}"])
+            ->toArray();
 
-        Log::info("✅ Loaded company data for expeditor {$value}", [
-            'drivers' => $this->drivers->count(),
-            'trucks'  => $this->trucks->count(),
-            'trailers'=> $this->trailers->count(),
-        ]);
+        $this->trucks = Truck::where('company', $id)
+            ->orderBy('brand')
+            ->get(['id', 'brand', 'model', 'plate'])
+            ->mapWithKeys(fn($t) => [$t->id => "{$t->brand} {$t->model} ({$t->plate})"])
+            ->toArray();
 
-        $this->driverId = $this->truckId = $this->trailerId = null;
+        $this->trailers = Trailer::where('company', $id)
+            ->orderBy('plate')
+            ->get(['id', 'brand', 'plate'])
+            ->mapWithKeys(fn($t) => [$t->id => "{$t->brand} ({$t->plate})"])
+            ->toArray();
+
+        // клиенты не фильтруем
+        $this->clients = Client::orderBy('company_name')
+            ->get(['id', 'company_name'])
+            ->mapWithKeys(fn($c) => [$c->id => $c->company_name])
+            ->toArray();
     }
 
-    public function updatedClientId($value)
+    /** === При выборе Shipper === */
+    public function updatedShipperId($id)
     {
-        $this->selectedClient = $value ? Client::find($value) : null;
+        $client = Client::find($id);
+        $this->shipperData = $client?->only(['company_name', 'email', 'phone', 'fiz_address', 'fiz_city', 'fiz_country']) ?? [];
     }
 
+    /** === При выборе Consignee === */
+    public function updatedConsigneeId($id)
+    {
+        $client = Client::find($id);
+        $this->consigneeData = $client?->only(['company_name', 'email', 'phone', 'fiz_address', 'fiz_city', 'fiz_country']) ?? [];
+    }
+
+    /** === Города === */
+    public function updatedOriginCountryId($countryId)
+    {
+        $this->originCities = $this->formatCities(getCitiesByCountryId((int) $countryId));
+        $this->origin_city_id = null;
+    }
+
+    public function updatedDestinationCountryId($countryId)
+    {
+        $this->destinationCities = $this->formatCities(getCitiesByCountryId((int) $countryId));
+        $this->destination_city_id = null;
+    }
+
+    private function formatCities(array $cities): array
+    {
+        return collect($cities)->mapWithKeys(fn($c, $id) => [$id => $c['name']])->toArray();
+    }
+
+    /** === Сохранение === */
     public function save()
     {
-        $this->price = str_replace(',', '.', $this->price);
-        try {
-            $this->validate();
+        $this->validate();
 
-            $company = config('companies.' . $this->expeditorId);
+        $exp = config("companies.{$this->expeditor_id}");
 
-            Trip::create([
-                'expeditor_id'        => $this->expeditorId,
-                'expeditor_name'      => $company['name'] ?? null,
-                'expeditor_reg_nr'    => $company['reg_nr'] ?? null,
-                'expeditor_country'   => $company['country'] ?? null,
-                'expeditor_city'      => $company['city'] ?? null,
-                'expeditor_address'   => $company['address'] ?? null,
-                'expeditor_post_code' => $company['post_code'] ?? null,
-                'expeditor_email'     => $company['email'] ?? null,
-                'expeditor_phone'     => $company['phone'] ?? null,
+       Trip::create([
+    // === Expeditor Snapshot ===
+    'expeditor_id'        => $this->expeditor_id,
+    'expeditor_name'      => $exp['name'] ?? '',
+    'expeditor_reg_nr'    => $exp['reg_nr'] ?? '',
+    'expeditor_country'   => $exp['country'] ?? '',
+    'expeditor_city'      => $exp['city'] ?? '',
+    'expeditor_address'   => $exp['address'] ?? '',
+    'expeditor_post_code' => $exp['post_code'] ?? '',
+    'expeditor_email'     => $exp['email'] ?? '',
+    'expeditor_phone'     => $exp['phone'] ?? '',
 
-                'driver_id'  => $this->driverId,
-                'truck_id'   => $this->truckId,
-                'trailer_id' => $this->trailerId,
-                'client_id'  => $this->clientId,
-                 'origin_country_id'      => $this->origin_country_id,
-                  'origin_city_id'      => $this->origin_city_id,
-                'origin_address'      => $this->origin_address,
-                'destination_country_id' => $this->destination_country_id,
-                  'destination_city_id' => $this->destination_city_id,
-                'destination_address' => $this->destination_address,
+    // === Relations ===
+    'driver_id'      => $this->driver_id,
+    'truck_id'       => $this->truck_id,
+    'trailer_id'     => $this->trailer_id,
+    'shipper_id'     => $this->shipperId,
+    'consignee_id'   => $this->consigneeId,
 
-               
-                'start_date' => $this->start_date,
-                'end_date'   => $this->end_date,
-                'cargo'      => $this->cargo,
-                'price'      => $this->price,
-                'currency'   => $this->currency,
-                'status'     => TripStatus::PLANNED, // ✅ Enum автоматически сконвертируется
-            ]);
+    // === Route ===
+    'origin_country_id'      => $this->origin_country_id,
+    'origin_city_id'         => $this->origin_city_id,
+    'origin_address'         => $this->origin_address,
+    'destination_country_id' => $this->destination_country_id,
+    'destination_city_id'    => $this->destination_city_id,
+    'destination_address'    => $this->destination_address,
 
-            Log::info("✅ Trip successfully created", ['expeditor' => $this->expeditorId]);
+    // === Cargo ===
+    'cargo_description' => $this->cargo_description,
+    'cargo_packages'    => $this->cargo_packages,
+    'cargo_weight'      => $this->cargo_weight,
+    'cargo_volume'      => $this->cargo_volume,
+    'cargo_marks'       => $this->cargo_marks,
+    'cargo_instructions'=> $this->cargo_instructions,
+    'cargo_remarks'     => $this->cargo_remarks,
 
-            session()->flash('success', 'Trip created successfully!');
-            return redirect()->route('trips.index');
+    // === Payment ===
+    'price'          => $this->price,
+    'currency'       => $this->currency,
+    'payment_terms'  => $this->payment_terms,
+    'payer_type_id'  => $this->payer_type_id,
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ Validation failed when creating trip', ['errors' => $e->errors()]);
-            throw $e;
-
-        } catch (\Exception $e) {
-            Log::error('💥 Failed to create trip', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'input' => [
-                    'expeditorId' => $this->expeditorId,
-                    'driverId' => $this->driverId,
-                    'truckId' => $this->truckId,
-                    'trailerId' => $this->trailerId,
-                    'clientId' => $this->clientId,
-                ],
-            ]);
-
-            session()->flash('error', 'An unexpected error occurred while saving the trip.');
-        }
+    // === Other ===
+    'start_date' => $this->start_date,
+    'end_date'   => $this->end_date,
+    'status'     => $this->status,
+]);
+        $this->resetExcept('successMessage');
+        $this->successMessage = '✅ CMR Trip successfully created!';
+        return redirect()->route('trips.index');
     }
 
+    /** === Рендер === */
     public function render()
     {
-        $clients = Client::orderBy('company_name')->get();
+        return view('livewire.trips.create-trip', [
+            // ✅ исправлено — теперь обе компании отобразятся
+            'companies' => collect(config('companies'))
+                ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
+                ->toArray(),
 
-        return view('livewire.trips.create-trip', compact('clients'))
-            ->layout('layouts.app')
-            ->title('Create Trip');
+            // страны тоже исправлены
+            'countries' => collect(config('countries'))
+                ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
+                ->toArray(),
+
+            // типы оплат
+            'payerTypes' => collect(config('payers'))
+                ->mapWithKeys(fn($p, $id) => [$id => $p['label']])
+                ->toArray(),
+
+            // клиенты
+            'clients' => $this->clients ?: Client::orderBy('company_name')
+                ->get(['id', 'company_name'])
+                ->mapWithKeys(fn($c) => [$c->id => $c->company_name])
+                ->toArray(),
+
+            'drivers' => $this->drivers,
+            'trucks' => $this->trucks,
+            'trailers' => $this->trailers,
+            'originCities' => $this->originCities,
+            'destinationCities' => $this->destinationCities,
+        ])->layout('layouts.app');
     }
 }

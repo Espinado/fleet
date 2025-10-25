@@ -26,4 +26,14 @@ class Client extends Model
         'phone',
         'representative',
     ];
+
+    public function shipments()
+{
+    return $this->hasMany(Trip::class, 'shipper_id');
+}
+
+public function receptions()
+{
+    return $this->hasMany(Trip::class, 'consignee_id');
+}
 }

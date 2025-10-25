@@ -14,7 +14,7 @@ use App\Livewire\Trucks\{ShowTruck, EditTruck, CreateTruck};
 use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
 use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
 use App\Livewire\TripsTable;
-use App\Livewire\Trips\{CreateTrip, ShowTrip, EditTrip};
+use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
 
 // Главная страница → редирект на дашборд
 Route::redirect('/', '/dashboard');
@@ -55,7 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
      Route::get('/trips', TripsTable::class)->name('trips.index');       // список рейсов
     Route::get('/trips/create', CreateTrip::class)->name('trips.create'); // создание нового рейса
-    Route::get('/trips/{trip}', ShowTrip::class)->name('trips.show');     // просмотр карточки рейса
+    Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
     Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit'); // редактирование рейса
    
 
