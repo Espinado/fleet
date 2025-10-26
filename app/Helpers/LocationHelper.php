@@ -1,27 +1,47 @@
 <?php
 
+use Illuminate\Support\Facades\File;
+
 /**
- * === LOCATION HELPER ===
+ * ============================================================================
+ * 🌍 LOCATION HELPER (v2.0)
  * Универсальные функции для работы со странами и городами.
+ * Работает с конфигами:
+ *   - config/countries.php
+ *   - config/cities/{iso}.php  (например: config/cities/lv.php)
+ * ============================================================================
  *
- * Работает с конфигурацией:
- *  - config/countries.php
- *  - config/cities/{iso}.php  (например, cities/lv.php)
- *
- * Пример использования:
- *  getCountryByIso('LV')
- *  getCitiesByIso('LV')
- *  getCitiesByCountryId(1)
- *  getCityName('LV', 3)
+ * Примеры:
+ *  getCountryById(1) → "Latvia"
+ *  getCitiesByCountryId(1) → [1 => ['name' => 'Riga'], ...]
+ *  getCityNameByCountryId(1, 3) → "Riga"
+ *  getCityById(3, 1) → "Riga"   // теперь учитывает страну!
+ * ============================================================================
  */
 
+
+/**
+ * 🏳️ Получить название страны по ID
+ */
+if (!function_exists('getCountryById')) {
+    function getCountryById(?int $id): ?string
+    {
+        if (!$id) return null;
+
+        $country = config("countries.$id");
+        if (is_array($country)) {
+            return $country['name'] ?? '—';
+        }
+
+        return is_string($country) ? $country : '—';
+    }
+}
+
+
+/**
+ * 🏴‍☠️ Получить данные страны по ISO
+ */
 if (!function_exists('getCountryByIso')) {
-    /**
-     * Возвращает данные о стране по ISO-коду.
-     *
-     * @param string $iso
-     * @return array|null
-     */
     function getCountryByIso(string $iso): ?array
     {
         $countries = config('countries');
@@ -36,54 +56,51 @@ if (!function_exists('getCountryByIso')) {
     }
 }
 
-if (!function_exists('getCountryById')) {
-    /**
-     * Возвращает данные о стране по ID.
-     *
-     * @param int $countryId
-     * @return array|null
-     */
-    function getCountryById(int $countryId): ?array
-    {
-        $countries = config('countries');
-        return $countries[$countryId] ?? null;
-    }
-}
 
+/**
+ * 🏙 Получить список городов по ISO
+ */
 if (!function_exists('getCitiesByIso')) {
-    /**
-     * Возвращает массив городов по ISO-коду страны.
-     * Пример: getCitiesByIso('LV')
-     *
-     * Файл должен находиться в: config/cities/lv.php
-     *
-     * @param string $iso
-     * @return array
-     */
     function getCitiesByIso(string $iso): array
     {
-        $iso = strtolower($iso);
+        $iso = strtolower(trim($iso));
         $path = config_path("cities/{$iso}.php");
 
         if (file_exists($path)) {
-            return require $path;
+            $cities = include $path;
+            return is_array($cities) ? $cities : [];
         }
 
         return [];
     }
 }
+if (!function_exists('getCompanyById')) {
+    function getCompanyById(?int $id): ?string
+    {
+        if (!$id) return null;
 
+        $companies = config('companies');
+        $company = $companies[$id] ?? null;
+
+        if (!$company) return '—';
+
+        $name = $company['name'] ?? '—';
+        $city = $company['city'] ?? '';
+        $country = $company['country'] ?? '';
+
+        return trim("$name ($city, $country)");
+    }
+}
+
+
+
+/**
+ * 🗺 Получить города по ID страны
+ */
 if (!function_exists('getCitiesByCountryId')) {
-    /**
-     * Возвращает города по ID страны (через ISO).
-     * Пример: getCitiesByCountryId(1)
-     *
-     * @param int $countryId
-     * @return array
-     */
     function getCitiesByCountryId(int $countryId): array
     {
-        $country = getCountryById($countryId);
+        $country = config("countries.$countryId");
 
         if (!$country || empty($country['iso'])) {
             return [];
@@ -93,39 +110,54 @@ if (!function_exists('getCitiesByCountryId')) {
     }
 }
 
-if (!function_exists('getCityName')) {
-    /**
-     * Возвращает название города по ISO и ID.
-     * Пример: getCityName('LV', 1) → "Riga"
-     *
-     * @param string $iso
-     * @param int|string $cityId
-     * @return string|null
-     */
-    function getCityName(string $iso, int|string $cityId): ?string
-    {
-        $cities = getCitiesByIso($iso);
-        return $cities[$cityId]['name'] ?? null;
-    }
-}
 
+/**
+ * 🏡 Получить название города по ID страны и ID города
+ */
 if (!function_exists('getCityNameByCountryId')) {
-    /**
-     * Возвращает название города по ID страны и ID города.
-     * Пример: getCityNameByCountryId(1, 3)
-     *
-     * @param int $countryId
-     * @param int|string $cityId
-     * @return string|null
-     */
     function getCityNameByCountryId(int $countryId, int|string $cityId): ?string
     {
-        $country = getCountryById($countryId);
+        $country = config("countries.$countryId");
+
         if (!$country || empty($country['iso'])) {
             return null;
         }
 
         $cities = getCitiesByIso($country['iso']);
-        return $cities[$cityId]['name'] ?? null;
+        return $cities[$cityId]['name'] ?? '—';
+    }
+}
+
+
+/**
+ * 🔍 Получить название города по ID (универсально)
+ *  Если известна страна — ищет строго в её списке.
+ *  Если страна не указана — ищет по всем config/cities/*.php.
+ */
+if (!function_exists('getCityById')) {
+    function getCityById(?int $cityId, ?int $countryId = null): string
+    {
+        if (!$cityId) return '—';
+
+        // Если известна страна — ищем строго в её списке
+        if ($countryId) {
+            $country = config("countries.$countryId");
+            if (!$country || empty($country['iso'])) return '—';
+
+            $cities = getCitiesByIso($country['iso']);
+            return $cities[$cityId]['name'] ?? '—';
+        }
+
+        // Иначе ищем во всех странах (старое поведение)
+        foreach (File::glob(config_path('cities/*.php')) as $path) {
+            $cities = include $path;
+            if (!is_array($cities)) continue;
+
+            if (isset($cities[$cityId]['name'])) {
+                return (string) $cities[$cityId]['name'];
+            }
+        }
+
+        return '—';
     }
 }

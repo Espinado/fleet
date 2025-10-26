@@ -15,10 +15,17 @@ class EditDriver extends Component
     public Driver $driver;
 
     // Personal info
-    public $first_name, $last_name, $pers_code, $phone, $email;
-    public  $declared_street, $declared_building, $declared_room, $declared_postcode;
-    public  $actual_street, $actual_building, $actual_room, $status, $is_active;
-     public $company;
+    public $first_name, $last_name, $pers_code, $phone, $email, $company;
+    public $declared_street, $declared_building, $declared_room, $declared_postcode;
+    public $actual_street, $actual_building, $actual_room, $status, $is_active;
+
+    // IDs
+    public ?int $citizenship = null;
+    public ?int $declared_country_id = null;
+    public ?int $declared_city_id = null;
+    public ?int $actual_country_id = null;
+    public ?int $actual_city_id = null;
+
     // Documents
     public $license_number, $license_issued, $license_end;
     public $code95_issued, $code95_end;
@@ -26,17 +33,9 @@ class EditDriver extends Component
     public $medical_issued, $medical_expired;
     public $medical_exam_passed, $medical_exam_expired;
     public $declaration_issued, $declaration_expired;
-    public ?int $citizenship = null;
-   public ?int $declared_country_id = null;
-   public ?int $declared_city_id = null;
-   public ?int $actual_country_id = null;
-   public ?int $actual_city_id = null;
-
 
     // Photos
     public $photo, $license_photo, $medical_certificate_photo;
-
-    // Store old photo paths
     public $old_photo, $old_license_photo, $old_medical_certificate_photo;
 
     protected $rules = [
@@ -64,20 +63,9 @@ class EditDriver extends Component
         'medical_certificate_photo' => 'nullable|image|max:2048',
     ];
 
-    public function updatedDeclaredCountryId()
-{
-    $this->declared_city_id = null;
-}
-
-public function updatedActualCountryId()
-{
-    $this->actual_city_id = null;
-}
-
     public function mount(Driver $driver)
     {
         $this->driver = $driver;
-
 
         // Personal info
         $this->first_name = $driver->first_name;
@@ -102,52 +90,65 @@ public function updatedActualCountryId()
         $this->actual_room = $driver->actual_room;
         $this->status = $driver->status;
         $this->is_active = $driver->is_active;
-          $this->license_number = $driver->license_number;
+        $this->license_number = $driver->license_number;
 
-       // Documents (приведение к Y-m-d)
-   $this->license_issued = $driver->license_issued ? Carbon::parse($driver->license_issued)->format('Y-m-d') : null;
-$this->license_end    = $driver->license_end ? Carbon::parse($driver->license_end)->format('Y-m-d') : null;
-$this->code95_issued  = $driver->code95_issued ? Carbon::parse($driver->code95_issued)->format('Y-m-d') : null;
-$this->code95_end     = $driver->code95_end ? Carbon::parse($driver->code95_end)->format('Y-m-d') : null;
-$this->permit_issued  = $driver->permit_issued ? Carbon::parse($driver->permit_issued)->format('Y-m-d') : null;
-$this->permit_expired = $driver->permit_expired ? Carbon::parse($driver->permit_expired)->format('Y-m-d') : null;
-$this->medical_issued = $driver->medical_issued ? Carbon::parse($driver->medical_issued)->format('Y-m-d') : null;
-$this->medical_expired = $driver->medical_expired ? Carbon::parse($driver->medical_expired)->format('Y-m-d') : null;
-$this->medical_exam_passed = $driver->medical_exam_passed ? Carbon::parse($driver->medical_exam_passed)->format('Y-m-d') : null;
-$this->medical_exam_expired = $driver->medical_exam_expired ? Carbon::parse($driver->medical_exam_expired)->format('Y-m-d') : null;
-$this->declaration_issued = $driver->declaration_issued ? Carbon::parse($driver->declaration_issued)->format('Y-m-d') : null;
-$this->declaration_expired = $driver->declaration_expired ? Carbon::parse($driver->declaration_expired)->format('Y-m-d') : null;
+        // Convert dates for form inputs
+        $this->license_issued = optional($driver->license_issued)->format('Y-m-d');
+        $this->license_end = optional($driver->license_end)->format('Y-m-d');
+        $this->code95_issued = optional($driver->code95_issued)->format('Y-m-d');
+        $this->code95_end = optional($driver->code95_end)->format('Y-m-d');
+        $this->permit_issued = optional($driver->permit_issued)->format('Y-m-d');
+        $this->permit_expired = optional($driver->permit_expired)->format('Y-m-d');
+        $this->medical_issued = optional($driver->medical_issued)->format('Y-m-d');
+        $this->medical_expired = optional($driver->medical_expired)->format('Y-m-d');
+        $this->medical_exam_passed = optional($driver->medical_exam_passed)->format('Y-m-d');
+        $this->medical_exam_expired = optional($driver->medical_exam_expired)->format('Y-m-d');
+        $this->declaration_issued = optional($driver->declaration_issued)->format('Y-m-d');
+        $this->declaration_expired = optional($driver->declaration_expired)->format('Y-m-d');
 
-        // Photos
+        // Old photos
         $this->old_photo = $driver->photo;
         $this->old_license_photo = $driver->license_photo;
         $this->old_medical_certificate_photo = $driver->medical_certificate_photo;
+    }
+
+    public function updatedDeclaredCountryId()
+    {
+        $this->declared_city_id = null;
+    }
+
+    public function updatedActualCountryId()
+    {
+        $this->actual_city_id = null;
     }
 
     public function save()
     {
         $this->validate();
 
-        // Save photos
+        // Save photos (replace old if new uploaded)
         if ($this->photo) {
-            $this->driver->photo = $this->photo->store('drivers', 'public');
-        } else {
-            $this->driver->photo = $this->old_photo;
+            if ($this->old_photo && Storage::disk('public')->exists($this->old_photo)) {
+                Storage::disk('public')->delete($this->old_photo);
+            }
+            $this->driver->photo = $this->photo->store('drivers/photos', 'public');
         }
 
         if ($this->license_photo) {
-            $this->driver->license_photo = $this->license_photo->store('drivers', 'public');
-        } else {
-            $this->driver->license_photo = $this->old_license_photo;
+            if ($this->old_license_photo && Storage::disk('public')->exists($this->old_license_photo)) {
+                Storage::disk('public')->delete($this->old_license_photo);
+            }
+            $this->driver->license_photo = $this->license_photo->store('drivers/licenses', 'public');
         }
 
         if ($this->medical_certificate_photo) {
-            $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers', 'public');
-        } else {
-            $this->driver->medical_certificate_photo = $this->old_medical_certificate_photo;
+            if ($this->old_medical_certificate_photo && Storage::disk('public')->exists($this->old_medical_certificate_photo)) {
+                Storage::disk('public')->delete($this->old_medical_certificate_photo);
+            }
+            $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
         }
 
-        // Save other fields
+        // Update driver
         $this->driver->update([
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
@@ -185,29 +186,21 @@ $this->declaration_expired = $driver->declaration_expired ? Carbon::parse($drive
         ]);
 
         session()->flash('success', 'Driver updated successfully!');
-         return redirect()->route('drivers.index');
+        return redirect()->route('drivers.index');
     }
 
     public function render()
     {
-        return view('livewire.drivers.edit-driver')->layout('layouts.app');
+        $companies = config('companies');
+        $countries = config('countries');
+        $declaredCities = $this->declared_country_id ? getCitiesByCountryId($this->declared_country_id) : [];
+        $actualCities = $this->actual_country_id ? getCitiesByCountryId($this->actual_country_id) : [];
+
+        return view('livewire.drivers.edit-driver', [
+            'companies' => $companies,
+            'countries' => $countries,
+            'declaredCities' => $declaredCities,
+            'actualCities' => $actualCities,
+        ])->layout('layouts.app')->title('Edit Driver');
     }
-
-    public function destroy()
-{
-    if ($this->driver) {
-        $this->driver->delete();
-
-        // Можно сбросить поля формы, если остаёмся на этой странице
-        $this->reset();
-
-        // Сообщение пользователю
-        session()->flash('success', 'Driver deleted successfully.');
-
-        // При желании — редирект на список водителей
-        return redirect()->route('drivers.index');
-    }
-
-    session()->flash('error', 'Driver not found.');
-}
 }

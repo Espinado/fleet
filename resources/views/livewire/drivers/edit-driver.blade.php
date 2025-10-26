@@ -1,232 +1,211 @@
-<div class="max-w-5xl mx-auto bg-white p-6 rounded shadow space-y-6">
-    <h2 class="text-xl font-bold">✏️ Edit Driver</h2>
+<div class="p-6 max-w-5xl mx-auto">
 
-    {{-- Success Message --}}
-    @if(session()->has('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+    {{-- ✅ Уведомления --}}
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
             {{ session('success') }}
         </div>
     @endif
 
-    <form wire:submit.prevent="save" class="space-y-6 relative">
+    @if (session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {{ session('error') }}
+        </div>
+    @endif
 
-        {{-- Loader --}}
-        <div wire:loading.flex wire:target="save, declared_country_id, actual_country_id"
+    <div class="bg-white shadow rounded-lg p-6 relative">
+
+        {{-- 🔄 Лоадер --}}
+        <div wire:loading.flex wire:target="save, declared_country_id, actual_country_id, photo, license_photo, medical_certificate_photo"
              class="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-20">
             <div class="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
         </div>
 
-        {{-- Personal Information --}}
-        <h3 class="font-semibold text-lg border-b pb-1">Personal Information</h3>
-        <div class="grid grid-cols-3 gap-4">
-            <div>
-                <label>First Name</label>
-                <input type="text" wire:model.live="first_name" class="w-full border rounded p-2">
-                @error('first_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label>Last Name</label>
-                <input type="text" wire:model.live="last_name" class="w-full border rounded p-2">
-                @error('last_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label>Personal Code</label>
-                <input type="text" wire:model.live="pers_code" class="w-full border rounded p-2">
-                @error('pers_code') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-        </div>
+        <h2 class="text-2xl font-semibold mb-6">✏️ Edit Driver</h2>
 
-        <div class="grid grid-cols-3 gap-4">
+        <form wire:submit.prevent="save" class="space-y-8">
+
+            {{-- 1️⃣ Company --}}
             <div>
-                <label>Citizenship</label>
-                <select wire:model.live="citizenship" class="w-full border rounded p-2">
-                    <option value="">Select country</option>
-                    @foreach(config('countries') as $id => $country)
-                        <option value="{{ $id }}">{{ $country['name'] }}</option>
+                <label class="block font-medium mb-1">Expeditor Company *</label>
+                <select wire:model="company" class="w-full border rounded px-3 py-2">
+                    <option value="">Select company</option>
+                    @foreach($companies as $id => $company)
+                        <option value="{{ $id }}">
+                            {{ $company['name'] }}
+                            — {{ $company['country'] ?? '' }}{{ isset($company['city']) ? ', '.$company['city'] : '' }}
+                        </option>
                     @endforeach
                 </select>
-                @error('citizenship') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                @error('company') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
-            <div>
-                <label>Phone</label>
-                <input type="text" wire:model.live="phone" class="w-full border rounded p-2">
-                @error('phone') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+            {{-- 2️⃣ Personal Info --}}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-medium mb-1">First Name *</label>
+                    <input type="text" wire:model="first_name" class="w-full border rounded px-3 py-2">
+                    @error('first_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Last Name *</label>
+                    <input type="text" wire:model="last_name" class="w-full border rounded px-3 py-2">
+                    @error('last_name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
             </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-medium mb-1">Personal Code *</label>
+                    <input type="text" wire:model="pers_code" class="w-full border rounded px-3 py-2">
+                    @error('pers_code') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Citizenship *</label>
+                    <select wire:model="citizenship" class="w-full border rounded px-3 py-2">
+                        <option value="">Select Country</option>
+                        @foreach($countries as $id => $country)
+                            <option value="{{ $id }}">{{ $country['name'] }}</option>
+                        @endforeach
+                    </select>
+                    @error('citizenship') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">Phone *</label>
+                    <input type="text" wire:model="phone" class="w-full border rounded px-3 py-2">
+                    @error('phone') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
             <div>
-                <label>Email</label>
-                <input type="email" wire:model.live="email" class="w-full border rounded p-2">
+                <label class="block font-medium mb-1">Email *</label>
+                <input type="email" wire:model="email" class="w-full border rounded px-3 py-2">
                 @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
             </div>
-        </div>
 
-        {{-- Declared Address --}}
-        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Declared Address</h3>
-        <div class="grid grid-cols-3 gap-4">
-            <div class="relative">
-                <label>Country</label>
-                <select wire:model.live="declared_country_id" class="w-full border rounded p-2">
-                    <option value="">Select country</option>
-                    @foreach(config('countries') as $id => $country)
-                        <option value="{{ $id }}">{{ $country['name'] }}</option>
-                    @endforeach
-                </select>
+            {{-- 3️⃣ Declared Address --}}
+            <div class="border-t pt-4 space-y-4">
+                <h3 class="text-lg font-semibold">Declared Address</h3>
 
-                <div wire:loading wire:target="declared_country_id"
-                     class="absolute right-3 top-9">
-                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <select wire:model.live="declared_country_id" class="border rounded px-3 py-2">
+                        <option value="">Select Country</option>
+                        @foreach($countries as $id => $country)
+                            <option value="{{ $id }}">{{ $country['name'] }}</option>
+                        @endforeach
+                    </select>
 
-                @error('declared_country_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-
-            <div class="relative">
-                <label>City</label>
-                <select wire:model.live="declared_city_id" class="w-full border rounded p-2"
-                        @disabled(empty($declared_country_id))>
-                    <option value="">Select city</option>
-                    @if(!empty($declared_country_id))
-                        @foreach(getCitiesByCountryId($declared_country_id) as $id => $city)
+                    <select wire:model="declared_city_id" class="border rounded px-3 py-2">
+                        <option value="">Select City</option>
+                        @foreach($declaredCities as $id => $city)
                             <option value="{{ $id }}">{{ $city['name'] }}</option>
                         @endforeach
-                    @endif
-                </select>
-
-                <div wire:loading wire:target="declared_country_id"
-                     class="absolute right-3 top-9">
-                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    </select>
                 </div>
 
-                @error('declared_city_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-
-            <div>
-                <label>Street</label>
-                <input type="text" wire:model.live="declared_street" class="w-full border rounded p-2">
-                @error('declared_street') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-        </div>
-
-        <div class="grid grid-cols-3 gap-4">
-            <div>
-                <label>Building</label>
-                <input type="text" wire:model.live="declared_building" class="w-full border rounded p-2">
-                @error('declared_building') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label>Room</label>
-                <input type="text" wire:model.live="declared_room" class="w-full border rounded p-2">
-                @error('declared_room') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-            <div>
-                <label>Postcode</label>
-                <input type="text" wire:model.live="declared_postcode" class="w-full border rounded p-2">
-                @error('declared_postcode') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-        </div>
-
-        {{-- Actual Address --}}
-        <h3 class="font-semibold text-lg border-b pb-1 mt-4">Actual Address</h3>
-        <div class="grid grid-cols-3 gap-4">
-            <div class="relative">
-                <label>Country</label>
-                <select wire:model.live="actual_country_id" class="w-full border rounded p-2">
-                    <option value="">Select country</option>
-                    @foreach(config('countries') as $id => $country)
-                        <option value="{{ $id }}">{{ $country['name'] }}</option>
-                    @endforeach
-                </select>
-
-                <div wire:loading wire:target="actual_country_id"
-                     class="absolute right-3 top-9">
-                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                <div class="grid grid-cols-4 gap-4">
+                    <input type="text" wire:model="declared_street" placeholder="Street"
+                           class="border rounded px-3 py-2 col-span-2">
+                    <input type="text" wire:model="declared_building" placeholder="Building"
+                           class="border rounded px-3 py-2">
+                    <input type="text" wire:model="declared_room" placeholder="Room"
+                           class="border rounded px-3 py-2">
                 </div>
-
-                @error('actual_country_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                <input type="text" wire:model="declared_postcode" placeholder="Post code"
+                       class="border rounded px-3 py-2 w-1/2">
             </div>
 
-            <div class="relative">
-                <label>City</label>
-                <select wire:model.live="actual_city_id" class="w-full border rounded p-2"
-                        @disabled(empty($actual_country_id))>
-                    <option value="">Select city</option>
-                    @if(!empty($actual_country_id))
-                        @foreach(getCitiesByCountryId($actual_country_id) as $id => $city)
+            {{-- 4️⃣ Actual Address --}}
+            <div class="border-t pt-4 space-y-4">
+                <h3 class="text-lg font-semibold">Actual Address</h3>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <select wire:model.live="actual_country_id" class="border rounded px-3 py-2">
+                        <option value="">Select Country</option>
+                        @foreach($countries as $id => $country)
+                            <option value="{{ $id }}">{{ $country['name'] }}</option>
+                        @endforeach
+                    </select>
+
+                    <select wire:model="actual_city_id" class="border rounded px-3 py-2">
+                        <option value="">Select City</option>
+                        @foreach($actualCities as $id => $city)
                             <option value="{{ $id }}">{{ $city['name'] }}</option>
                         @endforeach
-                    @endif
-                </select>
-
-                <div wire:loading wire:target="actual_country_id"
-                     class="absolute right-3 top-9">
-                    <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                    </select>
                 </div>
 
-                @error('actual_city_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                <div class="grid grid-cols-3 gap-4">
+                    <input type="text" wire:model="actual_street" placeholder="Street"
+                           class="border rounded px-3 py-2 col-span-2">
+                    <input type="text" wire:model="actual_building" placeholder="Building"
+                           class="border rounded px-3 py-2">
+                    <input type="text" wire:model="actual_room" placeholder="Room"
+                           class="border rounded px-3 py-2">
+                </div>
             </div>
 
-            <div>
-                <label>Street</label>
-                <input type="text" wire:model.live="actual_street" class="w-full border rounded p-2">
-                @error('actual_street') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            {{-- 5️⃣ Documents --}}
+            <div class="border-t pt-4 space-y-3">
+                <h3 class="text-lg font-semibold">Documents</h3>
+
+                <div class="grid grid-cols-3 gap-4">
+                    <input type="text" wire:model="license_number" placeholder="License Number"
+                           class="border rounded px-3 py-2">
+                    <input type="date" wire:model="license_issued" class="border rounded px-3 py-2">
+                    <input type="date" wire:model="license_end" class="border rounded px-3 py-2">
+                </div>
             </div>
-        </div>
 
-        <div class="grid grid-cols-3 gap-4">
-            <div>
-                <label>Building</label>
-                <input type="text" wire:model.live="actual_building" class="w-full border rounded p-2">
-                @error('actual_building') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+            {{-- 6️⃣ Photos --}}
+            <div class="border-t pt-4 space-y-4">
+                <h3 class="text-lg font-semibold">Driver Photos</h3>
+
+                <div class="grid grid-cols-3 gap-6">
+                    {{-- Driver photo --}}
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Driver Photo</label>
+                        <input type="file" wire:model="photo" class="w-full border rounded p-2">
+                        @if ($photo)
+                            <img src="{{ $photo->temporaryUrl() }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @elseif ($driver->photo)
+                            <img src="{{ Storage::url($driver->photo) }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @endif
+                    </div>
+
+                    {{-- License photo --}}
+                    <div>
+                        <label class="block text-sm font-medium mb-1">License Photo</label>
+                        <input type="file" wire:model="license_photo" class="w-full border rounded p-2">
+                        @if ($license_photo)
+                            <img src="{{ $license_photo->temporaryUrl() }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @elseif ($driver->license_photo)
+                            <img src="{{ Storage::url($driver->license_photo) }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @endif
+                    </div>
+
+                    {{-- Medical certificate photo --}}
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Medical Certificate</label>
+                        <input type="file" wire:model="medical_certificate_photo" class="w-full border rounded p-2">
+                        @if ($medical_certificate_photo)
+                            <img src="{{ $medical_certificate_photo->temporaryUrl() }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @elseif ($driver->medical_certificate_photo)
+                            <img src="{{ Storage::url($driver->medical_certificate_photo) }}" class="mt-2 rounded shadow w-32 h-32 object-cover">
+                        @endif
+                    </div>
+                </div>
             </div>
-            <div>
-                <label>Room</label>
-                <input type="text" wire:model.live="actual_room" class="w-full border rounded p-2">
-                @error('actual_room') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+            {{-- 7️⃣ Actions --}}
+            <div class="flex justify-end gap-3 pt-6 border-t">
+                <a href="{{ route('drivers.index') }}"
+                   class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition">Cancel</a>
+                <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                    💾 Update Driver
+                </button>
             </div>
-            <div>
-                <label>Status</label>
-                <select wire:model.live="status" class="w-full border rounded p-2">
-                    @foreach(\App\Enums\DriverStatus::options() as $value => $label)
-                        <option value="{{ $value }}">{{ $label }}</option>
-                    @endforeach
-                </select>
-                @error('status') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-            </div>
-        </div>
-
-        <div class="flex items-center gap-2 mt-2">
-            <input type="checkbox" wire:model.live="is_active" class="mr-2">
-            <span>Active</span>
-        </div>
-
-        {{-- License, Code95, Permit, Medical, Declaration --}}
-        {{-- ... (оставляем всё как у тебя, только добавлены .live и ошибки везде оформлены одинаково) ... --}}
-
-        {{-- Company --}}
-        <div>
-            <label>Company</label>
-            <select wire:model.live="company" class="w-full border rounded p-2">
-                <option value="">Select company</option>
-                @foreach(config('companies') as $id => $company)
-                    <option value="{{ $id }}">{{ $company['name'] }}</option>
-                @endforeach
-            </select>
-            @error('company') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-        </div>
-
-        {{-- Photos --}}
-        {{-- ... без изменений, всё верно ... --}}
-
-        <div class="flex gap-3">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded mt-4 hover:bg-blue-700">
-                💾 Save
-            </button>
-
-            <button type="button"
-                    wire:click="destroy"
-                    onclick="confirm('Are you sure you want to delete this driver?') || event.stopImmediatePropagation()"
-                    class="px-4 py-2 bg-red-600 text-white rounded mt-4 hover:bg-red-700">
-                🗑 Delete
-            </button>
-        </div>
-    </form>
+        </form>
+    </div>
 </div>

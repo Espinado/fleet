@@ -70,4 +70,9 @@ class Trip extends Model
     // Возвращает shipper по умолчанию, если нужен «старый» client
     return $this->belongsTo(Client::class, 'shipper_id');
 }
+
+public function cargos()
+{
+    return $this->hasMany(TripCargo::class);
+}
 }

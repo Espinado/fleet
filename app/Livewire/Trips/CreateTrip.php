@@ -14,44 +14,30 @@ class CreateTrip extends Component
     public $drivers = [], $trucks = [], $trailers = [];
 
     // Clients
-    public $clients = [], $shipperId, $consigneeId;
-    public $shipperData = [], $consigneeData = [];
-
-    // Route
-    public $origin_country_id, $origin_city_id, $origin_address, $originCities = [];
-    public $destination_country_id, $destination_city_id, $destination_address, $destinationCities = [];
-
-    // Cargo
-    public $cargo_description, $cargo_packages, $cargo_weight, $cargo_volume, $cargo_marks, $cargo_instructions, $cargo_remarks;
-
-    // Payment
-    public $price, $currency = 'EUR', $payment_terms, $payer_type_id;
+    public $clients = [];
 
     // Trip
-    public $start_date, $end_date, $status = 'planned', $successMessage;
+    public $status = 'planned', $successMessage;
+
+    // Multiple cargos
+    public $cargos = [];
 
     protected $rules = [
         'expeditor_id' => 'required',
-        'driver_id' => 'required',
-        'truck_id' => 'required',
-        'shipperId' => 'required',
-        'consigneeId' => 'required',
-        'origin_country_id' => 'required',
-        'origin_city_id' => 'required',
-        'origin_address' => 'required|string|max:255',
-        'destination_country_id' => 'required',
-        'destination_city_id' => 'required',
-        'destination_address' => 'required|string|max:255',
-        'start_date' => 'required|date',
-        'payment_terms' => 'nullable|date',
+        'driver_id'    => 'required',
+        'truck_id'     => 'required',
     ];
 
-    /** === При выборе Expeditor === */
+    public function mount()
+    {
+        $this->addCargo();
+    }
+
+    /** === Выбор экспедитора === */
     public function updatedExpeditorId($id)
     {
         $this->expeditorData = config("companies.$id") ?? [];
 
-        // фильтруем транспорт по компании
         $this->drivers = Driver::where('company', $id)
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'last_name'])
@@ -70,101 +56,152 @@ class CreateTrip extends Component
             ->mapWithKeys(fn($t) => [$t->id => "{$t->brand} ({$t->plate})"])
             ->toArray();
 
-        // клиенты не фильтруем
         $this->clients = Client::orderBy('company_name')
-            ->get(['id', 'company_name'])
-            ->mapWithKeys(fn($c) => [$c->id => $c->company_name])
+            ->pluck('company_name', 'id')
             ->toArray();
     }
 
-    /** === При выборе Shipper === */
-    public function updatedShipperId($id)
+    /** === Добавление и удаление грузов === */
+   public function addCargo()
+{
+    $this->cargos[] = [
+        'shipper_id' => null,
+        'consignee_id' => null,
+        'shipperData' => [],
+        'consigneeData' => [],
+        'cargo_description' => '',
+        'cargo_packages' => 1,
+        'cargo_weight' => 0,
+        'cargo_volume' => 0,
+        'cargo_marks' => '',
+        'cargo_instructions' => '',
+        'cargo_remarks' => '',
+        // маршрут
+        'loading_country_id' => null,
+        'loading_city_id' => null,
+        'loadingCities' => [],
+        'loading_address' => '',
+        'loading_date' => '',
+        'unloading_country_id' => null,
+        'unloading_city_id' => null,
+        'unloadingCities' => [],
+        'unloading_address' => '',
+        'unloading_date' => '',
+        // оплата
+        'price' => '',
+        'currency' => 'EUR',
+        'payment_terms' => '',
+        'payer_type_id' => '',
+    ];
+}
+
+
+    public function removeCargo($index)
     {
-        $client = Client::find($id);
-        $this->shipperData = $client?->only(['company_name', 'email', 'phone', 'fiz_address', 'fiz_city', 'fiz_country']) ?? [];
+        unset($this->cargos[$index]);
+        $this->cargos = array_values($this->cargos);
     }
 
-    /** === При выборе Consignee === */
-    public function updatedConsigneeId($id)
-    {
-        $client = Client::find($id);
-        $this->consigneeData = $client?->only(['company_name', 'email', 'phone', 'fiz_address', 'fiz_city', 'fiz_country']) ?? [];
+    /** === Обновления внутри вложенного массива cargos === */
+   public function updated($property, $value)
+{
+    // === Shipper
+    if (preg_match('/^cargos\.(\d+)\.shipper_id$/', $property, $m)) {
+        $i = (int)$m[1];
+        $client = Client::find($value);
+        $this->cargos[$i]['shipperData'] = $client ? [
+            'company_name' => $client->company_name,
+            'email' => $client->email,
+            'phone' => $client->phone,
+            'fiz_address' => $client->fiz_address,
+            'fiz_city' => $client->fiz_city,
+            'fiz_country' => $client->fiz_country,
+        ] : [];
     }
 
-    /** === Города === */
-    public function updatedOriginCountryId($countryId)
-    {
-        $this->originCities = $this->formatCities(getCitiesByCountryId((int) $countryId));
-        $this->origin_city_id = null;
+    // === Consignee
+    if (preg_match('/^cargos\.(\d+)\.consignee_id$/', $property, $m)) {
+        $i = (int)$m[1];
+        $client = Client::find($value);
+        $this->cargos[$i]['consigneeData'] = $client ? [
+            'company_name' => $client->company_name,
+            'email' => $client->email,
+            'phone' => $client->phone,
+            'fiz_address' => $client->fiz_address,
+            'fiz_city' => $client->fiz_city,
+            'fiz_country' => $client->fiz_country,
+        ] : [];
     }
 
-    public function updatedDestinationCountryId($countryId)
-    {
-        $this->destinationCities = $this->formatCities(getCitiesByCountryId((int) $countryId));
-        $this->destination_city_id = null;
+    // === Города загрузки ===
+    if (preg_match('/^cargos\.(\d+)\.loading_country_id$/', $property, $m)) {
+        $i = (int)$m[1];
+        $countryId = (int)$value;
+
+        $this->cargos[$i]['loading_city_id'] = null;
+        $cities = getCitiesByCountryId($countryId);
+
+        $this->cargos[$i]['loadingCities'] = $this->formatCities($cities);
+
+        // 🟢 Принудительно обновляем массив, чтобы Livewire отрисовал
+        $this->cargos = array_values($this->cargos);
     }
 
+    // === Города разгрузки ===
+    if (preg_match('/^cargos\.(\d+)\.unloading_country_id$/', $property, $m)) {
+        $i = (int)$m[1];
+        $countryId = (int)$value;
+
+        $this->cargos[$i]['unloading_city_id'] = null;
+        $cities = getCitiesByCountryId($countryId);
+
+        $this->cargos[$i]['unloadingCities'] = $this->formatCities($cities);
+
+        // 🟢 Принудительно обновляем массив, чтобы Livewire отрисовал
+        $this->cargos = array_values($this->cargos);
+    }
+}
+
+
+    /** === Формат городов === */
     private function formatCities(array $cities): array
     {
-        return collect($cities)->mapWithKeys(fn($c, $id) => [$id => $c['name']])->toArray();
+        return collect($cities)
+            ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
+            ->toArray();
     }
 
     /** === Сохранение === */
     public function save()
     {
+       
         $this->validate();
 
         $exp = config("companies.{$this->expeditor_id}");
 
-       Trip::create([
-    // === Expeditor Snapshot ===
-    'expeditor_id'        => $this->expeditor_id,
-    'expeditor_name'      => $exp['name'] ?? '',
-    'expeditor_reg_nr'    => $exp['reg_nr'] ?? '',
-    'expeditor_country'   => $exp['country'] ?? '',
-    'expeditor_city'      => $exp['city'] ?? '',
-    'expeditor_address'   => $exp['address'] ?? '',
-    'expeditor_post_code' => $exp['post_code'] ?? '',
-    'expeditor_email'     => $exp['email'] ?? '',
-    'expeditor_phone'     => $exp['phone'] ?? '',
+        $trip = Trip::create([
+             'expeditor_id'        => $this->expeditor_id,
+        'expeditor_name'      => $exp['name'] ?? '',
+        'expeditor_reg_nr'    => $exp['reg_nr'] ?? '',
+        'expeditor_country'   => $exp['country'] ?? '',
+        'expeditor_city'      => $exp['city'] ?? '',
+        'expeditor_address'   => $exp['address'] ?? '',
+        'expeditor_post_code' => $exp['post_code'] ?? '',
+        'expeditor_email'     => $exp['email'] ?? '',
+        'expeditor_phone'     => $exp['phone'] ?? '',
+            'driver_id'         => $this->driver_id,
+            'truck_id'          => $this->truck_id,
+            'trailer_id'        => $this->trailer_id,
+            'status'            => $this->status,
+        ]);
 
-    // === Relations ===
-    'driver_id'      => $this->driver_id,
-    'truck_id'       => $this->truck_id,
-    'trailer_id'     => $this->trailer_id,
-    'shipper_id'     => $this->shipperId,
-    'consignee_id'   => $this->consigneeId,
+        // создаём связанные грузы
+        foreach ($this->cargos as $cargo) {
+            $trip->cargos()->create($cargo);
+        }
 
-    // === Route ===
-    'origin_country_id'      => $this->origin_country_id,
-    'origin_city_id'         => $this->origin_city_id,
-    'origin_address'         => $this->origin_address,
-    'destination_country_id' => $this->destination_country_id,
-    'destination_city_id'    => $this->destination_city_id,
-    'destination_address'    => $this->destination_address,
-
-    // === Cargo ===
-    'cargo_description' => $this->cargo_description,
-    'cargo_packages'    => $this->cargo_packages,
-    'cargo_weight'      => $this->cargo_weight,
-    'cargo_volume'      => $this->cargo_volume,
-    'cargo_marks'       => $this->cargo_marks,
-    'cargo_instructions'=> $this->cargo_instructions,
-    'cargo_remarks'     => $this->cargo_remarks,
-
-    // === Payment ===
-    'price'          => $this->price,
-    'currency'       => $this->currency,
-    'payment_terms'  => $this->payment_terms,
-    'payer_type_id'  => $this->payer_type_id,
-
-    // === Other ===
-    'start_date' => $this->start_date,
-    'end_date'   => $this->end_date,
-    'status'     => $this->status,
-]);
         $this->resetExcept('successMessage');
-        $this->successMessage = '✅ CMR Trip successfully created!';
+        $this->successMessage = '✅ Trip successfully created with multiple clients!';
         return redirect()->route('trips.index');
     }
 
@@ -172,32 +209,25 @@ class CreateTrip extends Component
     public function render()
     {
         return view('livewire.trips.create-trip', [
-            // ✅ исправлено — теперь обе компании отобразятся
             'companies' => collect(config('companies'))
                 ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
                 ->toArray(),
 
-            // страны тоже исправлены
             'countries' => collect(config('countries'))
                 ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
                 ->toArray(),
 
-            // типы оплат
             'payerTypes' => collect(config('payers'))
                 ->mapWithKeys(fn($p, $id) => [$id => $p['label']])
                 ->toArray(),
 
-            // клиенты
             'clients' => $this->clients ?: Client::orderBy('company_name')
-                ->get(['id', 'company_name'])
-                ->mapWithKeys(fn($c) => [$c->id => $c->company_name])
+                ->pluck('company_name', 'id')
                 ->toArray(),
 
             'drivers' => $this->drivers,
             'trucks' => $this->trucks,
             'trailers' => $this->trailers,
-            'originCities' => $this->originCities,
-            'destinationCities' => $this->destinationCities,
         ])->layout('layouts.app');
     }
 }

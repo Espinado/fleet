@@ -179,10 +179,25 @@ class CreateDriver extends Component
     // ================= RENDER =================
     public function render()
     { 
+        $countries = config('countries');
+        $companies = config('companies');
+
+        $declaredCities = $this->declared_country_id
+            ? getCitiesByCountryId($this->declared_country_id)
+            : [];
+
+        $actualCities = $this->actual_country_id
+            ? getCitiesByCountryId($this->actual_country_id)
+            : [];
+
        
    
 
-    return view('livewire.drivers.create-driver')
-        ->layout('layouts.app');
+    return view('livewire.drivers.create-driver', [
+    'companies' => $companies,
+    'countries' => $countries,
+    'declaredCities' => $declaredCities,
+    'actualCities' => $actualCities,
+])->layout('layouts.app')->title('Add Driver');
     }
 }
