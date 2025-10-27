@@ -5,6 +5,7 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Livewire\ExpiringDocumentsTable;
+use App\Http\Controllers\CmrController;
 use App\Livewire\DriversTable;
 use App\Livewire\TrucksTable;
 use App\Livewire\TrailersTable;
@@ -58,6 +59,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
     Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit'); // редактирование рейса
    
+   Route::get('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
+    ->name('cmr.generate');
 
     Route::post('/logout', function () {
         Auth::logout();

@@ -13,6 +13,7 @@ class TripCargo extends Model
     'trip_id',
     'shipper_id',
     'consignee_id',
+     'cmr_file',
 
     // === Loading ===
     'loading_country_id',
