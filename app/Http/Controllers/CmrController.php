@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\TripCargo;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class CmrController extends Controller
 {
@@ -13,84 +13,76 @@ class CmrController extends Controller
     {
         $trip = $cargo->trip;
 
-        // 🚫 Если CMR уже существует, просто открываем PDF
-        if ($cargo->cmr_file && Storage::disk('public')->exists(str_replace('storage/', '', $cargo->cmr_file))) {
-            return redirect(asset($cargo->cmr_file));
+        // Находим все грузы для этой пары
+        $cargos = $trip->cargos()
+            ->where('shipper_id', $cargo->shipper_id)
+            ->where('consignee_id', $cargo->consignee_id)
+            ->get();
+
+        if ($cargos->isEmpty()) {
+            return back()->with('error', 'No cargos found for this pair.');
         }
 
-        // === Подготовка данных ===
+        $shipper   = $cargos->first()->shipper;
+        $consignee = $cargos->first()->consignee;
+
+        // === Данные ===
         $data = [
-            // === 1. Отправитель ===
             'sender' => [
-                'name' => optional($cargo->shipper)->company_name
-                    ?? optional($trip)->expeditor_name
-                    ?? '—',
-                'reg_nr' => optional($cargo->shipper)->reg_nr,
-                'address' => optional($cargo->shipper)->fiz_address
-                    ?? optional($cargo->shipper)->jur_address,
-                'city' => optional($cargo->shipper)->fiz_city
-                    ?? optional($cargo->shipper)->jur_city,
-                'country' => optional($cargo->shipper)->fiz_country
-                    ?? optional($cargo->shipper)->jur_country,
-                'email' => optional($cargo->shipper)->email,
-                'phone' => optional($cargo->shipper)->phone,
+                'name'     => $shipper->company_name ?? '—',
+                'address'  => $shipper->fiz_address ?? $shipper->jur_address ?? '—',
+                'city'     => getCityById(
+                    (int)($shipper->fiz_city_id ?? $shipper->jur_city_id),
+                    (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
+                ),
+                'country'  => getCountryById(
+                    (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
+                ),
+                'reg_nr'   => $shipper->reg_nr ?? '—',
             ],
-
-            // === 2. Получатель ===
             'receiver' => [
-                'name' => optional($cargo->consignee)->company_name ?? '—',
-                'reg_nr' => optional($cargo->consignee)->reg_nr,
-                'address' => optional($cargo->consignee)->fiz_address
-                    ?? optional($cargo->consignee)->jur_address,
-                'city' => optional($cargo->consignee)->fiz_city
-                    ?? optional($cargo->consignee)->jur_city,
-                'country' => optional($cargo->consignee)->fiz_country
-                    ?? optional($cargo->consignee)->jur_country,
-                'email' => optional($cargo->consignee)->email,
-                'phone' => optional($cargo->consignee)->phone,
+                'name'     => $consignee->company_name ?? '—',
+                'address'  => $consignee->fiz_address ?? $consignee->jur_address ?? '—',
+                'city'     => getCityById(
+                    (int)($consignee->fiz_city_id ?? $consignee->jur_city_id),
+                    (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
+                ),
+                'country'  => getCountryById(
+                    (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
+                ),
+                'reg_nr'   => $consignee->reg_nr ?? '—',
             ],
-
-            // === 3. Перевозчик / Экспедитор ===
             'carrier' => [
-                'name' => $trip->expeditor_name ?? '—',
-                'reg_nr' => $trip->expeditor_reg_nr ?? '—',
-                'address' => $trip->expeditor_address ?? '—',
-                'city' => $trip->expeditor_city ?? '—',
-                'country' => $trip->expeditor_country ?? '—',
-                'email' => $trip->expeditor_email ?? '—',
-                'phone' => $trip->expeditor_phone ?? '—',
+                'name'     => $trip->expeditor_name ?? '—',
+                'address'  => $trip->expeditor_address ?? '—',
+                'city'     => $trip->expeditor_city ?? '—',
+                'country'  => $trip->expeditor_country ?? '—',
+                'reg_nr'   => $trip->expeditor_reg_nr ?? '—',
             ],
-
-            // === 4. Места ===
-            'loading_place' => trim(
-                collect([
-                    getCityById((int)$cargo->loading_city_id, (int)$cargo->loading_country_id),
-                    getCountryById((int)$cargo->loading_country_id),
-                    $cargo->loading_address,
-                ])->filter()->implode(', ')
-            ),
-
-            'unloading_place' => trim(
-                collect([
-                    getCityById((int)$cargo->unloading_city_id, (int)$cargo->unloading_country_id),
-                    getCountryById((int)$cargo->unloading_country_id),
-                    $cargo->unloading_address,
-                ])->filter()->implode(', ')
-            ),
-
-            // === 5. Таблица груза ===
-            'items' => [[
-                'marks'  => $cargo->cargo_marks ?? '',
-                'qty'    => $cargo->cargo_packages ?? '',
-                'pack'   => '',
-                'desc'   => $cargo->cargo_description ?? '',
-                'stat'   => '',
-                'gross'  => $cargo->cargo_weight ?? '',
-                'volume' => $cargo->cargo_volume ?? '',
-            ]],
+            'loading_place'     => getCityById((int)$cargo->loading_city_id, (int)$cargo->loading_country_id) . ', ' . getCountryById((int)$cargo->loading_country_id),
+            'unloading_place'   => getCityById((int)$cargo->unloading_city_id, (int)$cargo->unloading_country_id) . ', ' . getCountryById((int)$cargo->unloading_country_id),
+            'loading_address'   => $cargo->loading_address ?? '',
+            'unloading_address' => $cargo->unloading_address ?? '',
+            'items' => $cargos->map(fn($c) => [
+    'marks'  => $c->cargo_marks ?? '',
+    'qty'    => $c->cargo_packages ?? '',
+    'desc'   => $c->cargo_description ?? '',
+    'gross'  => $c->cargo_weight ?? '',
+    'volume' => $c->cargo_volume ?? '',
+        ])->toArray(),
+            'date' => Carbon::now()->format('d.m.Y'),
+            'trip_id' => $trip->id,
         ];
 
         // === Генерация PDF ===
+        $tripId   = $trip->id ?? 0;
+        $dir      = "cmr/trip_{$tripId}";
+        $fileName = "cmr_{$cargo->shipper_id}_{$cargo->consignee_id}.pdf";
+        $savePath = "public/{$dir}/{$fileName}";
+        $publicUrl = asset("storage/{$dir}/{$fileName}");
+
+        Storage::disk('public')->makeDirectory($dir);
+
         $pdf = Pdf::loadView('pdf.cmr-template', $data)
             ->setPaper('A4')
             ->setOptions([
@@ -99,23 +91,15 @@ class CmrController extends Controller
                 'defaultFont' => 'DejaVu Sans',
             ]);
 
-        // === Сохранение ===
-       $tripId = $trip?->id ?? 0;
-$dir = "cmr/trip_{$tripId}";
-Storage::disk('public')->makeDirectory($dir, 0775, true);
+        Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
 
-$fileName = 'cmr_' . $cargo->id . '_' . Str::slug($cargo->consignee?->company_name ?? 'cargo') . '.pdf';
-$fullPath = Storage::disk('public')->path("{$dir}/{$fileName}");
-$pdf->save($fullPath);
+        foreach ($cargos as $c) {
+            $c->update([
+                'cmr_file' => "cmr/trip_{$tripId}/{$fileName}",
+                'cmr_created_at' => now(),
+            ]);
+        }
 
-$cargo->update([
-    'cmr_file' => "storage/{$dir}/{$fileName}",
-    'cmr_created_at' => now(),
-]);
-
-return response()->json([
-    'success' => true,
-    'file' => asset("storage/{$dir}/{$fileName}")
-]);
+       return $publicUrl; // Возвращаем путь, чтобы Livewire мог открыть PDF
     }
 }

@@ -14,6 +14,7 @@ class TripCargo extends Model
     'shipper_id',
     'consignee_id',
      'cmr_file',
+     'cmr_created_at',
 
     // === Loading ===
     'loading_country_id',
@@ -41,6 +42,7 @@ class TripCargo extends Model
     'currency',
     'payment_terms',
     'payer_type_id',
+    'items_json' => 'array'
 ];
 
 
@@ -48,6 +50,7 @@ class TripCargo extends Model
         'loading_date' => 'date',
         'unloading_date' => 'date',
         'payment_terms' => 'date',
+          'items_json' => 'array', // 🟢 автоматически парсить JSON как массив
     ];
 
     public function trip()

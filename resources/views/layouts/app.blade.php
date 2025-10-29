@@ -79,11 +79,6 @@
     </div>
 
     {{-- ✅ Livewire scripts --}}
-    {{-- Отключаем navigate для корректной работы wire:model на селектах --}}
     @livewireScripts(['navigate' => false])
-
-    {{-- Если нужны доп. скрипты --}}
-    @stack('scripts')
-
 </body>
 </html>
