@@ -39,16 +39,16 @@
                 <div>
                     <h3 class="font-semibold text-lg mb-2">Legal Address</h3>
                     <p>{{ $client->jur_address ?? '-' }}</p>
-                    <p>{{ $client->jur_city ?? '' }} {{ $client->jur_post_code ?? '' }}</p>
-                    <p>{{ $client->jur_country ?? '' }}</p>
+                    <p> {{ getCityById($client->jur_city_id ?? null, $client->jur_country_id ?? null) }} {{ $client->jur_post_code ?? '' }}</p>
+                    <p>{{ getCountryById($client->jur_country_id ?? null) }}</p>
                 </div>
 
                 {{-- Физ. адрес --}}
                 <div>
                     <h3 class="font-semibold text-lg mb-2">Physical Address</h3>
                     <p>{{ $client->fiz_address ?? '-' }}</p>
-                    <p>{{ $client->fiz_city ?? '' }} {{ $client->fiz_post_code ?? '' }}</p>
-                    <p>{{ $client->fiz_country ?? '' }}</p>
+                    <p> {{ getCityById($client->fiz_city_id ?? null, $client->jur_country_id ?? null) }} {{ $client->fiz_post_code ?? '' }}</p>
+                    <p>{{ getCountryById($client->fiz_country_id ?? null) }}</p>
                 </div>
             </div>
 
@@ -112,16 +112,20 @@
                                 </td>
                                 <td class="p-2 border text-center">
                                     @if($cargo->cmr_file && Storage::disk('public')->exists(str_replace('storage/', '', $cargo->cmr_file)))
-                                        <a href="{{ asset($cargo->cmr_file) }}"
-                                           target="_blank"
-                                           class="inline-flex items-center gap-1 px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition">
-                                            👁 View
-                                        </a>
-                                        @if($cargo->cmr_created_at)
-                                            <div class="text-[10px] text-gray-500 mt-0.5">
-                                                {{ \Carbon\Carbon::parse($cargo->cmr_created_at)->format('d.m.Y H:i') }}
-                                            </div>
-                                        @endif
+                                        @if($cargo->cmr_file)
+    <a href="{{ asset('storage/' . ltrim($cargo->cmr_file, '/')) }}"
+       target="_blank"
+       class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-md shadow hover:bg-blue-700 transition">
+        📄 View CMR
+    </a>
+
+    @if($cargo->cmr_created_at)
+        <div class="text-[10px] text-gray-500 mt-1">
+            {{ \Carbon\Carbon::parse($cargo->cmr_created_at)->format('d.m.Y H:i') }}
+        </div>
+    @endif
+@endif
+                                        
                                     @else
                                         <span class="text-gray-400 text-xs italic">—</span>
                                     @endif

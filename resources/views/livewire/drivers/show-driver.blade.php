@@ -34,7 +34,7 @@
                 <p><span class="font-semibold">Phone:</span> <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span></p>
                 <p><span class="font-semibold">Email:</span> <span class="text-gray-700">{{ $driver->email ?? '-' }}</span></p>
                <span class="font-semibold">Citizenship:</span>
-               <span class="text-gray-700">{{ config('countries')[$driver->citizenship]['name'] ?? '-' }} </span>
+               <span class="text-gray-700">{{ config('countries')[$driver->citizenship_id]['name'] ?? '-' }} </span>
                   <p><span class="font-semibold">Company:</span> <span class="text-gray-700">{{ config('companies')[$driver->company]['name'] ?? '-' }}</span></p>
 
 

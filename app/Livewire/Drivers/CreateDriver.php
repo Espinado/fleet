@@ -13,7 +13,7 @@ class CreateDriver extends Component
     use WithFileUploads;
 
     // Личные данные
-    public $first_name, $last_name, $pers_code, $citizenship;
+    public $first_name, $last_name, $pers_code, $citizenship_id;
     public $phone, $email, $company;
     public $status = DriverStatus::ON_WORK->value;
     public $is_active = true;
@@ -49,7 +49,7 @@ class CreateDriver extends Component
             'first_name'  => 'required|string|max:255',
             'last_name'   => 'required|string|max:255',
             'pers_code'   => 'required|string|unique:drivers,pers_code',
-            'citizenship' => 'required|integer',
+            'citizenship_id' => 'required|integer',
             'phone'       => 'required|string|max:20',
             'email'       => 'required|email|max:255',
             'company'     => 'required|integer',
@@ -101,7 +101,7 @@ class CreateDriver extends Component
             'first_name'          => $this->first_name,
             'last_name'           => $this->last_name,
             'pers_code'           => $this->pers_code,
-            'citizenship'         => $this->citizenship,
+            'citizenship_id'         => $this->citizenship_id,
             'declared_country_id' => $this->declared_country_id,
             'declared_city_id'    => $this->declared_city_id,
             'declared_street'     => $this->declared_street,

@@ -126,3 +126,18 @@
         </div>
     </div>
 </div>
+@push('scripts')
+<script>
+    Livewire.on('cmrGenerated', (data) => {
+        if (data.url) {
+            window.open(data.url, '_blank');
+        }
+
+        const toast = document.createElement('div');
+        toast.textContent = '✅ CMR successfully generated!';
+        toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm px-4 py-2 rounded shadow';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    });
+</script>
+@endpush

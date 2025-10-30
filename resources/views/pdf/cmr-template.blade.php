@@ -155,7 +155,7 @@
 
     {{-- === 3–4 Места === --}}
     <div class="section">
-        {{-- 3️⃣ Место погрузки --}}
+      
       {{-- 3️⃣ Место погрузки --}}
 <div class="cell">
     <div class="label">3. Место погрузки</div>
@@ -169,7 +169,7 @@
 </div>
 
         {{-- 4️⃣ Место разгрузки --}}
-       {{-- 3️⃣ Место погрузки --}}
+     
 <div class="cell">
     <div class="label">3. Место разгрузки</div>
     @php
@@ -197,10 +197,22 @@
                 $carrierCity     = $carrier['city'] ?? null;
                 $carrierCountry  = $carrier['country'] ?? null;
                 $carrierFull     = implode(', ', array_filter([$carrierAddress, $carrierCity, $carrierCountry]));
+                 $driverName        = $carrier['driver'] ?? '—';
+        $truckBrand        = $carrier['truck'] ?? '—';
+        $truckPlate        = $carrier['truck_plate'] ?? '—';
+        $trailerBrand      = $carrier['trailer'] ?? '—';
+        $trailerPlate      = $carrier['trailer_plate'] ?? '—';
             @endphp
             <strong>{{ $carrierName }}</strong><br>
             @if($carrierReg) Reg. Nr: {{ $carrierReg }}<br> @endif
             {{ $carrierFull ?: '—' }}
+             <hr style="border:0;border-top:0.5px solid #999; margin:4px 0;">
+
+    <div style="font-size:8.5px; line-height:1.4;">
+        <b>Driver:</b> {{ $driverName }}<br>
+        <b>Truck:</b> {{ $truckBrand }} ({{ $truckPlate }})<br>
+        <b>Trailer:</b> {{ $trailerBrand }} ({{ $trailerPlate }})
+    </div>
         </div>
     </div>
 
@@ -256,19 +268,5 @@
 </div>
 </body>
 </html>
-<script>
-    Livewire.on('cmrGenerated', (data) => {
-        if (data.url) {
-            // 🟢 открываем PDF в новой вкладке
-            window.open(data.url, '_blank');
-        }
 
-        // (опционально) уведомление пользователю
-        const toast = document.createElement('div');
-        toast.textContent = '✅ CMR successfully generated!';
-        toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm px-4 py-2 rounded shadow';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    });
-</script>
 
