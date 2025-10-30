@@ -1,5 +1,5 @@
 
-                                                            
-  No arguments expected for "db:wipe" command, got "INFO".  
-                                                            
+                                                                              
+  Too many arguments to "make:migration" command, expected arguments "name".  
+                                                                              
 
