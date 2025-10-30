@@ -13,7 +13,7 @@
     @endif
 
     <div class="bg-white shadow rounded-lg p-4">
-        {{-- 🔍 Панель фильтров и кнопок --}}
+        {{-- 🔍 Панель фильтров --}}
         <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
             <div class="flex items-center gap-2">
                 <input type="text" wire:model.live.debounce.300ms="search"
@@ -37,11 +37,10 @@
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
-                    <option value="50">50</option>
                 </select>
 
                 <a href="{{ route('trips.create') }}"
-                    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
+                   class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">
                     + Add Trip
                 </a>
             </div>
@@ -51,70 +50,141 @@
         <table class="w-full border-collapse text-left">
             <thead class="bg-gray-100 text-gray-700 border-b">
                 <tr>
-                    <th wire:click="sortBy('start_date')" class="px-3 py-2 cursor-pointer">Start</th>
+                    <th class="px-3 py-2">Start</th>
                     <th class="px-3 py-2">Expeditor</th>
-                    <th class="px-3 py-2">Clients / Cargo</th>
-                    <th class="px-3 py-2">Driver</th>
-                    <th class="px-3 py-2">Truck</th>
-                    <th class="px-3 py-2">Trailer</th>
+                    <th class="px-3 py-2">Driver/Truck/Trailer</th>
                     <th class="px-3 py-2">Route</th>
-                    <th wire:click="sortBy('status')" class="px-3 py-2 cursor-pointer">Status</th>
+                    <th class="px-3 py-2">Clients</th>
+                    <th class="px-3 py-2 text-right">Total Weight</th>
+                    <th class="px-3 py-2 text-right">Total Price</th>
+                    <th class="px-3 py-2">Status</th>
                     <th class="px-3 py-2 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($trips as $t)
-                    <tr class="border-b hover:bg-gray-50 align-top">
-                        {{-- 📅 Дата --}}
+                    @php
+                        // === Даты начала и конца рейса ===
+                        $startDate = $t->cargos->min('loading_date');
+                        $endDate = $t->cargos->max('unloading_date');
+
+                        // === Маршрут стран ===
+                        $countryIds = collect($t->cargos)
+                            ->flatMap(fn($c) => [$c->loading_country_id, $c->unloading_country_id])
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        $route = $countryIds
+                            ->map(fn($id) => config("countries.$id.iso") ?? null)
+                            ->filter()
+                            ->unique()
+                            ->implode(' → ');
+
+                        // === Города для tooltip ===
+                        $cityNames = collect($t->cargos)
+                            ->flatMap(fn($c) => [
+                                getCityById($c->loading_city_id),
+                                getCityById($c->unloading_city_id),
+                            ])
+                            ->filter()
+                            ->unique()
+                            ->implode(' → ');
+
+                        // === Клиенты (Shippers и Consignees) ===
+                        $shippers = collect($t->cargos)
+                            ->pluck('shipper.company_name')
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        $consignees = collect($t->cargos)
+                            ->pluck('consignee.company_name')
+                            ->filter()
+                            ->unique()
+                            ->values();
+
+                        $allClients = collect();
+
+                        foreach ($shippers as $s) {
+                            $allClients->push(['type' => 'shipper', 'name' => $s]);
+                        }
+
+                        foreach ($consignees as $c) {
+                            // если клиент уже есть как shipper — не добавляем
+                            if (!$allClients->contains(fn($x) => $x['name'] === $c)) {
+                                $allClients->push(['type' => 'consignee', 'name' => $c]);
+                            }
+                        }
+
+                        // === Общий вес и сумма ===
+                        $totalWeight = $t->cargos->sum('cargo_weight');
+                        $totalPrice = $t->cargos->sum('price');
+                    @endphp
+
+                    <tr class="border-b hover:bg-gray-50">
+                        {{-- 📅 Даты --}}
                         <td class="px-3 py-2 text-sm whitespace-nowrap">
-                            {{ $t->start_date?->format('d.m.Y') ?? '—' }}
+                            {{ optional($startDate)->format('d.m.Y') ?? '—' }}
+                            <div class="text-xs text-gray-500">
+                                → {{ optional($endDate)->format('d.m.Y') ?? '—' }}
+                            </div>
                         </td>
 
                         {{-- 🧾 Экспедитор --}}
-                        <td class="px-3 py-2 text-sm">
+                        <td class="px-3 py-2 text-sm font-medium">
                             {{ $t->expeditor_name ?? '—' }}
                         </td>
 
-                        {{-- 👥 Клиенты и грузы --}}
+                        {{-- 🚛 Водитель и Тягач --}}
                         <td class="px-3 py-2 text-sm">
-                            @forelse ($t->cargos as $cargo)
-                                <div class="border-b last:border-0 pb-1 mb-1">
-                                    <div>
-                                        <b>From:</b> {{ $cargo->shipper->company_name ?? '-' }}
-                                        → <b>To:</b> {{ $cargo->consignee->company_name ?? '-' }}
-                                    </div>
-                                    <div class="text-xs text-gray-600">
-                                        {{ $cargo->cargo_description ?? '' }}
-                                        @if($cargo->price)
-                                            — 💶 {{ number_format($cargo->price, 2) }} {{ $cargo->currency }}
-                                        @endif
-                                    </div>
+                            {{ ($t->driver->first_name ?? '') . ' ' . ($t->driver->last_name ?? '') }}
+                            <div class="text-xs text-gray-600">
+                                {{ $t->truck->plate ?? '—' }}
+                            </div>
+                            <div class="text-xs text-gray-600">
+                                {{ $t->trailer->plate ?? '—' }}
+                            </div>
+                        </td>
+
+                        {{-- 🌍 Маршрут --}}
+                        <td class="px-3 py-2 text-sm font-medium text-gray-700 relative group">
+                            <span class="cursor-help">{{ $route ?: '—' }}</span>
+
+                            @if ($cityNames)
+                                <!-- <div class="absolute bottom-full left-0 mb-1 hidden group-hover:block 
+                                            bg-gray-800 text-white text-xs rounded py-1 px-2 whitespace-nowrap 
+                                            shadow-lg z-50 opacity-0 group-hover:opacity-100 
+                                            transition-opacity duration-200">
+                                    {{ $cityNames }}
+                                </div> -->
+                            @endif
+                        </td>
+
+                        {{-- 👥 Клиенты --}}
+                        <td class="px-3 py-2 text-sm leading-tight">
+                            @forelse($allClients as $client)
+                                <div class="flex items-center gap-1">
+                                    @if ($client['type'] === 'shipper')
+                                        <span class="text-blue-500 text-xs">🔵</span>
+                                    @else
+                                        <span class="text-green-500 text-xs">🟢</span>
+                                    @endif
+                                    <span>{{ $client['name'] }}</span>
                                 </div>
                             @empty
-                                <span class="text-gray-400">No cargo</span>
+                                <span class="text-gray-400">—</span>
                             @endforelse
                         </td>
 
-                        {{-- 🚚 Водитель --}}
-                        <td class="px-3 py-2 text-sm">
-                            {{ ($t->driver->first_name ?? '') . ' ' . ($t->driver->last_name ?? '') }}
+                        {{-- ⚖️ Вес --}}
+                        <td class="px-3 py-2 text-sm text-right">
+                            {{ number_format($totalWeight, 0, '.', ' ') }} kg
                         </td>
 
-                        {{-- 🚛 Грузовик --}}
-                        <td class="px-3 py-2 text-sm">{{ $t->truck->plate ?? '—' }}</td>
-
-                        {{-- 🚛 Прицеп --}}
-                        <td class="px-3 py-2 text-sm">{{ $t->trailer->plate ?? '—' }}</td>
-
-                        {{-- 🗺️ Маршрут (по первому и последнему грузу) --}}
-                        <td class="px-3 py-2 text-sm">
-                            @if($t->cargos->isNotEmpty())
-                                {{ config('countries.' . $t->cargos->first()->loading_country_id)['iso'] ?? '—' }}
-                                →
-                                {{ config('countries.' . $t->cargos->last()->unloading_country_id)['iso'] ?? '—' }}
-                            @else
-                                —
-                            @endif
+                        {{-- 💶 Цена --}}
+                        <td class="px-3 py-2 text-sm text-right">
+                            €{{ number_format($totalPrice, 2, '.', ' ') }}
                         </td>
 
                         {{-- 🏷️ Статус --}}
@@ -127,7 +197,7 @@
                         {{-- ⚙️ Действия --}}
                         <td class="px-3 py-2 text-right text-sm">
                             <a href="{{ route('trips.show', $t->id) }}"
-                                class="text-blue-600 hover:underline">👁️</a>
+                               class="text-blue-600 hover:underline">👁️</a>
                         </td>
                     </tr>
                 @empty

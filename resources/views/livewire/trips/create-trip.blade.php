@@ -8,7 +8,7 @@
     @endif
 
     {{-- 🔄 Лоадер --}}
-    <div wire:loading.flex wire:target="save, addCargo, removeCargo"
+    <div wire:loading.flex wire:target="save, addCargo, removeCargo, addCargoItem, removeCargoItem"
          class="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-20">
         <div class="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
     </div>
@@ -63,7 +63,6 @@
 
                     {{-- 🧾 Shipper / Consignee --}}
                     <div class="grid grid-cols-2 gap-6">
-
                         {{-- 📤 Shipper --}}
                         <div>
                             <x-select
@@ -109,12 +108,10 @@
 
                     {{-- 🗺 Route --}}
                     <div class="mt-5 grid grid-cols-2 gap-6">
-
                         {{-- 📍 Loading --}}
                         <div>
                             <h5 class="font-medium text-gray-700 mb-1">📍 Loading</h5>
 
-                            {{-- Country --}}
                             <x-select
                                 label="Country *"
                                 model="cargos.{{ $index }}.loading_country_id"
@@ -123,7 +120,6 @@
                                 :key="'loading-country-'.$index"
                             />
 
-                            {{-- City (нативный select для гарантии) --}}
                             <label class="block text-sm font-medium mb-1 mt-2">City *</label>
                             <select wire:model.live="cargos.{{ $index }}.loading_city_id"
                                     :key="'loading-city-'.$index.'-'.($cargo['loading_country_id'] ?? 'none')"
@@ -134,23 +130,14 @@
                                 @endforeach
                             </select>
 
-                            <x-input
-                                label="Address *"
-                                model="cargos.{{ $index }}.loading_address"
-                                placeholder="Street, building..."
-                            />
-                            <x-input
-                                type="date"
-                                label="Date *"
-                                model="cargos.{{ $index }}.loading_date"
-                            />
+                            <x-input label="Address *" model="cargos.{{ $index }}.loading_address" placeholder="Street, building..." />
+                            <x-input type="date" label="Date *" model="cargos.{{ $index }}.loading_date" />
                         </div>
 
                         {{-- 🏁 Unloading --}}
                         <div>
                             <h5 class="font-medium text-gray-700 mb-1">🏁 Unloading</h5>
 
-                            {{-- Country --}}
                             <x-select
                                 label="Country *"
                                 model="cargos.{{ $index }}.unloading_country_id"
@@ -159,7 +146,6 @@
                                 :key="'unloading-country-'.$index"
                             />
 
-                            {{-- City (нативный select) --}}
                             <label class="block text-sm font-medium mb-1 mt-2">City *</label>
                             <select wire:model.live="cargos.{{ $index }}.unloading_city_id"
                                     :key="'unloading-city-'.$index.'-'.($cargo['unloading_country_id'] ?? 'none')"
@@ -170,33 +156,56 @@
                                 @endforeach
                             </select>
 
-                            <x-input
-                                label="Address *"
-                                model="cargos.{{ $index }}.unloading_address"
-                                placeholder="Street, building..."
-                            />
-                            <x-input
-                                type="date"
-                                label="Date *"
-                                model="cargos.{{ $index }}.unloading_date"
-                            />
+                            <x-input label="Address *" model="cargos.{{ $index }}.unloading_address" placeholder="Street, building..." />
+                            <x-input type="date" label="Date *" model="cargos.{{ $index }}.unloading_date" />
                         </div>
                     </div>
 
-                    {{-- 📦 Cargo Info --}}
-                    <div class="mt-5 grid grid-cols-2 gap-6">
-                        <x-textarea label="Description of Goods *" model="cargos.{{ $index }}.cargo_description" rows="2" />
-                        <x-input type="number" label="Packages" model="cargos.{{ $index }}.cargo_packages" min="1" />
-                        <x-input type="number" label="Gross Weight (kg)" model="cargos.{{ $index }}.cargo_weight" step="0.01" />
-                        <x-input type="number" label="Volume (m³)" model="cargos.{{ $index }}.cargo_volume" step="0.01" />
-                        <x-textarea label="Marks / Instructions" model="cargos.{{ $index }}.cargo_instructions" rows="2" />
-                        <x-textarea label="Remarks" model="cargos.{{ $index }}.cargo_remarks" rows="2" />
+                    {{-- 📦 Cargo Items --}}
+                    @foreach ($cargo['items'] as $itemIndex => $item)
+                        <div class="mt-5 border border-gray-200 rounded-lg p-4 bg-gray-50 relative"
+                             wire:key="cargo-item-{{ $index }}-{{ $itemIndex }}">
+                            <div class="absolute top-2 right-2">
+                                @if($itemIndex > 0)
+                                    <button type="button"
+                                            wire:click="removeCargoItem({{ $index }}, {{ $itemIndex }})"
+                                            class="text-red-500 hover:text-red-700 text-xs">✖</button>
+                                @endif
+                            </div>
+
+                            <h5 class="font-semibold text-gray-700 mb-3">🧱 Item #{{ $itemIndex + 1 }}</h5>
+
+                            <div class="grid grid-cols-2 gap-6">
+                                <x-textarea label="Description *" model="cargos.{{ $index }}.items.{{ $itemIndex }}.description" rows="2" />
+                                <x-input type="number" label="Packages" model="cargos.{{ $index }}.items.{{ $itemIndex }}.packages" min="1" />
+                                <x-input type="number" label="Gross Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.weight" step="0.01" />
+                                <x-input type="number" label="Volume (m³)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.volume" step="0.01" />
+                                <x-input type="number" label="Price (€)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price" step="0.01" />
+                                <x-textarea label="Remarks" model="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks" rows="2" />
+                            </div>
+                        </div>
+                    @endforeach
+
+                    {{-- ➕ Add new item --}}
+                    <div class="pt-2">
+                        <button type="button"
+                                wire:click="addCargoItem({{ $index }})"
+                                class="mt-2 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600">
+                            ➕ Add Item
+                        </button>
+                    </div>
+
+                    {{-- 🧮 Client Totals --}}
+                    <div class="mt-4 bg-gray-100 border border-gray-300 rounded p-3 text-sm">
+                        <p><b>Client Total Weight:</b> {{ number_format((float)($cargo['cargo_weight'] ?? 0), 2) }} kg</p>
+                        <p><b>Client Total Volume:</b> {{ number_format((float)($cargo['cargo_volume'] ?? 0), 2) }} m³</p>
+                        <p><b>Client Total Price:</b>
+                            <span class="text-green-700">{{ number_format((float)($cargo['price'] ?? 0), 2) }}</span> EUR
+                        </p>
                     </div>
 
                     {{-- 💶 Payment --}}
                     <div class="mt-5 grid grid-cols-3 gap-6">
-                        <x-input type="number" label="Price" model="cargos.{{ $index }}.price" step="0.01" />
-                        <x-input label="Currency" model="cargos.{{ $index }}.currency" placeholder="EUR" />
                         <x-input type="date" label="Payment Due Date" model="cargos.{{ $index }}.payment_terms" />
                         <x-select label="Payer Type" model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
                     </div>
@@ -210,13 +219,18 @@
                     ➕ Add Another Cargo
                 </button>
 
-                {{-- 💰 Total --}}
-                <div class="text-right">
-                    @php
-                        $total = collect($cargos)->sum(fn($c) => (float)($c['price'] ?? 0));
-                    @endphp
-                    <p class="text-lg font-semibold text-gray-700">
-                        Total: <span class="text-green-700">{{ number_format($total, 2) }}</span> EUR
+                {{-- 💰 Totals for all clients --}}
+                @php
+                    $grandWeight = collect($cargos)->sum(fn($c) => (float)($c['cargo_weight'] ?? 0));
+                    $grandVolume = collect($cargos)->sum(fn($c) => (float)($c['cargo_volume'] ?? 0));
+                    $grandPrice  = collect($cargos)->sum(fn($c) => (float)($c['price'] ?? 0));
+                @endphp
+
+                <div class="text-right space-y-1">
+                    <p class="text-gray-700"><b>Total Weight:</b> {{ number_format((float)$grandWeight, 2) }} kg</p>
+                    <p class="text-gray-700"><b>Total Volume:</b> {{ number_format((float)$grandVolume, 2) }} m³</p>
+                    <p class="text-lg font-semibold text-gray-800">
+                        Total Price: <span class="text-green-700">{{ number_format((float)$grandPrice, 2) }}</span> EUR
                     </p>
                 </div>
             </div>

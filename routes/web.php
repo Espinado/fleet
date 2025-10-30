@@ -59,8 +59,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
     Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit'); // редактирование рейса
    
-   Route::get('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
+   Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
     ->name('cmr.generate');
+
+   
 
     Route::post('/logout', function () {
         Auth::logout();

@@ -4,84 +4,103 @@
     <meta charset="UTF-8">
     <title>CMR Form</title>
     <style>
+        /* === Подключаем Unicode-шрифт (для EU-символов) === */
+        @font-face {
+            font-family: 'DejaVu Sans';
+            src: url('{{ public_path('fonts/DejaVuSans.ttf') }}') format('truetype');
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             font-size: 9.5px;
-            line-height: 1.25;
+            line-height: 1.3;
             color: #000;
             margin: 10px;
         }
+
         .cmr {
             border: 1px solid #000;
             padding: 6px;
         }
+
         .header {
             text-align: center;
             font-weight: bold;
             font-size: 13px;
             border-bottom: 1px solid #000;
             padding-bottom: 4px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
+
         .section {
             display: flex;
             border: 1px solid #000;
             border-top: none;
         }
+
         .cell {
             flex: 1;
             border-right: 1px solid #000;
             padding: 4px;
-            min-height: 55px;
+            min-height: 60px;
             vertical-align: top;
+            word-break: break-word;
         }
+
         .cell:last-child { border-right: none; }
+
         .label {
             font-weight: bold;
             font-size: 9px;
             margin-bottom: 2px;
             border-bottom: 0.5px solid #999;
         }
+
         table {
             border-collapse: collapse;
             width: 100%;
             font-size: 9px;
             margin-top: -1px;
         }
+
         th, td {
             border: 1px solid #000;
-            padding: 2px 3px;
-            text-align: center;
+            padding: 3px 4px;
         }
+
         th {
-            background: #f7f7f7;
+            background: #f5f5f5;
             font-weight: bold;
             font-size: 8.5px;
+            text-align: center;
         }
+
         td {
-            line-height: 1.2;
             vertical-align: top;
+            text-align: left;
         }
+
         .footer {
             display: flex;
             border: 1px solid #000;
             border-top: none;
         }
+
         .block {
             flex: 1;
             border-right: 1px solid #000;
             padding: 4px;
-            min-height: 55px;
+            min-height: 60px;
         }
+
         .block:last-child { border-right: none; }
+
         .small {
             font-size: 8px;
             color: #555;
         }
-        .center {
-            text-align: center;
-        }
+
         .meta {
             font-size: 8px;
             text-align: center;
@@ -92,69 +111,112 @@
 </head>
 <body>
 <div class="cmr">
+
     <div class="header">
         МЕЖДУНАРОДНАЯ ТОВАРНО-ТРАНСПОРТНАЯ НАКЛАДНАЯ (CMR)
     </div>
 
-    {{-- 1–2 Отправитель и Получатель --}}
+    {{-- === 1–2 Отправитель / Получатель === --}}
     <div class="section" style="border-top:1px solid #000;">
+        {{-- 1️⃣ Отправитель --}}
         <div class="cell">
             <div class="label">1. Отправитель</div>
-            @if(!empty($sender) && is_array($sender))
-                <strong>{{ (string)($sender['name'] ?? '—') }}</strong><br>
-                Reg. Nr: {{ (string)($sender['reg_nr'] ?? '—') }}<br>
-                {{ (string)($sender['address'] ?? '') }}, {{ (string)($sender['city'] ?? '') }}<br>
-                {{ (string)($sender['country'] ?? '') }}
-            @else
-                {{ (string)($sender ?? '—') }}
-            @endif
+            @php
+                $senderName     = $sender['name'] ?? '—';
+                $senderReg      = $sender['reg_nr'] ?? null;
+                $senderAddress  = $sender['address'] ?? null;
+                $senderCity     = $sender['city'] ?? null;
+                $senderCountry  = $sender['country'] ?? null;
+
+                $senderFull = implode(', ', array_filter([$senderAddress, $senderCity, $senderCountry]));
+            @endphp
+            <strong>{{ $senderName }}</strong><br>
+            @if($senderReg) Reg. Nr: {{ $senderReg }}<br> @endif
+            {{ $senderFull ?: '—' }}
         </div>
 
+        {{-- 2️⃣ Получатель --}}
         <div class="cell">
             <div class="label">2. Получатель</div>
-            @if(!empty($receiver) && is_array($receiver))
-                <strong>{{ (string)($receiver['name'] ?? '—') }}</strong><br>
-                Reg. Nr: {{ (string)($receiver['reg_nr'] ?? '—') }}<br>
-                {{ (string)($receiver['address'] ?? '') }}, {{ (string)($receiver['city'] ?? '') }}<br>
-                {{ (string)($receiver['country'] ?? '') }}
-            @else
-                {{ (string)($receiver ?? '—') }}
-            @endif
+            @php
+                $receiverName     = $receiver['name'] ?? '—';
+                $receiverReg      = $receiver['reg_nr'] ?? null;
+                $receiverAddress  = $receiver['address'] ?? null;
+                $receiverCity     = $receiver['city'] ?? null;
+                $receiverCountry  = $receiver['country'] ?? null;
+
+                $receiverFull = implode(', ', array_filter([$receiverAddress, $receiverCity, $receiverCountry]));
+            @endphp
+            <strong>{{ $receiverName }}</strong><br>
+            @if($receiverReg) Reg. Nr: {{ $receiverReg }}<br> @endif
+            {{ $receiverFull ?: '—' }}
         </div>
     </div>
 
-    {{-- 3–4 Места --}}
+    {{-- === 3–4 Места === --}}
     <div class="section">
-        <div class="cell">
-            <div class="label">3. Место погрузки</div>
-            {{ (string)($loading_place ?? '—') }}
-        </div>
-        <div class="cell">
-            <div class="label">4. Место разгрузки</div>
-            {{ (string)($unloading_place ?? '—') }}
-        </div>
-    </div>
+      
+      {{-- 3️⃣ Место погрузки --}}
+<div class="cell">
+    <div class="label">3. Место погрузки</div>
+    @php
+        $loadParts = array_filter([
+            $loading_address ?? null,
+            $loading_place ?? null
+        ]);
+    @endphp
+    {{ implode(', ', $loadParts) ?: '—' }}
+</div>
 
-    {{-- 5 + 16 --}}
+        {{-- 4️⃣ Место разгрузки --}}
+     
+<div class="cell">
+    <div class="label">3. Место разгрузки</div>
+    @php
+        $loadParts = array_filter([
+            $unloading_address ?? null,
+            $unloading_place ?? null
+        ]);
+    @endphp
+    {{ implode(', ', $loadParts) ?: '—' }}
+</div>
+
+    {{-- === 5 + 16 === --}}
     <div class="section">
         <div class="cell">
             <div class="label">5. Приложенные документы</div>
-            {{ (string)($documents ?? '—') }}
+            {{ $documents ?? '—' }}
         </div>
+
         <div class="cell">
             <div class="label">16. Перевозчик / Экспедитор</div>
-            @if(!empty($carrier) && is_array($carrier))
-                <strong>{{ (string)($carrier['name'] ?? '—') }}</strong><br>
-                Reg. Nr: {{ (string)($carrier['reg_nr'] ?? '—') }}<br>
-                {{ (string)($carrier['address'] ?? '') }}, {{ (string)($carrier['city'] ?? '') }}<br>
-                {{ (string)($carrier['country'] ?? '') }}
-            @else
-                {{ (string)($carrier ?? '—') }}
-            @endif
+            @php
+                $carrierName     = $carrier['name'] ?? '—';
+                $carrierReg      = $carrier['reg_nr'] ?? null;
+                $carrierAddress  = $carrier['address'] ?? null;
+                $carrierCity     = $carrier['city'] ?? null;
+                $carrierCountry  = $carrier['country'] ?? null;
+                $carrierFull     = implode(', ', array_filter([$carrierAddress, $carrierCity, $carrierCountry]));
+                 $driverName        = $carrier['driver'] ?? '—';
+        $truckBrand        = $carrier['truck'] ?? '—';
+        $truckPlate        = $carrier['truck_plate'] ?? '—';
+        $trailerBrand      = $carrier['trailer'] ?? '—';
+        $trailerPlate      = $carrier['trailer_plate'] ?? '—';
+            @endphp
+            <strong>{{ $carrierName }}</strong><br>
+            @if($carrierReg) Reg. Nr: {{ $carrierReg }}<br> @endif
+            {{ $carrierFull ?: '—' }}
+             <hr style="border:0;border-top:0.5px solid #999; margin:4px 0;">
+
+    <div style="font-size:8.5px; line-height:1.4;">
+        <b>Driver:</b> {{ $driverName }}<br>
+        <b>Truck:</b> {{ $truckBrand }} ({{ $truckPlate }})<br>
+        <b>Trailer:</b> {{ $trailerBrand }} ({{ $trailerPlate }})
+    </div>
         </div>
     </div>
 
-    {{-- 6–12 Таблица груза --}}
+    {{-- === Таблица груза === --}}
     <table>
         <thead>
         <tr>
@@ -162,43 +224,29 @@
             <th>7. Мест</th>
             <th>8. Упак.</th>
             <th>9. Наименование</th>
-            <th>10. Стат.</th>
-            <th>11. Брутто, кг</th>
-            <th>12. Объём, м³</th>
+            <th>10. Брутто, кг</th>
+            <th>11. Объем, м³</th>
         </tr>
         </thead>
         <tbody>
         @forelse($items ?? [] as $item)
             <tr>
-                <td>{{ (string)($item['marks'] ?? '') }}</td>
-                <td>{{ (string)($item['qty'] ?? '') }}</td>
-                <td>{{ (string)($item['pack'] ?? '') }}</td>
-                <td style="text-align:left;">{{ (string)($item['desc'] ?? '') }}</td>
-                <td>{{ (string)($item['stat'] ?? '') }}</td>
-                <td>{{ (string)($item['gross'] ?? '') }}</td>
-                <td>{{ (string)($item['volume'] ?? '') }}</td>
+                <td>{{ $item['marks'] ?? '' }}</td>
+                <td style="text-align:center">{{ $item['qty'] ?? '' }}</td>
+                <td style="text-align:center">—</td>
+                <td>{{ $item['desc'] ?? '' }}</td>
+                <td style="text-align:center">{{ $item['gross'] ?? '' }}</td>
+                <td style="text-align:center">{{ $item['volume'] ?? '' }}</td>
             </tr>
         @empty
-            @for($i = 0; $i < 3; $i++)
-                <tr><td colspan="7">&nbsp;</td></tr>
-            @endfor
+            <tr>
+                <td colspan="6" style="text-align:center; color:#888;">— Нет данных о грузе —</td>
+            </tr>
         @endforelse
         </tbody>
     </table>
 
-    {{-- 13–19 --}}
-    <div class="section">
-        <div class="cell">
-            <div class="label">13. Указания отправителя</div>
-            —
-        </div>
-        <div class="cell">
-            <div class="label">19. Платежи</div>
-            —
-        </div>
-    </div>
-
-    {{-- 22–24 Подписи --}}
+    {{-- === 22–24 Подписи === --}}
     <div class="footer">
         <div class="block">
             <div class="label">22. Отправитель</div>
@@ -215,8 +263,10 @@
     </div>
 
     <p class="meta">
-        * Автоматически создано системой Fleet Manager ({{ date('d.m.Y') }})
+        * Автоматически создано системой Fleet Manager ({{ $date ?? date('d.m.Y') }})
     </p>
 </div>
 </body>
 </html>
+
+

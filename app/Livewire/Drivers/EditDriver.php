@@ -20,7 +20,7 @@ class EditDriver extends Component
     public $actual_street, $actual_building, $actual_room, $status, $is_active;
 
     // IDs
-    public ?int $citizenship = null;
+    public ?int $citizenship_id = null;
     public ?int $declared_country_id = null;
     public ?int $declared_city_id = null;
     public ?int $actual_country_id = null;
@@ -71,7 +71,7 @@ class EditDriver extends Component
         $this->first_name = $driver->first_name;
         $this->last_name = $driver->last_name;
         $this->pers_code = $driver->pers_code;
-        $this->citizenship = $driver->citizenship;
+        $this->citizenship_id = $driver->citizenship_id;
         $this->phone = $driver->phone;
         $this->email = $driver->email;
         $this->company = $driver->company;
@@ -153,7 +153,7 @@ class EditDriver extends Component
             'first_name' => $this->first_name,
             'last_name' => $this->last_name,
             'pers_code' => $this->pers_code,
-            'citizenship' => $this->citizenship,
+            'citizenship_id' => $this->citizenship_id,
             'company' => $this->company,
             'phone' => $this->phone,
             'email' => $this->email,

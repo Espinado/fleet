@@ -1,216 +1,102 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>CMR Form</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
-            color: #000;
-            margin: 0;
-            padding: 0;
-        }
-        .cmr {
-            border: 1px solid #000;
-            padding: 10px;
-            width: 100%;
-        }
-        .header {
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 5px;
-            margin-bottom: 8px;
-        }
-        .section {
-            display: flex;
-            border: 1px solid #000;
-            border-top: none;
-        }
-        .cell {
-            flex: 1;
-            border-right: 1px solid #000;
-            padding: 5px;
-            min-height: 70px;
-            vertical-align: top;
-        }
-        .cell:last-child { border-right: none; }
-        .label {
-            font-weight: bold;
-            font-size: 11px;
-            margin-bottom: 3px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 10px;
-        }
-        th, td {
-            border: 1px solid #000;
-            padding: 3px;
-            text-align: center;
-        }
-        th {
-            background: #f3f3f3;
-            font-weight: bold;
-        }
-        .footer {
-            display: flex;
-            border: 1px solid #000;
-            border-top: none;
-        }
-        .block {
-            flex: 1;
-            border-right: 1px solid #000;
-            padding: 5px;
-            min-height: 80px;
-        }
-        .block:last-child { border-right: none; }
-        .small {
-            font-size: 9px;
-            color: #555;
-        }
-        .center {
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-<div class="cmr">
-    <div class="header">
-        МЕЖДУНАРОДНАЯ ТОВАРНО-ТРАНСПОРТНАЯ НАКЛАДНАЯ (CMR)
-    </div>
+<div class="max-w-5xl mx-auto p-6 bg-white rounded shadow space-y-6">
 
-    {{-- 1–2 Отправитель и Получатель --}}
-    <div class="section" style="border-top:1px solid #000;">
-        <div class="cell">
-            <div class="label">1. Отправитель</div>
-            @if(!empty($sender))
-                <strong>{{ $sender['name'] ?? '—' }}</strong><br>
-                Reg. Nr: {{ $sender['reg_nr'] ?? '—' }}<br>
-                {{ $sender['address'] ?? '' }}, {{ $sender['city'] ?? '' }}<br>
-                {{ $sender['country'] ?? '' }}<br>
-                📧 {{ $sender['email'] ?? '' }}<br>
-                ☎ {{ $sender['phone'] ?? '' }}
-            @else
-                —
-            @endif
+    {{-- Уведомления --}}
+    @if (session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <form wire:submit.prevent="generatePdf" class="space-y-6">
+        <h2 class="text-2xl font-bold">📄 Create CMR Document</h2>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block font-medium">Shipper *</label>
+                <input type="text" wire:model="shipper_name" class="w-full border rounded p-2">
+                @error('shipper_name') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block font-medium">Consignee *</label>
+                <input type="text" wire:model="consignee_name" class="w-full border rounded p-2">
+                @error('consignee_name') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
         </div>
 
-        <div class="cell">
-            <div class="label">2. Получатель</div>
-            @if(!empty($receiver))
-                <strong>{{ $receiver['name'] ?? '—' }}</strong><br>
-                Reg. Nr: {{ $receiver['reg_nr'] ?? '—' }}<br>
-                {{ $receiver['address'] ?? '' }}, {{ $receiver['city'] ?? '' }}<br>
-                {{ $receiver['country'] ?? '' }}<br>
-                📧 {{ $receiver['email'] ?? '' }}<br>
-                ☎ {{ $receiver['phone'] ?? '' }}
-            @else
-                —
-            @endif
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block font-medium">Loading Place *</label>
+                <input type="text" wire:model="loading_place" class="w-full border rounded p-2">
+                @error('loading_place') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label class="block font-medium">Unloading Place *</label>
+                <input type="text" wire:model="unloading_place" class="w-full border rounded p-2">
+                @error('unloading_place') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
+            </div>
         </div>
-    </div>
 
-    {{-- 3–4 Места --}}
-    <div class="section">
-        <div class="cell">
-            <div class="label">3. Место погрузки</div>
-            {{ $loading_place ?? '—' }}
+        <div>
+            <label class="block font-medium">Carrier *</label>
+            <input type="text" wire:model="carrier" class="w-full border rounded p-2">
+            @error('carrier') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
         </div>
-        <div class="cell">
-            <div class="label">4. Место разгрузки</div>
-            {{ $unloading_place ?? '—' }}
-        </div>
-    </div>
 
-    {{-- 5 + 16 --}}
-    <div class="section">
-        <div class="cell">
-            <div class="label">5. Приложенные документы</div>
-            {{ $documents ?? '—' }}
+        <div>
+            <label class="block font-medium">Attached Documents</label>
+            <textarea wire:model="attached_documents" class="w-full border rounded p-2"></textarea>
         </div>
-        <div class="cell">
-            <div class="label">16. Перевозчик / Экспедитор</div>
-            @if(!empty($carrier))
-                <strong>{{ $carrier['name'] ?? '—' }}</strong><br>
-                Reg. Nr: {{ $carrier['reg_nr'] ?? '—' }}<br>
-                {{ $carrier['address'] ?? '' }}, {{ $carrier['city'] ?? '' }}<br>
-                {{ $carrier['country'] ?? '' }}<br>
-                📧 {{ $carrier['email'] ?? '' }}<br>
-                ☎ {{ $carrier['phone'] ?? '' }}
-            @else
-                —
-            @endif
-        </div>
-    </div>
 
-    {{-- 6–12 Таблица груза --}}
-    <table>
-        <thead>
-            <tr>
-                <th>6. Знаки и номера</th>
-                <th>7. Кол-во мест</th>
-                <th>8. Род упаковки</th>
-                <th>9. Наименование груза</th>
-                <th>10. Стат. №</th>
-                <th>11. Вес брутто, кг</th>
-                <th>12. Объём, м³</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($items ?? [] as $item)
-                <tr>
-                    <td>{{ $item['marks'] ?? '' }}</td>
-                    <td>{{ $item['qty'] ?? '' }}</td>
-                    <td>{{ $item['pack'] ?? '' }}</td>
-                    <td style="text-align:left;">{{ $item['desc'] ?? '' }}</td>
-                    <td>{{ $item['stat'] ?? '' }}</td>
-                    <td>{{ $item['gross'] ?? '' }}</td>
-                    <td>{{ $item['volume'] ?? '' }}</td>
-                </tr>
-            @empty
-                @for($i = 0; $i < 5; $i++)
-                    <tr><td colspan="7">&nbsp;</td></tr>
-                @endfor
-            @endforelse
-        </tbody>
-    </table>
+        {{-- Таблица грузов --}}
+        <h3 class="font-semibold text-lg border-b pb-1">📦 Cargo Items</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm border">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="border p-2">Marks</th>
+                        <th class="border p-2">Qty</th>
+                        <th class="border p-2">Pack</th>
+                        <th class="border p-2">Description</th>
+                        <th class="border p-2">Gross</th>
+                        <th class="border p-2">Volume</th>
+                        <th class="border p-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($items as $i => $item)
+                        <tr>
+                            <td class="border"><input type="text" wire:model="items.{{ $i }}.marks" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model="items.{{ $i }}.qty" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="text" wire:model="items.{{ $i }}.pack" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="text" wire:model="items.{{ $i }}.desc" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model="items.{{ $i }}.gross" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model="items.{{ $i }}.volume" class="w-full p-1 border-none"></td>
+                            <td class="border text-center">
+                                <button type="button" wire:click="removeItem({{ $i }})" class="text-red-600 hover:underline">✖</button>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
 
-    {{-- 13–19 Указания и платежи --}}
-    <div class="section">
-        <div class="cell">
-            <div class="label">13. Указания отправителя</div>
-            —
-        </div>
-        <div class="cell">
-            <div class="label">19. Платежи</div>
-            —
-        </div>
-    </div>
+        <button type="button" wire:click="addItem" class="mt-2 px-3 py-1 bg-gray-200 rounded hover:bg-gray-300">
+            ➕ Add Item
+        </button>
 
-    {{-- 22–24 Подписи сторон --}}
-    <div class="footer">
-        <div class="block">
-            <div class="label">22. Отправитель</div>
-            <div class="small">Подпись / печать</div><br><br><br>
+        <div class="flex justify-end pt-4 border-t">
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                💾 Generate PDF
+            </button>
         </div>
-        <div class="block">
-            <div class="label">23. Перевозчик</div>
-            <div class="small">Подпись / печать</div><br><br><br>
-        </div>
-        <div class="block">
-            <div class="label">24. Получатель</div>
-            <div class="small">Подпись / печать</div><br><br><br>
-        </div>
-    </div>
+    </form>
 
-    <p class="center small" style="margin-top:6px;">
-        * Данный документ создан автоматически системой Fleet Manager ({{ date('d.m.Y') }})
-    </p>
+    {{-- JS для открытия PDF --}}
+    <script>
+        window.addEventListener('open-pdf', event => {
+            if (event.detail.url) {
+                window.open(event.detail.url, '_blank');
+            }
+        });
+    </script>
 </div>
-</body>
-</html>
