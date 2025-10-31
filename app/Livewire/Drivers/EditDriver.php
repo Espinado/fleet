@@ -25,6 +25,7 @@ class EditDriver extends Component
     public ?int $declared_city_id = null;
     public ?int $actual_country_id = null;
     public ?int $actual_city_id = null;
+    public ?int $actual_postcode = null;
 
     // Documents
     public $license_number, $license_issued, $license_end;
@@ -88,6 +89,7 @@ class EditDriver extends Component
         $this->actual_street = $driver->actual_street;
         $this->actual_building = $driver->actual_building;
         $this->actual_room = $driver->actual_room;
+         $this->actual_postcode = $driver->actual_postcode;
         $this->status = $driver->status;
         $this->is_active = $driver->is_active;
         $this->license_number = $driver->license_number;

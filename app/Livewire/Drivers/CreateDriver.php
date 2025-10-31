@@ -26,7 +26,7 @@ class CreateDriver extends Component
     // Адрес (Actual)
     public ?int $actual_country_id = null;
     public ?int $actual_city_id = null;
-    public $actual_street, $actual_building, $actual_room;
+    public $actual_street, $actual_building, $actual_room, $actual_postcode;
 
     // Документы
     public $license_number, $license_issued, $license_end;
@@ -113,6 +113,7 @@ class CreateDriver extends Component
             'actual_street'       => $this->actual_street,
             'actual_building'     => $this->actual_building,
             'actual_room'         => $this->actual_room,
+            'actual_postcode'     => $this->actual_postcode,
             'phone'               => $this->phone,
             'email'               => $this->email,
             'status'              => $this->status,
