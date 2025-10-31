@@ -1,12 +1,5 @@
 <div class="p-4 sm:p-6 space-y-4">
 
-    {{-- ✅ Уведомление об успехе --}}
-    @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
     {{-- 🔍 Панель управления --}}
     <div class="bg-white shadow rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {{-- Поиск --}}
@@ -23,8 +16,9 @@
             @endif
         </div>
 
-        {{-- Кол-во строк и кнопка --}}
-        <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+        {{-- Кол-во строк, сортировка, кнопка --}}
+        <div class="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            {{-- Rows --}}
             <div class="flex items-center gap-2 text-sm">
                 <label class="text-gray-600">Rows:</label>
                 <select wire:model.live="perPage"
@@ -37,6 +31,20 @@
                 </select>
             </div>
 
+            {{-- Sort --}}
+            <div class="flex items-center gap-2 text-sm">
+                <label class="text-gray-600">Sort by:</label>
+                <select wire:model.live="sortField"
+                        wire:change="sortBy($event.target.value)"
+                        class="border rounded-lg px-2 py-1 w-40 bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
+                    <option value="first_name">Name</option>
+                    <option value="pers_code">Personal Code</option>
+                    <option value="company">Company</option>
+                    <option value="status">Status</option>
+                    <option value="is_active">Active</option>
+                </select>
+            </div>
+
             <a href="{{ route('drivers.create') }}"
                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
                 ➕ Add Driver
@@ -44,7 +52,7 @@
         </div>
     </div>
 
-    {{-- 🖥️ Таблица для десктопа --}}
+    {{-- 🖥️ Таблица --}}
     <div class="hidden md:block bg-white shadow rounded-xl overflow-x-auto">
         <table class="w-full border-collapse text-sm">
             <thead class="bg-gray-100 text-gray-700">
@@ -70,9 +78,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr>
-                        <td colspan="6" class="text-center py-4 text-gray-500">No results</td>
-                    </tr>
+                    <tr><td colspan="6" class="text-center py-4 text-gray-500">No results</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -83,9 +89,7 @@
         @forelse($items as $driver)
             <div class="bg-white rounded-xl shadow-sm border p-4 flex justify-between items-start">
                 <div>
-                    <p class="text-sm font-semibold text-gray-800 leading-tight">
-                        {{ $driver->first_name }} {{ $driver->last_name }}
-                    </p>
+                    <p class="text-sm font-semibold text-gray-800">{{ $driver->first_name }} {{ $driver->last_name }}</p>
                     <p class="text-xs text-gray-500 mb-1">{{ $driver->pers_code }}</p>
                     <p class="text-xs text-gray-600"><b>Company:</b> {{ $driver->company_name }}</p>
                     <p class="text-xs text-gray-600"><b>Status:</b> {{ $driver->status_label }}</p>
