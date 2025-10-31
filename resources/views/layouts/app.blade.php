@@ -122,5 +122,26 @@
 
     {{-- ✅ Livewire scripts --}}
     @livewireScripts(['navigate' => false])
+    <script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration) {
+            registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed') {
+                        if (navigator.serviceWorker.controller) {
+                            // Новый контент готов — перезагружаем приложение
+                            if (confirm('🚀 New version available. Reload now?')) {
+                                window.location.reload();
+                            }
+                        }
+                    }
+                });
+            });
+        }
+    });
+}
+</script>
 </body>
 </html>
