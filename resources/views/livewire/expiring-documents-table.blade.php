@@ -16,7 +16,9 @@
 
         <div class="flex items-center gap-2 text-sm">
             <label for="perPage" class="text-gray-600">Rows:</label>
-            <select id="perPage" wire:model.live="perPage" class="border rounded-lg px-2 py-1 focus:ring-1 focus:ring-blue-400 focus:outline-none">
+          <select id="perPage"
+        wire:model.live="perPage"
+        class="border rounded-lg px-2 py-1 w-20 sm:w-24 text-center bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
                 <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
