@@ -26,11 +26,11 @@
 
 <body class="bg-gray-100 h-screen flex overflow-hidden relative">
 
-    {{-- === Тёмная подложка для мобильного меню === --}}
+    {{-- === 🟣 Подложка для мобильного меню === --}}
     <div id="overlay"
-         class="fixed inset-0 bg-black/50 z-30 hidden md:hidden opacity-0 transition-opacity duration-300"></div>
+         class="fixed inset-0 bg-black/50 z-30 hidden opacity-0 transition-opacity duration-300 md:hidden"></div>
 
-    {{-- === Sidebar (мобильный + десктоп) === --}}
+    {{-- === 🟢 Sidebar === --}}
     <aside
         id="sidebar"
         class="w-64 bg-white shadow-md fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40"
@@ -39,6 +39,7 @@
             🚚 Fleet Manager
             <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl">✖</button>
         </div>
+
         <nav class="p-4 space-y-2">
             <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Dashboard</a>
             <a href="{{ route('drivers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">👨‍✈️ Drivers</a>
@@ -49,18 +50,19 @@
         </nav>
     </aside>
 
-    {{-- === Main Content === --}}
+    {{-- === 🟢 Основной контент === --}}
     <div class="flex-1 flex flex-col">
 
         {{-- === Header === --}}
         <header class="h-16 bg-white shadow flex items-center justify-between px-6">
-            {{-- ☰ Бургер на мобильных --}}
+            {{-- ☰ Бургер (только на мобильных) --}}
             <button id="openSidebar" class="md:hidden text-gray-600 hover:text-gray-900 text-2xl focus:outline-none">
                 ☰
             </button>
 
             <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
 
+            {{-- Профиль пользователя --}}
             <div class="relative group">
                 <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
                     <span>Hello, {{ Auth::user()->name }}</span>
@@ -83,7 +85,7 @@
             </div>
         </header>
 
-        {{-- === Content === --}}
+        {{-- === Контент === --}}
         <main class="flex-1 overflow-y-auto p-6">
             @if (isset($slot))
                 {{ $slot }}
@@ -93,7 +95,7 @@
         </main>
     </div>
 
-    {{-- ✅ JS для меню и подложки --}}
+    {{-- === 🟢 JS для меню и подложки === --}}
     <script>
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
