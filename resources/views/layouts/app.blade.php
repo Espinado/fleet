@@ -24,11 +24,21 @@
     @endif
 </head>
 
-<body class="bg-gray-100 h-screen flex overflow-hidden">
+<body class="bg-gray-100 h-screen flex overflow-hidden relative">
 
-    {{-- === Sidebar === --}}
-    <aside class="w-64 bg-white shadow-md hidden md:block">
-        <div class="p-4 text-xl font-bold border-b">🚚 Fleet Manager</div>
+    {{-- === Тёмная подложка для мобильного меню === --}}
+    <div id="overlay"
+         class="fixed inset-0 bg-black/50 z-30 hidden md:hidden opacity-0 transition-opacity duration-300"></div>
+
+    {{-- === Sidebar (мобильный + десктоп) === --}}
+    <aside
+        id="sidebar"
+        class="w-64 bg-white shadow-md fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40"
+    >
+        <div class="p-4 text-xl font-bold border-b flex justify-between items-center">
+            🚚 Fleet Manager
+            <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl">✖</button>
+        </div>
         <nav class="p-4 space-y-2">
             <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Dashboard</a>
             <a href="{{ route('drivers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">👨‍✈️ Drivers</a>
@@ -44,6 +54,11 @@
 
         {{-- === Header === --}}
         <header class="h-16 bg-white shadow flex items-center justify-between px-6">
+            {{-- ☰ Бургер на мобильных --}}
+            <button id="openSidebar" class="md:hidden text-gray-600 hover:text-gray-900 text-2xl focus:outline-none">
+                ☰
+            </button>
+
             <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
 
             <div class="relative group">
@@ -77,6 +92,30 @@
             @endif
         </main>
     </div>
+
+    {{-- ✅ JS для меню и подложки --}}
+    <script>
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const openBtn = document.getElementById('openSidebar');
+        const closeBtn = document.getElementById('closeSidebar');
+
+        function openSidebarMenu() {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            requestAnimationFrame(() => overlay.classList.add('opacity-100'));
+        }
+
+        function closeSidebarMenu() {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.remove('opacity-100');
+            overlay.addEventListener('transitionend', () => overlay.classList.add('hidden'), { once: true });
+        }
+
+        openBtn?.addEventListener('click', openSidebarMenu);
+        closeBtn?.addEventListener('click', closeSidebarMenu);
+        overlay?.addEventListener('click', closeSidebarMenu);
+    </script>
 
     {{-- ✅ Livewire scripts --}}
     @livewireScripts(['navigate' => false])
