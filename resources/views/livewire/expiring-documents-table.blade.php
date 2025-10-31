@@ -2,7 +2,6 @@
 
     {{-- 🔍 Панель управления --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl shadow">
-
         {{-- Поиск --}}
         <div class="flex items-center gap-2 w-full sm:w-auto">
             <input
@@ -16,15 +15,13 @@
             @endif
         </div>
 
-        {{-- Параметры: Rows + Sort --}}
-        <div class="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-
-            {{-- Кол-во строк --}}
-            <div class="flex items-center gap-2 text-sm">
-                <label for="perPage" class="text-gray-600">Rows:</label>
-                <select id="perPage"
-                        wire:model.live="perPage"
-                        class="border rounded-lg px-2 py-1 w-20 sm:w-24 text-center bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
+        {{-- ⚙️ Rows + Sort --}}
+        <div class="flex items-center gap-4 text-sm flex-wrap sm:justify-end">
+            {{-- Rows --}}
+            <div class="flex items-center gap-2">
+                <label class="text-gray-600 whitespace-nowrap">Rows:</label>
+                <select wire:model.live="perPage"
+                        class="border rounded-lg px-2 py-1 w-20 text-center bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
@@ -33,12 +30,12 @@
                 </select>
             </div>
 
-            {{-- Сортировка --}}
-            <div class="flex items-center gap-2 text-sm">
-                <label class="text-gray-600">Sort by:</label>
+            {{-- Sort --}}
+            <div class="flex items-center gap-2">
+                <label class="text-gray-600 whitespace-nowrap">Sort:</label>
                 <select wire:model.live="sortField"
                         wire:change="sortBy($event.target.value)"
-                        class="border rounded-lg px-2 py-1 w-40 bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
+                        class="border rounded-lg px-2 py-1 w-36 bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
                     <option value="expiry_date">Expiry date</option>
                     <option value="name">Name</option>
                     <option value="type">Type</option>
@@ -48,21 +45,13 @@
         </div>
     </div>
 
-    {{-- 🖥️ Таблица (десктоп) --}}
+    {{-- 🖥️ Таблица --}}
     <div class="hidden md:block bg-white shadow rounded-xl overflow-x-auto">
         <table class="w-full border-collapse text-sm">
             <thead class="bg-gray-100 text-gray-700">
                 <tr>
                     @php
-                        $cols = [
-                            'type' => 'Type',
-                            'name' => 'Name',
-                            'document' => 'Document',
-                            'expiry_date' => 'Expiry date',
-                            'company' => 'Company',
-                            'status' => 'Status',
-                            'is_active' => 'Active'
-                        ];
+                        $cols = ['type'=>'Type','name'=>'Name','document'=>'Document','expiry_date'=>'Expiry date','company'=>'Company','status'=>'Status','is_active'=>'Active'];
                     @endphp
                     @foreach($cols as $field => $label)
                         <th class="p-3 text-left cursor-pointer select-none" wire:click="sortBy('{{ $field }}')">
@@ -111,7 +100,7 @@
         </table>
     </div>
 
-    {{-- 📱 Мобильные карточки --}}
+    {{-- 📱 Карточки --}}
     <div class="grid md:hidden gap-3">
         @forelse($items as $item)
             @php
@@ -157,5 +146,4 @@
             {{ $items->links() }}
         </div>
     </div>
-
 </div>

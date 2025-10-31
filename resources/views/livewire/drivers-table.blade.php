@@ -1,5 +1,12 @@
 <div class="p-4 sm:p-6 space-y-4">
 
+    {{-- ✅ Уведомление --}}
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-xl shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
     {{-- 🔍 Панель управления --}}
     <div class="bg-white shadow rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         {{-- Поиск --}}
@@ -16,35 +23,40 @@
             @endif
         </div>
 
-        {{-- Кол-во строк, сортировка, кнопка --}}
+        {{-- ⚙️ Rows + Sort + Add --}}
         <div class="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
-            {{-- Rows --}}
-            <div class="flex items-center gap-2 text-sm">
-                <label class="text-gray-600">Rows:</label>
-                <select wire:model.live="perPage"
-                        class="border rounded-lg px-2 py-1 w-20 sm:w-24 text-center bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
+
+            {{-- Rows + Sort в одну линию --}}
+            <div class="flex items-center gap-4 text-sm">
+                {{-- Rows --}}
+                <div class="flex items-center gap-2">
+                    <label class="text-gray-600 whitespace-nowrap">Rows:</label>
+                    <select wire:model.live="perPage"
+                            class="border rounded-lg px-2 py-1 w-20 text-center bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                {{-- Sort --}}
+                <div class="flex items-center gap-2">
+                    <label class="text-gray-600 whitespace-nowrap">Sort:</label>
+                    <select wire:model.live="sortField"
+                            wire:change="sortBy($event.target.value)"
+                            class="border rounded-lg px-2 py-1 w-36 bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
+                        <option value="first_name">Name</option>
+                        <option value="pers_code">Personal Code</option>
+                        <option value="company">Company</option>
+                        <option value="status">Status</option>
+                        <option value="is_active">Active</option>
+                    </select>
+                </div>
             </div>
 
-            {{-- Sort --}}
-            <div class="flex items-center gap-2 text-sm">
-                <label class="text-gray-600">Sort by:</label>
-                <select wire:model.live="sortField"
-                        wire:change="sortBy($event.target.value)"
-                        class="border rounded-lg px-2 py-1 w-40 bg-white focus:ring-1 focus:ring-blue-400 focus:outline-none">
-                    <option value="first_name">Name</option>
-                    <option value="pers_code">Personal Code</option>
-                    <option value="company">Company</option>
-                    <option value="status">Status</option>
-                    <option value="is_active">Active</option>
-                </select>
-            </div>
-
+            {{-- Add --}}
             <a href="{{ route('drivers.create') }}"
                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
                 ➕ Add Driver
@@ -104,12 +116,7 @@
 
     {{-- 📄 Пагинация --}}
     <div class="flex items-center justify-between flex-wrap gap-2 mt-3 text-sm text-gray-600">
-        <div>
-            Showing {{ $items->firstItem() ?? 0 }}–{{ $items->lastItem() ?? 0 }} of {{ $items->total() }}
-        </div>
-        <div>
-            {{ $items->links() }}
-        </div>
+        <div>Showing {{ $items->firstItem() ?? 0 }}–{{ $items->lastItem() ?? 0 }} of {{ $items->total() }}</div>
+        <div>{{ $items->links() }}</div>
     </div>
-
 </div>
