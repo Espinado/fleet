@@ -9,50 +9,53 @@ class TripCargo extends Model
 {
     use HasFactory;
 
-   protected $fillable = [
-    'trip_id',
-    'shipper_id',
-    'consignee_id',
-     'cmr_file',
-     'cmr_created_at',
+    protected $fillable = [
+        'trip_id',
+        'shipper_id',
+        'consignee_id',
+        'cmr_file',
+        'cmr_created_at',
 
-    // === Loading ===
-    'loading_country_id',
-    'loading_city_id',
-    'loading_address',
-    'loading_date',
+        // Loading
+        'loading_country_id',
+        'loading_city_id',
+        'loading_address',
+        'loading_date',
 
-    // === Unloading ===
-    'unloading_country_id',
-    'unloading_city_id',
-    'unloading_address',
-    'unloading_date',
+        // Unloading
+        'unloading_country_id',
+        'unloading_city_id',
+        'unloading_address',
+        'unloading_date',
 
-    // === Cargo ===
-    'cargo_description',
-    'cargo_packages',
-    'cargo_weight',
-    'cargo_volume',
-    'cargo_marks',
-    'cargo_instructions',
-    'cargo_remarks',
+        // Cargo
+        'cargo_description',
+        'cargo_packages',
+        'cargo_paletes',
+        'cargo_tonnes',
+        'cargo_weight',
+        'cargo_netto_weight',
+        'cargo_volume',
+        'cargo_marks',
+        'cargo_instructions',
+        'cargo_remarks',
 
-    // === Payment ===
-    'price',
-    'currency',
-    'payment_terms',
-    'payer_type_id',
-    'items_json' => 'array'
-];
-
-
-    protected $casts = [
-        'loading_date' => 'date',
-        'unloading_date' => 'date',
-        'payment_terms' => 'date',
-          'items_json' => 'array', // 🟢 автоматически парсить JSON как массив
+        // Payment
+        'price',
+        'total_tax_amount',
+        'price_with_tax',
+        'currency',
+        'payment_terms',
+        'payer_type_id',
     ];
 
+    protected $casts = [
+        'loading_date'   => 'date',
+        'unloading_date' => 'date',
+        'payment_terms'  => 'date',
+    ];
+
+    /** === Связи === */
     public function trip()
     {
         return $this->belongsTo(Trip::class);
@@ -66,5 +69,10 @@ class TripCargo extends Model
     public function consignee()
     {
         return $this->belongsTo(Client::class, 'consignee_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(TripCargoItem::class, 'trip_cargo_id');
     }
 }

@@ -57,30 +57,6 @@
             border-bottom: 0.5px solid #999;
         }
 
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 9px;
-            margin-top: -1px;
-        }
-
-        th, td {
-            border: 1px solid #000;
-            padding: 3px 4px;
-        }
-
-        th {
-            background: #f5f5f5;
-            font-weight: bold;
-            font-size: 8.5px;
-            text-align: center;
-        }
-
-        td {
-            vertical-align: top;
-            text-align: left;
-        }
-
         .footer {
             display: flex;
             border: 1px solid #000;
@@ -96,16 +72,31 @@
 
         .block:last-child { border-right: none; }
 
-        .small {
-            font-size: 8px;
-            color: #555;
-        }
+        .small { font-size: 8px; color: #555; }
 
         .meta {
             font-size: 8px;
             text-align: center;
             margin-top: 3px;
             color: #666;
+        }
+
+        .cargo-block {
+            border-top: 1px solid #000;
+            padding: 5px 6px;
+            page-break-inside: avoid;
+        }
+
+        .cargo-block b {
+            display: inline-block;
+            width: 130px;
+        }
+
+        .cargo-summary {
+            border-top: 1px solid #000;
+            padding: 5px;
+            font-weight: bold;
+            background: #f8f8f8;
         }
     </style>
 </head>
@@ -127,8 +118,7 @@
                 $senderAddress  = $sender['address'] ?? null;
                 $senderCity     = $sender['city'] ?? null;
                 $senderCountry  = $sender['country'] ?? null;
-
-                $senderFull = implode(', ', array_filter([$senderAddress, $senderCity, $senderCountry]));
+                $senderFull     = implode(', ', array_filter([$senderAddress, $senderCity, $senderCountry]));
             @endphp
             <strong>{{ $senderName }}</strong><br>
             @if($senderReg) Reg. Nr: {{ $senderReg }}<br> @endif
@@ -144,8 +134,7 @@
                 $receiverAddress  = $receiver['address'] ?? null;
                 $receiverCity     = $receiver['city'] ?? null;
                 $receiverCountry  = $receiver['country'] ?? null;
-
-                $receiverFull = implode(', ', array_filter([$receiverAddress, $receiverCity, $receiverCountry]));
+                $receiverFull     = implode(', ', array_filter([$receiverAddress, $receiverCity, $receiverCountry]));
             @endphp
             <strong>{{ $receiverName }}</strong><br>
             @if($receiverReg) Reg. Nr: {{ $receiverReg }}<br> @endif
@@ -155,31 +144,24 @@
 
     {{-- === 3–4 Места === --}}
     <div class="section">
-      
-      {{-- 3️⃣ Место погрузки --}}
-<div class="cell">
-    <div class="label">3. Место погрузки</div>
-    @php
-        $loadParts = array_filter([
-            $loading_address ?? null,
-            $loading_place ?? null
-        ]);
-    @endphp
-    {{ implode(', ', $loadParts) ?: '—' }}
-</div>
+        {{-- 3️⃣ Место погрузки --}}
+        <div class="cell">
+            <div class="label">3. Место погрузки</div>
+            @php
+                $loadParts = array_filter([$loading_address ?? null, $loading_place ?? null]);
+            @endphp
+            {{ implode(', ', $loadParts) ?: '—' }}
+        </div>
 
         {{-- 4️⃣ Место разгрузки --}}
-     
-<div class="cell">
-    <div class="label">3. Место разгрузки</div>
-    @php
-        $loadParts = array_filter([
-            $unloading_address ?? null,
-            $unloading_place ?? null
-        ]);
-    @endphp
-    {{ implode(', ', $loadParts) ?: '—' }}
-</div>
+        <div class="cell">
+            <div class="label">4. Место разгрузки</div>
+            @php
+                $unloadParts = array_filter([$unloading_address ?? null, $unloading_place ?? null]);
+            @endphp
+            {{ implode(', ', $unloadParts) ?: '—' }}
+        </div>
+    </div>
 
     {{-- === 5 + 16 === --}}
     <div class="section">
@@ -197,54 +179,69 @@
                 $carrierCity     = $carrier['city'] ?? null;
                 $carrierCountry  = $carrier['country'] ?? null;
                 $carrierFull     = implode(', ', array_filter([$carrierAddress, $carrierCity, $carrierCountry]));
-                 $driverName        = $carrier['driver'] ?? '—';
-        $truckBrand        = $carrier['truck'] ?? '—';
-        $truckPlate        = $carrier['truck_plate'] ?? '—';
-        $trailerBrand      = $carrier['trailer'] ?? '—';
-        $trailerPlate      = $carrier['trailer_plate'] ?? '—';
+                $driverName      = $carrier['driver'] ?? '—';
+                $truckBrand      = $carrier['truck'] ?? '—';
+                $truckPlate      = $carrier['truck_plate'] ?? '—';
+                $trailerBrand    = $carrier['trailer'] ?? '—';
+                $trailerPlate    = $carrier['trailer_plate'] ?? '—';
             @endphp
             <strong>{{ $carrierName }}</strong><br>
             @if($carrierReg) Reg. Nr: {{ $carrierReg }}<br> @endif
             {{ $carrierFull ?: '—' }}
-             <hr style="border:0;border-top:0.5px solid #999; margin:4px 0;">
-
-    <div style="font-size:8.5px; line-height:1.4;">
-        <b>Driver:</b> {{ $driverName }}<br>
-        <b>Truck:</b> {{ $truckBrand }} ({{ $truckPlate }})<br>
-        <b>Trailer:</b> {{ $trailerBrand }} ({{ $trailerPlate }})
-    </div>
+            <hr style="border:0;border-top:0.5px solid #999; margin:4px 0;">
+            <div style="font-size:8.5px; line-height:1.4;">
+                <b>Driver:</b> {{ $driverName }}<br>
+                <b>Truck:</b> {{ $truckBrand }} ({{ $truckPlate }})<br>
+                <b>Trailer:</b> {{ $trailerBrand }} ({{ $trailerPlate }})
+            </div>
         </div>
     </div>
 
-    {{-- === Таблица груза === --}}
-    <table>
-        <thead>
+ {{-- === Грузы в табличном формате CMR (6–12) === --}}
+@php
+    $totalQty = collect($items ?? [])->sum('qty');
+    $totalWeight = collect($items ?? [])->sum('gross');
+@endphp
+
+<table style="width:100%; border-collapse:collapse; font-size:9px; margin-top:-1px; border:1px solid #000;">
+    <thead style="background:#f5f5f5;">
         <tr>
-            <th>6. Знаки</th>
-            <th>7. Мест</th>
-            <th>8. Упак.</th>
-            <th>9. Наименование</th>
-            <th>10. Брутто, кг</th>
-            <th>11. Объем, м³</th>
+            <th style="border:1px solid #000; padding:4px; text-align:center;">№</th>
+            <th style="border:1px solid #000; padding:4px; text-align:left;">6️⃣ Знаки и номера</th>
+            <th style="border:1px solid #000; padding:4px; text-align:center;">7️⃣ Кол-во мест</th>
+            <th style="border:1px solid #000; padding:4px; text-align:left;">10️⃣ Наименование груза</th>
+            <th style="border:1px solid #000; padding:4px; text-align:right;">11️⃣ Вес брутто (кг)</th>
+            <th style="border:1px solid #000; padding:4px; text-align:right;">12️⃣ Объём (м³)</th>
         </tr>
-        </thead>
-        <tbody>
-        @forelse($items ?? [] as $item)
+    </thead>
+    <tbody>
+        @forelse($items ?? [] as $index => $item)
             <tr>
-                <td>{{ $item['marks'] ?? '' }}</td>
-                <td style="text-align:center">{{ $item['qty'] ?? '' }}</td>
-                <td style="text-align:center">—</td>
-                <td>{{ $item['desc'] ?? '' }}</td>
-                <td style="text-align:center">{{ $item['gross'] ?? '' }}</td>
-                <td style="text-align:center">{{ $item['volume'] ?? '' }}</td>
+                <td style="border:1px solid #000; padding:3px; text-align:center;">{{ $index + 1 }}</td>
+                <td style="border:1px solid #000; padding:3px;">{{ $item['marks'] ?? '—' }}</td>
+                <td style="border:1px solid #000; padding:3px; text-align:center;">{{ $item['qty'] ?? '—' }}</td>
+                <td style="border:1px solid #000; padding:3px;">{{ $item['desc'] ?? '—' }}</td>
+                <td style="border:1px solid #000; padding:3px; text-align:right;">{{ $item['gross'] ?? '—' }}</td>
+                <td style="border:1px solid #000; padding:3px; text-align:right;">{{ $item['volume'] ?? '—' }}</td>
             </tr>
         @empty
             <tr>
-                <td colspan="6" style="text-align:center; color:#888;">— Нет данных о грузе —</td>
+                <td colspan="6" style="border:1px solid #000; padding:5px; text-align:center; color:#666;">
+                    — Нет данных о грузе —
+                </td>
             </tr>
         @endforelse
-        </tbody>
-    </table>
+    </tbody>
+    <tfoot style="font-weight:bold; background:#f8f8f8;">
+        <tr>
+            <td colspan="2" style="border:1px solid #000; padding:4px; text-align:right;">ИТОГО:</td>
+            <td style="border:1px solid #000; padding:4px; text-align:center;">{{ $totalQty ?: '—' }}</td>
+            <td style="border:1px solid #000; padding:4px; text-align:right;">—</td>
+            <td style="border:1px solid #000; padding:4px; text-align:right;">{{ $totalWeight ?: '—' }}</td>
+            <td style="border:1px solid #000; padding:4px; text-align:right;">—</td>
+        </tr>
+    </tfoot>
+</table>
 
     {{-- === 22–24 Подписи === --}}
     <div class="footer">
@@ -268,5 +265,3 @@
 </div>
 </body>
 </html>
-
-

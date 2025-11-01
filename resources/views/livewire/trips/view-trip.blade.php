@@ -109,6 +109,11 @@
                         <p><b>Weight:</b> {{ number_format($cargo->cargo_weight ?? 0, 2, '.', ' ') }} kg</p>
                         <p><b>Price:</b> {{ number_format($cargo->price ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</p>
                     </div>
+                     <div class="border rounded p-3 bg-white">
+                        <p class="font-semibold text-gray-700 mb-1">📦 {{ $cargo->cargo_description ?? '—' }}</p>
+                        <p><b>Netto Weight:</b> {{ number_format($cargo->cargo_netto_weight ?? 0, 2, '.', ' ') }} kg</p>
+                        <p><b>Price with tax:</b> {{ number_format($cargo->price_with_tax ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</p>
+                    </div>
                 @endforeach
             </div>
         </div>
