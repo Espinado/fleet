@@ -61,6 +61,27 @@
                         📦 Cargo #{{ (int) $index + 1 }}
                     </h4>
 
+                    {{-- 👤 Customer --}}
+                    <div class="mb-6">
+                        <x-select
+                            label="Select Customer *"
+                            model="cargos.{{ $index }}.customer_id"
+                            :options="$customers"
+                            live
+                        />
+
+                        @if(!empty($cargo['customerData']))
+                            <div class="mt-2 bg-blue-50 border border-blue-200 rounded p-3 text-xs space-y-1">
+                                <p><b>🏢 {{ $cargo['customerData']['company_name'] ?? '-' }}</b></p>
+                                <p>📧 {{ $cargo['customerData']['email'] ?? '-' }}</p>
+                                <p>📞 {{ $cargo['customerData']['phone'] ?? '-' }}</p>
+                                <p>📍 {{ $cargo['customerData']['fiz_address'] ?? '-' }},
+                                    {{ $cargo['customerData']['fiz_city'] ?? '' }},
+                                    {{ $cargo['customerData']['fiz_country'] ?? '' }}</p>
+                            </div>
+                        @endif
+                    </div>
+
                     {{-- 🧾 Shipper / Consignee --}}
                     <div class="grid grid-cols-2 gap-6">
                         {{-- 📤 Shipper --}}
@@ -180,16 +201,16 @@
                                 <x-input type="number" label="Packages" model="cargos.{{ $index }}.items.{{ $itemIndex }}.packages" min="1" />
                                 <x-input type="number" label="Paletes" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_paletes" min="1" />
                                 <x-input type="number" label="Gross Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.weight" step="0.01" />
-                                 <x-input type="number" label="Netto Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_netto_weight" step="0.01" />
+                                <x-input type="number" label="Netto Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_netto_weight" step="0.01" />
                                 <x-input type="number" label="Volume (m³)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.volume" step="0.01" />
                                 <x-input type="number" label="Tonnes" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_tonnes" step="0.01" />
                                 <x-input type="number" label="Price (€)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price" step="0.01" />
                                 <x-textarea label="Remarks" model="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks" rows="2" />
-                           <x-select 
-    label="Tax (%)" 
-    model="cargos.{{ $index }}.items.{{ $itemIndex }}.tax_percent" 
-    :options="[0 => '0%', 10 => '10%', 21 => '21%']" 
-/>
+                                <x-select 
+                                    label="Tax (%)" 
+                                    model="cargos.{{ $index }}.items.{{ $itemIndex }}.tax_percent" 
+                                    :options="[0 => '0%', 10 => '10%', 21 => '21%']" 
+                                />
                             </div>
                         </div>
                     @endforeach
@@ -206,7 +227,7 @@
                     {{-- 🧮 Client Totals --}}
                     <div class="mt-4 bg-gray-100 border border-gray-300 rounded p-3 text-sm">
                         <p><b>Client Total Weight:</b> {{ number_format((float)($cargo['cargo_weight'] ?? 0), 2) }} kg</p>
-                           <p><b>Client Total Netto Weight:</b> {{ number_format((float)($cargo['cargo_netto_weight'] ?? 0), 2) }} kg</p>
+                        <p><b>Client Total Netto Weight:</b> {{ number_format((float)($cargo['cargo_netto_weight'] ?? 0), 2) }} kg</p>
                         <p><b>Client Total Volume:</b> {{ number_format((float)($cargo['cargo_volume'] ?? 0), 2) }} m³</p>
                         <p><b>Client Total Price:</b>
                             <span class="text-green-700">{{ number_format((float)($cargo['price'] ?? 0), 2) }}</span> EUR
@@ -217,8 +238,6 @@
                     <div class="mt-5 grid grid-cols-3 gap-6">
                         <x-input type="date" label="Payment Due Date" model="cargos.{{ $index }}.payment_terms" />
                         <x-select label="Payer Type" model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
-                      
-                        
                     </div>
                 </div>
             @endforeach
@@ -233,14 +252,14 @@
                 {{-- 💰 Totals for all clients --}}
                 @php
                     $grandWeight = collect($cargos)->sum(fn($c) => (float)($c['cargo_weight'] ?? 0));
-                      $grandNettoWeight = collect($cargos)->sum(fn($c) => (float)($c['cargo_netto_weight'] ?? 0));
+                    $grandNettoWeight = collect($cargos)->sum(fn($c) => (float)($c['cargo_netto_weight'] ?? 0));
                     $grandVolume = collect($cargos)->sum(fn($c) => (float)($c['cargo_volume'] ?? 0));
                     $grandPrice  = collect($cargos)->sum(fn($c) => (float)($c['price'] ?? 0));
                 @endphp
 
                 <div class="text-right space-y-1">
                     <p class="text-gray-700"><b>Total Weight:</b> {{ number_format((float)$grandWeight, 2) }} kg</p>
-                      <p class="text-gray-700"><b>Total Netto Weight:</b> {{ number_format((float)$grandNettoWeight, 2) }} kg</p>
+                    <p class="text-gray-700"><b>Total Netto Weight:</b> {{ number_format((float)$grandNettoWeight, 2) }} kg</p>
                     <p class="text-gray-700"><b>Total Volume:</b> {{ number_format((float)$grandVolume, 2) }} m³</p>
                     <p class="text-lg font-semibold text-gray-800">
                         Total Price: <span class="text-green-700">{{ number_format((float)$grandPrice, 2) }}</span> EUR

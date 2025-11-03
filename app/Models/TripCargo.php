@@ -13,8 +13,12 @@ class TripCargo extends Model
         'trip_id',
         'shipper_id',
         'consignee_id',
+        'customer_id',
         'cmr_file',
         'cmr_created_at',
+        'order_created_at',
+        'order_nr',
+        'cmr_nr',
 
         // Loading
         'loading_country_id',
@@ -39,6 +43,7 @@ class TripCargo extends Model
         'cargo_marks',
         'cargo_instructions',
         'cargo_remarks',
+        'order_file',
 
         // Payment
         'price',
@@ -47,6 +52,7 @@ class TripCargo extends Model
         'currency',
         'payment_terms',
         'payer_type_id',
+
     ];
 
     protected $casts = [
@@ -54,6 +60,7 @@ class TripCargo extends Model
         'unloading_date' => 'date',
         'payment_terms'  => 'date',
     ];
+    protected $with = ['customer', 'shipper', 'consignee'];
 
     /** === Связи === */
     public function trip()
@@ -75,4 +82,8 @@ class TripCargo extends Model
     {
         return $this->hasMany(TripCargoItem::class, 'trip_cargo_id');
     }
+    public function customer()
+{
+    return $this->belongsTo(Client::class, 'customer_id');
+}
 }

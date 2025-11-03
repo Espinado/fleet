@@ -24,6 +24,16 @@ class ViewTrip extends Component
     // 🟢 Отправляем JS-событие с URL PDF
     $this->dispatch('cmrGenerated', url: $url);
 }
+
+public function generateOrder($cargoId)
+{
+    $cargo = TripCargo::findOrFail($cargoId);
+    $controller = app(\App\Http\Controllers\CmrController::class);
+    $url = $controller->generateTransportOrder($cargo);
+
+    $this->dispatch('orderGenerated', ['url' => $url]);
+    $this->dispatch('$refresh');
+}
     public function mount($trip)
     {
         $this->trip = $trip instanceof Trip

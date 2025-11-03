@@ -9,111 +9,128 @@
             src: url('{{ public_path('fonts/DejaVuSans.ttf') }}') format('truetype');
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
             font-family: 'DejaVu Sans', sans-serif;
-            font-size: 9px;
+            font-size: 12px;
+            line-height: 1.4;
             color: #000;
+            margin: 0;
+            padding: 0;
         }
 
-        /* 🟦 Увеличенные отступы */
-        @page { size: A4; margin: 20mm 15mm 18mm 15mm; }
+        /* ⚙️ Реальные поля для DomPDF */
+        @page {
+            size: A4;
+            margin-top: 20mm;
+            margin-right: 20mm;
+            margin-bottom: 20mm;
+            margin-left: 20mm;
+        }
 
-        table { border-collapse: collapse; width: 100%; page-break-inside: avoid; }
+        .wrapper {
+            padding: 10mm 10mm 5mm 10mm;
+            position: relative;
+            z-index: 2;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            page-break-inside: avoid;
+        }
+
         td, th {
             border: 0.7px solid #000;
+            padding: 5px 6px;
             vertical-align: top;
-            padding: 3px 4px;
         }
-        th { background: #f8f8f8; }
+
+        th {
+            background: #f8f8f8;
+            text-align: center;
+        }
 
         .title {
             font-weight: bold;
             text-align: center;
-            font-size: 12px;
-            padding: 6px;
+            font-size: 13px;
             border: 1px solid #000;
-            margin-bottom: 2px;
+            padding: 8px;
+            margin-bottom: 10px;
         }
 
-        .field-num { font-weight: bold; font-size: 8px; margin-bottom: 2px; }
-        .small { font-size: 8px; color: #555; }
-        .right { text-align: right; }
+        .field-num { font-weight: bold; font-size: 11px; margin-bottom: 4px; }
         .center { text-align: center; }
+        .right { text-align: right; }
 
         .cmr-bg {
-            position: absolute;
-            top: 47%;
+            position: fixed;
+            top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 120px;
-            color: rgba(0,0,0,0.06);
+            font-size: 140px;
+            color: rgba(0,0,0,0.05);
             font-weight: bold;
+            letter-spacing: 3px;
             z-index: 0;
-            letter-spacing: 2px;
-        }
-
-        .page {
-            position: relative;
-            z-index: 1;
         }
     </style>
 </head>
 <body>
 
 <div class="cmr-bg">CMR</div>
-<div class="page">
 
-    {{-- === Header title === --}}
+<div class="wrapper">
+
     <div class="title">
-        TARPTAUTINIS KROVINIŲ TRANSPORTAVIMO VAŽTARAŠTIS / 
-        STARPTAUTISKĀ KRAVAS PIEGĀDES PAVADZĪME / 
-        INTERNATIONAL CONSIGNMENT NOTE (CMR)
+        TARPTAUTINIS KROVINIŲ TRANSPORTAVIMO VAŽTARAŠTIS /
+        STARPTAUTISKĀ KRAVAS PIEGĀDES PAVADZĪME /
+        INTERNATIONAL CONSIGNMENT NOTE (CMR) Nr. {{ $cmr_nr ?? '—' }}
     </div>
 
-    {{-- === 1–2 Sender / Consignee === --}}
+    {{-- === 1–5 === --}}
     <table>
         <tr>
             <td width="50%">
-                <div class="field-num">1. Sūtītājs / Sender (name, address, country)</div>
+                <div class="field-num">1. Sūtītājs / Sender</div>
                 <b>{{ $sender['name'] ?? '—' }}</b><br>
                 {{ $sender['address'] ?? '' }}<br>
                 {{ $sender['city'] ?? '' }}, {{ $sender['country'] ?? '' }}<br>
                 Reg. Nr: {{ $sender['reg_nr'] ?? '—' }}
             </td>
             <td>
-                <div class="field-num">2. Saņēmējs / Consignee (name, address, country)</div>
+                <div class="field-num">2. Saņēmējs / Consignee</div>
                 <b>{{ $receiver['name'] ?? '—' }}</b><br>
                 {{ $receiver['address'] ?? '' }}<br>
                 {{ $receiver['city'] ?? '' }}, {{ $receiver['country'] ?? '' }}<br>
                 Reg. Nr: {{ $receiver['reg_nr'] ?? '—' }}
             </td>
         </tr>
-
-        {{-- === 3–5 === --}}
         <tr>
-            <td width="50%">
-                <div class="field-num">3. Piegādes vieta / Place of delivery</div>
-                {{ $unloading_address ?? '' }}<br>
-                {{ $unloading_place ?? '' }}
-            </td>
             <td>
                 <div class="field-num">4. Iekraušanas vieta un datums / Place and date of taking over</div>
                 {{ $loading_address ?? '' }}<br>
                 {{ $loading_place ?? '' }}<br>
                 Date: {{ $date ?? '' }}
             </td>
+
+            <td>
+                <div class="field-num">3. Piegādes vieta / Place of delivery</div>
+                {{ $unloading_address ?? '' }}<br>
+                {{ $unloading_place ?? '' }}
+            </td>
         </tr>
         <tr>
             <td colspan="2">
                 <div class="field-num">5. Pievienotie dokumenti / Documents attached</div>
-                {{ $documents ?? '—' }}
+                Invoice nr. {{ $cmr_nr ?? '—' }}
             </td>
         </tr>
     </table>
 
-    {{-- === 6–12 Cargo table === --}}
-    <table style="margin-top:-1px;">
+    {{-- === 6–12 === --}}
+    <table>
         <tr class="center">
             <th width="14%">6. Zīmes un numuri<br>Marks & Numbers</th>
             <th width="8%">7. Vietu skaits<br>Number<br>of packages</th>
@@ -140,7 +157,7 @@
     <table>
         <tr>
             <td width="50%">
-                <div class="field-num">13. Nosūtītāja norādījumi / Sender's instructions (Customs and other formalities)</div>
+                <div class="field-num">13. Nosūtītāja norādījumi / Sender's instructions</div>
                 {{ $instructions ?? '—' }}
             </td>
             <td>
@@ -150,41 +167,20 @@
         </tr>
         <tr>
             <td>
-                <div class="field-num">15. Apdrošinājuma vērtība / Declared value of goods</div>
+                <div class="field-num">15. Apdrošinājuma vērtība / Declared value</div>
                 {{ $declared_value ?? '—' }}
             </td>
             <td>
-                <div class="field-num">16. Pārvadātājs / Carrier (name, address, country)</div>
+                <div class="field-num">16. Pārvadātājs / Carrier</div>
                 <b>{{ $carrier['name'] ?? '—' }}</b><br>
                 {{ $carrier['address'] ?? '' }}, {{ $carrier['city'] ?? '' }}<br>
                 {{ $carrier['country'] ?? '' }}<br>
-                Reg. Nr: {{ $carrier['reg_nr'] ?? '' }}<br>
-             
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div class="field-num">17. Citi pārvadātāji / Following carrier</div>
-                {{ $following_carrier ?? '—' }}
-            </td>
-            <td>
-                <div class="field-num">18. Pārvadātāja piezīmes / Carrier’s observations</div>
-                {{ $carrier_notes ?? '—' }}
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div class="field-num">19. Apmaksa / To be paid by</div>
-                {{ $payment_terms ?? '—' }}
-            </td>
-            <td>
-                <div class="field-num">20. Īpašie nosacījumi / Special agreements</div>
-                {{ $special_terms ?? '—' }}
+                Reg. Nr: {{ $carrier['reg_nr'] ?? '' }}
             </td>
         </tr>
     </table>
 
-    {{-- === 21–23 Signatures === --}}
+    {{-- === 21–25 === --}}
     <table>
         <tr>
             <td width="25%">
@@ -197,7 +193,7 @@
             </td>
             <td width="25%">
                 <div class="field-num">23. Transportlīdzeklis / Vehicle Reg. No</div>
-               {{ $carrier['truck'] ?? '' }} &nbsp;{{ $carrier['truck_plate'] ?? '' }}
+                {{ $carrier['truck'] ?? '' }} &nbsp;{{ $carrier['truck_plate'] ?? '' }}
             </td>
             <td>
                 <div class="field-num">24. Piekabe / Trailer</div>
@@ -206,14 +202,14 @@
         </tr>
     </table>
 
-    {{-- === New 25. Goods received === --}}
-    <table style="margin-top:10px;">
+    {{-- === 25. Подпись получателя === --}}
+    <table style="margin-top: 8px;">
         <tr>
             <td>
                 <div class="field-num">25. Krava saņemta / Goods received</div>
-                Date: ___________ &nbsp;&nbsp; Time: ___________<br><br>
+                Date: ________________ &nbsp;&nbsp; Time: ________________<br><br>
                 Signature and stamp of consignee:
-                <div style="height:40px; border:1px solid #000; margin-top:4px;"></div>
+                <div style="height:45px; border:1px solid #000; margin-top:4px;"></div>
             </td>
         </tr>
     </table>

@@ -15,6 +15,7 @@ class CreateTrip extends Component
 
     // Клиенты
     public $clients = [];
+     public $customers = [];
 
     // Рейс
     public $status = 'planned', $successMessage;
@@ -39,8 +40,10 @@ class CreateTrip extends Component
         $this->cargos[] = [
             'shipper_id'           => null,
             'consignee_id'         => null,
+            'customer_id'         => null,
             'shipperData'          => [],
             'consigneeData'        => [],
+            'customerData'        => [],
             'cargo_description'    => '',
             'cargo_packages'       => 1,
             'cargo_weight'         => 0,
@@ -153,8 +156,9 @@ class CreateTrip extends Component
     }
 
     /** === Реакция на выбор страны === */
-    public function updated($property, $value)
+   public function updated($property, $value)
     {
+        // === Страны ===
         if (preg_match('/^cargos\.(\d+)\.(loading|unloading)_country_id$/', $property, $m)) {
             $i = (int)$m[1];
             $type = $m[2];
@@ -163,6 +167,15 @@ class CreateTrip extends Component
             $this->cargos[$i]["{$type}Cities"] = $this->formatCities($cities);
         }
 
+        // === Клиенты (Customer / Shipper / Consignee) ===
+      if (preg_match('/^cargos\.(\d+)\.(customer_id|shipper_id|consignee_id)$/', $property, $m)) {
+    $i = (int)$m[1];
+    $field = str_replace('_id', '', $m[2]); // убираем "_id", чтобы получить "customer", "shipper", "consignee"
+    $client = Client::find($value);
+    $this->cargos[$i]["{$field}Data"] = $client ? $client->toArray() : [];
+}
+
+        // === Пересчёт при изменении позиций ===
         if (str_contains($property, 'items')) {
             $this->recalculateTotals();
         }
@@ -199,6 +212,10 @@ class CreateTrip extends Component
         $this->clients = Client::orderBy('company_name')
             ->pluck('company_name', 'id')
             ->toArray();
+            $this->customers = Client::orderBy('company_name')
+            ->pluck('company_name', 'id')
+            ->toArray();
+            
     }
 
     /** === Сохранение === */
@@ -228,6 +245,7 @@ class CreateTrip extends Component
             $cargoModel = $trip->cargos()->create([
                 'shipper_id'           => $cargo['shipper_id'] ?? null,
                 'consignee_id'         => $cargo['consignee_id'] ?? null,
+                 'customer_id'         => $cargo['customer_id'] ?? null,
                 'loading_country_id'   => $cargo['loading_country_id'] ?? null,
                 'loading_city_id'      => $cargo['loading_city_id'] ?? null,
                 'loading_address'      => $cargo['loading_address'] ?? '',
@@ -293,6 +311,7 @@ class CreateTrip extends Component
             'countries'  => collect(config('countries'))->mapWithKeys(fn($c, $id) => [$id => $c['name']])->toArray(),
             'payerTypes' => collect(config('payers'))->mapWithKeys(fn($p, $id) => [$id => $p['label']])->toArray(),
             'clients'    => $this->clients ?: Client::orderBy('company_name')->pluck('company_name', 'id')->toArray(),
+            'customers'    => $this->customers ?: Client::orderBy('company_name')->pluck('company_name', 'id')->toArray(),
             'drivers'    => $this->drivers,
             'trucks'     => $this->trucks,
             'trailers'   => $this->trailers,
