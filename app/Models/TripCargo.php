@@ -48,10 +48,14 @@ class TripCargo extends Model
         // Payment
         'price',
         'total_tax_amount',
+        'tax_percent',
         'price_with_tax',
         'currency',
         'payment_terms',
         'payer_type_id',
+        'inv_nr',
+        'inv_file',
+        'inv_created_at'
 
     ];
 

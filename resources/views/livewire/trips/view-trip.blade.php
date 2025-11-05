@@ -132,7 +132,35 @@
         </div>
     @endif
 
+    {{-- === INVOICE кнопка === --}}
+    {{-- === INVOICE кнопка === --}}
+@php
+    $invoiceExists = !empty($first->inv_file) && Storage::disk('public')->exists($first->inv_file);
+@endphp
+
+@if ($invoiceExists)
+    <div class="text-center">
+        <a href="{{ asset('storage/' . $first->inv_file) }}" target="_blank"
+           class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded">
+            🧾 View Invoice
+        </a>
+        <div class="text-[11px] text-gray-500 mt-1">
+            {{ \Carbon\Carbon::parse($first->inv_created_at)->format('d.m.Y H:i') }}
+        </div>
+    </div>
+@else
+    <div class="text-center">
+        <button wire:click="generateInvoice({{ $first->id }})"
+                wire:loading.attr="disabled"
+                class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded">
+            <span wire:loading.remove wire:target="generateInvoice({{ $first->id }})">🧾 Generate Invoice</span>
+            <span wire:loading wire:target="generateInvoice({{ $first->id }})" class="animate-pulse">⏳ Generating...</span>
+        </button>
+    </div>
+@endif
+
 </div>
+
 
 
                
@@ -170,30 +198,34 @@
 </div>
 @push('scripts')
 <script>
-    Livewire.on('cmrGenerated', (data) => {
-        if (data.url) {
-            window.open(data.url, '_blank');
-        }
+Livewire.on('cmrGenerated', (data) => {
+    if (data.url) window.open(data.url, '_blank');
+    const t = document.createElement('div');
+    t.textContent = '✅ CMR successfully generated!';
+    t.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm px-4 py-2 rounded shadow';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+});
 
-        const toast = document.createElement('div');
-        toast.textContent = '✅ CMR successfully generated!';
-        toast.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm px-4 py-2 rounded shadow';
-        document.body.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    });
-</script>
-
-<script>
 Livewire.on('orderGenerated', (data) => {
-    if (data.url) {
-        window.open(data.url, '_blank');
-    }
+    if (data.url) window.open(data.url, '_blank');
+    const t = document.createElement('div');
+    t.textContent = '✅ Order successfully generated!';
+    t.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded shadow';
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+});
+
+// 🧾 INVOICE (точно как ORDER)
+Livewire.on('invoiceGenerated', (data) => {
+    if (data.url) window.open(data.url, '_blank');
 
     const toast = document.createElement('div');
-    toast.textContent = '✅ Order successfully generated!';
-    toast.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded shadow';
+    toast.textContent = '✅ Invoice successfully generated!';
+    toast.className = 'fixed bottom-4 right-4 bg-amber-600 text-white text-sm px-4 py-2 rounded shadow';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
-});
+}); // ← вот эта скобка нужна!
 </script>
+
 @endpush

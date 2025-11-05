@@ -142,6 +142,8 @@ if ('serviceWorker' in navigator) {
         }
     });
 }
+
 </script>
+@stack('scripts')
 </body>
 </html>

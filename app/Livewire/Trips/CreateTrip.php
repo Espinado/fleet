@@ -4,6 +4,7 @@ namespace App\Livewire\Trips;
 
 use Livewire\Component;
 use App\Models\{Driver, Truck, Trailer, Client, Trip};
+use App\Helpers\CalculateTax;
 
 class CreateTrip extends Component
 {
@@ -15,7 +16,7 @@ class CreateTrip extends Component
 
     // Клиенты
     public $clients = [];
-     public $customers = [];
+    public $customers = [];
 
     // Рейс
     public $status = 'planned', $successMessage;
@@ -40,10 +41,10 @@ class CreateTrip extends Component
         $this->cargos[] = [
             'shipper_id'           => null,
             'consignee_id'         => null,
-            'customer_id'         => null,
+            'customer_id'          => null,
             'shipperData'          => [],
             'consigneeData'        => [],
-            'customerData'        => [],
+            'customerData'         => [],
             'cargo_description'    => '',
             'cargo_packages'       => 1,
             'cargo_weight'         => 0,
@@ -125,38 +126,25 @@ class CreateTrip extends Component
         $this->recalculateTotals();
     }
 
-    /** === Пересчёт итогов === */
+    /** === Пересчёт итогов (через CalculateTax) === */
     private function recalculateTotals()
     {
         foreach ($this->cargos as $i => &$cargo) {
-            $items = $cargo['items'] ?? [];
+            $calc = CalculateTax::forItems($cargo['items'] ?? []);
 
-            $cargo['price'] = 0;
-            $cargo['total_tax_amount'] = 0;
-            $cargo['price_with_tax'] = 0;
+            $cargo['items']            = $calc['items'];
+            $cargo['price']            = $calc['subtotal'];
+            $cargo['total_tax_amount'] = $calc['total_tax_amount'];
+            $cargo['price_with_tax']   = $calc['price_with_tax'];
 
-            foreach ($items as $idx => $it) {
-                $price = (float)($it['price'] ?? 0);
-                $tax   = (float)($it['tax_percent'] ?? 0);
-                $taxAmount = round($price * $tax / 100, 2);
-                $priceWithTax = round($price + $taxAmount, 2);
-
-                $cargo['items'][$idx]['tax_amount']     = $taxAmount;
-                $cargo['items'][$idx]['price_with_tax'] = $priceWithTax;
-
-                $cargo['price']            += $price;
-                $cargo['total_tax_amount'] += $taxAmount;
-                $cargo['price_with_tax']   += $priceWithTax;
-            }
-
-            $cargo['cargo_weight']       = collect($items)->sum(fn($it) => (float)($it['weight'] ?? 0));
-            $cargo['cargo_netto_weight'] = collect($items)->sum(fn($it) => (float)($it['cargo_netto_weight'] ?? 0));
-            $cargo['cargo_volume']       = collect($items)->sum(fn($it) => (float)($it['volume'] ?? 0));
+            $cargo['cargo_weight']       = collect($cargo['items'])->sum(fn($it) => (float)($it['weight'] ?? 0));
+            $cargo['cargo_netto_weight'] = collect($cargo['items'])->sum(fn($it) => (float)($it['cargo_netto_weight'] ?? 0));
+            $cargo['cargo_volume']       = collect($cargo['items'])->sum(fn($it) => (float)($it['volume'] ?? 0));
         }
     }
 
     /** === Реакция на выбор страны === */
-   public function updated($property, $value)
+    public function updated($property, $value)
     {
         // === Страны ===
         if (preg_match('/^cargos\.(\d+)\.(loading|unloading)_country_id$/', $property, $m)) {
@@ -168,12 +156,12 @@ class CreateTrip extends Component
         }
 
         // === Клиенты (Customer / Shipper / Consignee) ===
-      if (preg_match('/^cargos\.(\d+)\.(customer_id|shipper_id|consignee_id)$/', $property, $m)) {
-    $i = (int)$m[1];
-    $field = str_replace('_id', '', $m[2]); // убираем "_id", чтобы получить "customer", "shipper", "consignee"
-    $client = Client::find($value);
-    $this->cargos[$i]["{$field}Data"] = $client ? $client->toArray() : [];
-}
+        if (preg_match('/^cargos\.(\d+)\.(customer_id|shipper_id|consignee_id)$/', $property, $m)) {
+            $i = (int)$m[1];
+            $field = str_replace('_id', '', $m[2]);
+            $client = Client::find($value);
+            $this->cargos[$i]["{$field}Data"] = $client ? $client->toArray() : [];
+        }
 
         // === Пересчёт при изменении позиций ===
         if (str_contains($property, 'items')) {
@@ -185,6 +173,7 @@ class CreateTrip extends Component
     {
         return collect($cities)->mapWithKeys(fn($c, $id) => [$id => $c['name']])->toArray();
     }
+
 
     /** === Обновление списка по экспедитору === */
     public function updatedExpeditorId($id)

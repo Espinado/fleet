@@ -6,6 +6,7 @@ use App\Models\TripCargo;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use App\Helpers\CalculateTax;
 
 class CmrController extends Controller
 {
@@ -29,6 +30,47 @@ class CmrController extends Controller
 
         return $orderNr;
     }
+
+    private function numberToWordsLv($amount): string
+{
+    $units = [
+        0 => 'nulle', 1 => 'viens', 2 => 'divi', 3 => 'trīs', 4 => 'četri', 5 => 'pieci',
+        6 => 'seši', 7 => 'septiņi', 8 => 'astoņi', 9 => 'deviņi'
+    ];
+
+    $tens = [
+        10 => 'desmit', 11 => 'vienpadsmit', 12 => 'divpadsmit', 13 => 'trīspadsmit', 14 => 'četrpadsmit',
+        15 => 'piecpadsmit', 16 => 'sešpadsmit', 17 => 'septiņpadsmit', 18 => 'astoņpadsmit', 19 => 'deviņpadsmit',
+        20 => 'divdesmit', 30 => 'trīsdesmit', 40 => 'četrdesmit', 50 => 'piecdesmit',
+        60 => 'sešdesmit', 70 => 'septiņdesmit', 80 => 'astoņdesmit', 90 => 'deviņdesmit'
+    ];
+
+    $n = floor($amount);
+    if ($n == 0) return 'Nulle EUR, 00 centi';
+
+    $words = [];
+    if ($n >= 1000) {
+        $words[] = $units[intval($n / 1000)] . ' tūkstoši';
+        $n %= 1000;
+    }
+
+    if ($n >= 100) {
+        $words[] = $units[intval($n / 100)] . ' simti';
+        $n %= 100;
+    }
+
+    if ($n >= 20) {
+        $words[] = $tens[intval(floor($n / 10) * 10)];
+        $n %= 10;
+    }
+
+    if ($n > 0) {
+        $words[] = $units[$n];
+    }
+
+    return ucfirst(trim(implode(' ', $words))) . ' EUR, 00 centi';
+}
+
     public function generateAndSave(TripCargo $cargo)
     {
         $trip = $cargo->trip;
@@ -260,6 +302,119 @@ public function generateTransportOrder(TripCargo $cargo)
 
     return asset("storage/{$dir}/{$fileName}");
 }
+public function generateInvoice(TripCargo $cargo)
+{
+    $trip = $cargo->trip;
+
+    // 🟢 Грузы для пары shipper → consignee → customer
+    $cargos = $trip->cargos()
+        ->where('shipper_id', $cargo->shipper_id)
+        ->where('consignee_id', $cargo->consignee_id)
+        ->where('customer_id', $cargo->customer_id)
+        ->get();
+
+    if ($cargos->isEmpty()) {
+        return back()->with('error', 'Nav atrasta neviena krava šim pārim (no cargos found).');
+    }
+
+    $shipper   = $cargos->first()->shipper;
+    $consignee = $cargos->first()->consignee;
+    $customer  = $cargos->first()->customer;
+
+    // 🧾 Единый номер (совпадает с CMR и ORDER)
+    $invoiceNr = $this->getOrCreateOrderNumber($trip, $cargos);
+
+    // 📆 Дата выставления и срок оплаты
+    $invoiceDate = now();
+    $paymentTerms = $cargos->firstWhere('payment_terms', '!=', null)?->payment_terms ?? null;
+    $dueDate = $paymentTerms ? Carbon::parse($paymentTerms) : $invoiceDate->copy()->addDays(7);
+
+    // 💶 Расчёт итогов по налогам и суммам
+    $totals = \App\Helpers\CalculateTax::forCargos($cargos);
+    $subtotal = $totals['subtotal'];
+    $vat = $totals['vat'];
+    $total = $totals['total'];
+
+    // 💰 Определяем плательщика
+    $payerType = $cargo->payer_type_id;
+    $payerLabel = config("payers.$payerType.label") ?? 'Unknown';
+    switch ($payerType) {
+        case 1: $payer = $cargo->shipper; break;
+        case 2: $payer = $cargo->consignee; break;
+        case 3: $payer = $cargo->customer; break;
+        default: $payer = null; break;
+    }
+
+    // 🧾 Формируем массив для шаблона
+    $data = [
+        'invoice_nr'   => $invoiceNr,
+        'invoice_date' => $invoiceDate->format('d.m.Y'),
+        'due_date'     => $dueDate->format('d.m.Y'),
+
+        'expeditor' => [
+            'name'    => $trip->expeditor_name ?? '—',
+            'reg_nr'  => $trip->expeditor_reg_nr ?? '—',
+            'address' => $trip->expeditor_address ?? '—',
+            'city'    => $trip->expeditor_city ?? '—',
+            'country' => $trip->expeditor_country ?? '—',
+            'phone'   => $trip->expeditor_phone ?? '',
+            'email'   => $trip->expeditor_email ?? '',
+        ],
+
+        'payer' => [
+            'label'   => $payerLabel,
+            'name'    => $payer?->company_name ?? '—',
+            'reg_nr'  => $payer?->reg_nr ?? '—',
+            'address' => $payer?->jur_address ?? $payer?->fiz_address ?? '—',
+            'city'    => getCityById((int)($payer?->jur_city_id ?? $payer?->fiz_city_id)),
+            'country' => getCountryById((int)($payer?->jur_country_id ?? $payer?->fiz_country_id)),
+        ],
+
+        'shipper'   => $shipper,
+        'consignee' => $consignee,
+        'customer'  => $customer,
+
+        'cargos'    => $cargos,
+        'subtotal'  => $subtotal,
+        'vat'       => $vat,
+        'total'     => $total,
+        'trip'      => $trip,
+    ];
+
+    // 🗂️ Папка и имя файла
+    $dir = "invoices/trip_{$trip->id}";
+    $fileName = "invoice_{$cargo->shipper_id}_{$cargo->consignee_id}.pdf";
+    Storage::disk('public')->makeDirectory($dir);
+
+    // 🧾 Генерация PDF
+    $pdf = Pdf::loadView('pdf.invoice-template', $data)
+        ->setPaper('A4')
+        ->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'DejaVu Sans',
+        ]);
+
+    // 💾 Сохраняем PDF
+    Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
+
+    // 🟢 Обновляем все грузы пары
+    foreach ($cargos as $c) {
+        $c->update([
+            'inv_nr'         => $invoiceNr,
+            'inv_file'       => "{$dir}/{$fileName}",
+            'inv_created_at' => now(),
+        ]);
+    }
+
+    \Log::info('✅ Invoice PDF generated successfully', [
+    'trip' => $trip->id,
+    'path' => "{$dir}/{$fileName}",
+]);
+    // 🔗 Возвращаем публичную ссылку
+     return asset("storage/{$dir}/{$fileName}");
+}
+
 
 
 }

@@ -58,7 +58,7 @@ class CmrForm extends Component
         ];
     }
 
-    // === Генерация PDF и открытие ===
+    // === Генерация CMR ===
     public function generatePdf(): void
     {
         $this->validate();
@@ -81,7 +81,6 @@ class CmrForm extends Component
             'items'           => $this->items,
         ];
 
-        // === Создание PDF ===
         $pdf = Pdf::loadView('pdf.cmr-template', $data)
             ->setPaper('A4', 'portrait')
             ->setOptions([
@@ -90,18 +89,58 @@ class CmrForm extends Component
                 'defaultFont' => 'DejaVu Sans',
             ]);
 
-        // === Сохраняем во временную папку ===
         $fileName = 'cmr_' . now()->format('Ymd_His') . '.pdf';
         $dir = 'cmr_temp';
         Storage::disk('public')->makeDirectory($dir);
         $path = "{$dir}/{$fileName}";
         Storage::disk('public')->put($path, $pdf->output());
 
-        // === Отправляем событие для JS ===
-        $publicUrl = asset("storage/{$path}");
-        $this->dispatchBrowserEvent('open-pdf', ['url' => $publicUrl]);
-
+        $this->dispatchBrowserEvent('open-pdf', ['url' => asset("storage/{$path}")]);
         session()->flash('success', '✅ CMR successfully generated!');
+    }
+
+    // === Генерация Invoice ===
+    public function generateInvoice(): void
+    {
+         try {
+        $this->validate();
+
+        $data = [
+            'invoice_nr'   => 'INV-' . now()->format('Ymd-His'),
+            'invoice_date' => now()->format('d.m.Y'),
+            'due_date'     => now()->addDays(7)->format('d.m.Y'),
+            'sender' => [
+                'name'     => $this->shipper_name,
+                'address'  => $this->shipper_address,
+                'country'  => $this->shipper_country,
+            ],
+            'receiver' => [
+                'name'     => $this->consignee_name,
+                'address'  => $this->consignee_address,
+                'country'  => $this->consignee_country,
+            ],
+            'items' => $this->items,
+        ];
+
+        $pdf = Pdf::loadView('pdf.invoice-template', $data)
+            ->setPaper('A4', 'portrait')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'DejaVu Sans',
+            ]);
+
+        $fileName = 'invoice_' . now()->format('Ymd_His') . '.pdf';
+        $dir = 'invoices_temp';
+        Storage::disk('public')->makeDirectory($dir);
+        $path = "{$dir}/{$fileName}";
+        Storage::disk('public')->put($path, $pdf->output());
+
+        $this->dispatchBrowserEvent('open-pdf', ['url' => asset("storage/{$path}")]);
+        session()->flash('success', '✅ Invoice successfully generated!');
+         } catch (\Throwable $e) {
+        dd('💥 Error:', $e->getMessage(), $e->getTraceAsString());
+    }
     }
 
     public function render()
