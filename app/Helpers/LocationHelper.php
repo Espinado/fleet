@@ -92,6 +92,20 @@ if (!function_exists('getCompanyById')) {
     }
 }
 
+if (!function_exists('getCountryIsoById')) {
+    function getCountryIsoById(?int $id): ?string
+    {
+        if (!$id) return null;
+
+        $country = config("countries.$id");
+        if (is_array($country)) {
+            return strtoupper($country['iso'] ?? '—');
+        }
+
+        return '—';
+    }
+}
+
 
 
 /**

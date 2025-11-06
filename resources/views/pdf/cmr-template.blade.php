@@ -1,3 +1,4 @@
+{{-- resources/views/pdf/cmr-template.blade.php --}}
 <!DOCTYPE html>
 <html lang="lv">
 <head>
@@ -11,24 +12,24 @@
 
         html, body {
             font-family: 'DejaVu Sans', sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
+            font-size: 11.5px;
+            line-height: 1.25;
             color: #000;
             margin: 0;
             padding: 0;
         }
 
-        /* ⚙️ Реальные поля для DomPDF */
+        /* ⚙️ DomPDF A4 */
         @page {
             size: A4;
-            margin-top: 20mm;
-            margin-right: 20mm;
-            margin-bottom: 20mm;
-            margin-left: 20mm;
+            margin-top: 16mm;
+            margin-right: 16mm;
+            margin-bottom: 16mm;
+            margin-left: 16mm;
         }
 
         .wrapper {
-            padding: 10mm 10mm 5mm 10mm;
+            padding: 8mm 8mm 5mm 8mm;
             position: relative;
             z-index: 2;
         }
@@ -36,13 +37,13 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             page-break-inside: avoid;
         }
 
         td, th {
             border: 0.7px solid #000;
-            padding: 5px 6px;
+            padding: 3px 5px;
             vertical-align: top;
         }
 
@@ -56,11 +57,16 @@
             text-align: center;
             font-size: 13px;
             border: 1px solid #000;
-            padding: 8px;
-            margin-bottom: 10px;
+            padding: 6px;
+            margin-bottom: 8px;
         }
 
-        .field-num { font-weight: bold; font-size: 11px; margin-bottom: 4px; }
+        .field-num {
+            font-weight: bold;
+            font-size: 10.5px;
+            margin-bottom: 2px;
+        }
+
         .center { text-align: center; }
         .right { text-align: right; }
 
@@ -129,28 +135,66 @@
         </tr>
     </table>
 
-    {{-- === 6–12 === --}}
+    {{-- === 6–13 === --}}
     <table>
         <tr class="center">
-            <th width="14%">6. Zīmes un numuri<br>Marks & Numbers</th>
-            <th width="8%">7. Vietu skaits<br>Number<br>of packages</th>
-            <th width="13%">8. Iepakojuma veids<br>Method of packing</th>
-            <th width="38%">9. Kravas apraksts<br>Nature of goods</th>
+            <th width="10%">6. Paletes<br>Pallets</th>
+            <th width="8%">7. Vietu skaits<br>Packages</th>
+            <th width="12%">8. Svars, tonnas<br>Weight, tonnes</th>
+            <th width="29%">9. Kravas apraksts<br>Nature of goods</th>
+            <th width="12%">10. Cena (ar PVN)<br>Price (with tax)</th>
             <th width="9%">11. Bruto svars, kg<br>Gross weight</th>
             <th width="8%">12. Tilpums, m³<br>Volume</th>
         </tr>
+
+        @php
+            $totalPaletes = 0;
+            $totalPackages = 0;
+            $totalTonnes = 0;
+            $totalGross = 0;
+            $totalVolume = 0;
+            $totalPriceWithTax = 0;
+        @endphp
+
         @forelse($items ?? [] as $it)
+            @php
+                $paletes = (float)($it['cargo_paletes'] ?? 0);
+                $packages = (float)($it['packages'] ?? 0);
+                $tonnes = (float)($it['cargo_tonnes'] ?? 0);
+                $gross = (float)($it['gross'] ?? ($it['weight'] ?? 0));
+                $volume = (float)($it['volume'] ?? 0);
+                $priceWithTax = (float)($it['price_with_tax'] ?? 0);
+
+                $totalPaletes += $paletes;
+                $totalPackages += $packages;
+                $totalTonnes += $tonnes;
+                $totalGross += $gross;
+                $totalVolume += $volume;
+                $totalPriceWithTax += $priceWithTax;
+            @endphp
+
             <tr>
-                <td>{{ $it['marks'] ?? '' }}</td>
-                <td class="center">{{ $it['qty'] ?? '' }}</td>
-                <td class="center">—</td>
+                <td class="center">{{ $paletes ?: '—' }}</td>
+                <td class="center">{{ $packages ?: '—' }}</td>
+                <td class="center">{{ $tonnes ?: '—' }}</td>
                 <td>{{ $it['desc'] ?? '' }}</td>
-                <td class="right">{{ $it['gross'] ?? '' }}</td>
-                <td class="right">{{ $it['volume'] ?? '' }}</td>
+                <td class="right">{{ $priceWithTax ? number_format($priceWithTax, 2, '.', ' ') . ' €' : '—' }}</td>
+                <td class="right">{{ $gross ?: '—' }}</td>
+                <td class="right">{{ $volume ?: '—' }}</td>
             </tr>
         @empty
-            <tr><td colspan="6" class="center small">No cargo items</td></tr>
+            <tr><td colspan="7" class="center small">No cargo items</td></tr>
         @endforelse
+
+        <tr style="font-weight:bold; background:#f4f4f4;">
+            <td class="center">{{ $totalPaletes, 2, '.', ' ' }}</td>
+            <td class="center">{{ $totalPackages, 2, '.', ' ' }}</td>
+            <td class="center">{{ number_format($totalTonnes, 2, '.', '') }}</td>
+            <td class="right">TOTALS:</td>
+            <td class="right">{{ number_format($totalPriceWithTax, 2, '.', ' ') }} €</td>
+            <td class="right">{{ number_format($totalGross, 2, '.', '') }}</td>
+            <td class="right">{{ number_format($totalVolume, 2, '.', '') }}</td>
+        </tr>
     </table>
 
     {{-- === 13–20 === --}}
@@ -202,14 +246,13 @@
         </tr>
     </table>
 
-    {{-- === 25. Подпись получателя === --}}
-    <table style="margin-top: 8px;">
+    <table style="margin-top: 6px;">
         <tr>
             <td>
                 <div class="field-num">25. Krava saņemta / Goods received</div>
                 Date: ________________ &nbsp;&nbsp; Time: ________________<br><br>
                 Signature and stamp of consignee:
-                <div style="height:45px; border:1px solid #000; margin-top:4px;"></div>
+                <div style="height:40px; border:1px solid #000; margin-top:4px;"></div>
             </td>
         </tr>
     </table>

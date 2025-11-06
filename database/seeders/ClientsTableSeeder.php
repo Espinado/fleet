@@ -3,60 +3,83 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use App\Models\Client;
-use Faker\Factory as Faker;
+use Illuminate\Support\Str;
 
 class ClientsTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $faker = Faker::create('en_US');
+        $clients = [
+            [
+                'company_name' => 'Alpha Logistics SIA',
+                'reg_nr'       => 'LV40003000111',
+                'jur_country_id' => 16, // Latvia
+                'jur_city_id'    => 1,
+                'jur_address'    => 'Brīvības iela 120',
+                'jur_post_code'  => 'LV-1010',
+                'email'          => 'info@alpha.lv',
+                'phone'          => '+371 20000001',
+            ],
+            [
+                'company_name' => 'Beta Cargo OÜ',
+                'reg_nr'       => 'EE10223344',
+                'jur_country_id' => 17, // Lithuania
+                'jur_city_id'    => 2,
+                'jur_address'    => 'Gedimino pr. 10',
+                'jur_post_code'  => 'LT-01103',
+                'email'          => 'info@beta.ee',
+                'phone'          => '+372 5000002',
+            ],
+            [
+                'company_name' => 'Gamma Transport UAB',
+                'reg_nr'       => 'LT10998877',
+                'jur_country_id' => 12, // Poland
+                'jur_city_id'    => 3,
+                'jur_address'    => 'Warszawska 24',
+                'jur_post_code'  => '00-123',
+                'email'          => 'info@gamma.lt',
+                'phone'          => '+370 6000003',
+            ],
+            [
+                'company_name' => 'Delta Freight Kft',
+                'reg_nr'       => 'HU12345678',
+                'jur_country_id' => 13, // Hungary
+                'jur_city_id'    => 4,
+                'jur_address'    => 'Andrássy út 45',
+                'jur_post_code'  => '1061',
+                'email'          => 'info@delta.hu',
+                'phone'          => '+36 20000004',
+            ],
+            [
+                'company_name' => 'Omega Spedition AS',
+                'reg_nr'       => 'EE20001234',
+                'jur_country_id' => 16,
+                'jur_city_id'    => 5,
+                'jur_address'    => 'Tartu mnt 100',
+                'jur_post_code'  => '10112',
+                'email'          => 'info@omega.ee',
+                'phone'          => '+372 5555555',
+            ],
+            [
+                'company_name' => 'Zeta Transport SIA',
+                'reg_nr'       => 'LV4000778899',
+                'jur_country_id' => 16,
+                'jur_city_id'    => 6,
+                'jur_address'    => 'Kārļa Ulmaņa gatve 75',
+                'jur_post_code'  => 'LV-1045',
+                'email'          => 'info@zeta.lv',
+                'phone'          => '+371 20000006',
+            ],
+        ];
 
-        // 🔧 Отключаем проверки внешних ключей (иначе truncate упадёт)
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Client::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
-        // Страны и города (id из config/countries.php и файлов cities/*.php)
-        $countryIds = [8, 16, 17, 33, 39]; // Estonia, Latvia, Lithuania, Poland, Germany
-        $cityIds    = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-        for ($i = 1; $i <= 40; $i++) {
-            $countryId = $faker->randomElement($countryIds);
-            $cityId    = $faker->randomElement($cityIds);
-
-            $companyName = match ($countryId) {
-                16 => $faker->company . ' SIA', // Latvia
-                17 => $faker->company . ' UAB', // Lithuania
-                8  => $faker->company . ' OÜ',  // Estonia
-                33 => $faker->company . ' Sp. z o.o.', // Poland
-                39 => $faker->company . ' GmbH', // Germany
-                default => $faker->company,
-            };
-
-            Client::create([
-                'company_name'   => $companyName,
-                'reg_nr'         => strtoupper($faker->bothify('LV########')),
-
-                // Юр. адрес (id страны/города)
-                'jur_country_id' => $countryId,
-                'jur_city_id'    => $cityId,
-                'jur_address'    => $faker->streetAddress,
-                'jur_post_code'  => $faker->postcode,
-
-                // Фактический адрес (id страны/города)
-                'fiz_country_id' => $countryId,
-                'fiz_city_id'    => $cityId,
-                'fiz_address'    => $faker->streetAddress,
-                'fiz_post_code'  => $faker->postcode,
-
-                'bank_name'      => $faker->randomElement(['Swedbank', 'SEB', 'Luminor', 'Revolut', 'Citadele', 'Handelsbank']),
-                'swift'          => strtoupper($faker->bothify('ABCDEFG#')),
-                'email'          => $faker->unique()->companyEmail,
-                'phone'          => '+371 ' . $faker->numberBetween(20000000, 29999999),
-                'representative' => $faker->name,
-            ]);
+        foreach ($clients as $data) {
+            Client::updateOrCreate(
+                ['company_name' => $data['company_name']],
+                $data
+            );
         }
+
+        $this->command->info('✅ Добавлено/обновлено 6 тестовых клиентов.');
     }
 }

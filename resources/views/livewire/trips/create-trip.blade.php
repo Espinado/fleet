@@ -204,13 +204,9 @@
                                 <x-input type="number" label="Netto Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_netto_weight" step="0.01" />
                                 <x-input type="number" label="Volume (m³)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.volume" step="0.01" />
                                 <x-input type="number" label="Tonnes" model="cargos.{{ $index }}.items.{{ $itemIndex }}.cargo_tonnes" step="0.01" />
-                                <x-input type="number" label="Price (€)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price" step="0.01" />
+                                <x-input type="number" label="Price (€, with tax)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price_with_tax" step="0.01" />
                                 <x-textarea label="Remarks" model="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks" rows="2" />
-                                <x-select 
-                                    label="Tax (%)" 
-                                    model="cargos.{{ $index }}.items.{{ $itemIndex }}.tax_percent" 
-                                    :options="[0 => '0%', 10 => '10%', 21 => '21%']" 
-                                />
+                                
                             </div>
                         </div>
                     @endforeach
@@ -238,6 +234,12 @@
                     <div class="mt-5 grid grid-cols-3 gap-6">
                         <x-input type="date" label="Payment Due Date" model="cargos.{{ $index }}.payment_terms" />
                         <x-select label="Payer Type" model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
+                          <x-select label= "Tax (%)"  model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
+                          <x-select 
+                                    label="Tax (%)" 
+                                    model="cargos.{{ $index }}.tax_percent" 
+                                    :options="[0 => '0%', 10 => '10%', 21 => '21%']" 
+                                />
                     </div>
                 </div>
             @endforeach

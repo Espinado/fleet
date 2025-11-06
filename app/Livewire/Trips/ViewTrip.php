@@ -39,11 +39,11 @@ public function generateOrder($cargoId)
         $this->trip = $trip instanceof Trip
             ? $trip->load([
                 'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee',
+                'cargos.shipper', 'cargos.consignee','cargos.customer'
             ])
             : Trip::with([
                 'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee',
+                'cargos.shipper', 'cargos.consignee','cargos.customer',
             ])->findOrFail($trip);
     }
 

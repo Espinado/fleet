@@ -65,6 +65,8 @@ class CreateTrip extends Component
             'price'                => 0,
             'total_tax_amount'     => 0,
             'price_with_tax'       => 0,
+            'price_with_tax'       => 0,
+           'tax_percent'          => 0, // 👈 добавили
             'currency'             => 'EUR',
             'payment_terms'        => '',
             'payer_type_id'        => '',
@@ -129,18 +131,25 @@ class CreateTrip extends Component
     /** === Пересчёт итогов (через CalculateTax) === */
     private function recalculateTotals()
     {
-        foreach ($this->cargos as $i => &$cargo) {
-            $calc = CalculateTax::forItems($cargo['items'] ?? []);
+      foreach ($this->cargos as $i => &$cargo) {
 
-            $cargo['items']            = $calc['items'];
-            $cargo['price']            = $calc['subtotal'];
-            $cargo['total_tax_amount'] = $calc['total_tax_amount'];
-            $cargo['price_with_tax']   = $calc['price_with_tax'];
+        $taxPercent = (float)($cargo['tax_percent'] ?? 0);
+        $priceWithTax = (float)($cargo['price_with_tax'] ?? 0);
 
-            $cargo['cargo_weight']       = collect($cargo['items'])->sum(fn($it) => (float)($it['weight'] ?? 0));
-            $cargo['cargo_netto_weight'] = collect($cargo['items'])->sum(fn($it) => (float)($it['cargo_netto_weight'] ?? 0));
-            $cargo['cargo_volume']       = collect($cargo['items'])->sum(fn($it) => (float)($it['volume'] ?? 0));
+        if ($taxPercent > 0) {
+            // Цена без налога
+            $price = $priceWithTax / (1 + $taxPercent / 100);
+            // Сумма налога
+            $taxAmount = $priceWithTax - $price;
+        } else {
+            $price = $priceWithTax;
+            $taxAmount = 0;
         }
+
+        $cargo['price'] = round($price, 2);
+        $cargo['total_tax_amount'] = round($taxAmount, 2);
+        $cargo['price_with_tax'] = round($priceWithTax, 2);
+    }
     }
 
     /** === Реакция на выбор страны === */
@@ -167,6 +176,9 @@ class CreateTrip extends Component
         if (str_contains($property, 'items')) {
             $this->recalculateTotals();
         }
+        if (preg_match('/^cargos\.(\d+)\.(price_with_tax|tax_percent)$/', $property)) {
+    $this->recalculateTotals();
+}
     }
 
     private function formatCities(array $cities): array
@@ -230,56 +242,85 @@ class CreateTrip extends Component
             'status'              => $this->status,
         ]);
 
-        foreach ($this->cargos as $cargo) {
-            $cargoModel = $trip->cargos()->create([
-                'shipper_id'           => $cargo['shipper_id'] ?? null,
-                'consignee_id'         => $cargo['consignee_id'] ?? null,
-                 'customer_id'         => $cargo['customer_id'] ?? null,
-                'loading_country_id'   => $cargo['loading_country_id'] ?? null,
-                'loading_city_id'      => $cargo['loading_city_id'] ?? null,
-                'loading_address'      => $cargo['loading_address'] ?? '',
-                'loading_date'         => $cargo['loading_date'] ?? null,
-                'unloading_country_id' => $cargo['unloading_country_id'] ?? null,
-                'unloading_city_id'    => $cargo['unloading_city_id'] ?? null,
-                'unloading_address'    => $cargo['unloading_address'] ?? '',
-                'unloading_date'       => $cargo['unloading_date'] ?? null,
-                'cargo_description'    => $this->buildCargoDescription($cargo['items']),
-                'cargo_packages'       => collect($cargo['items'])->sum('packages'),
-                'cargo_paletes'        => collect($cargo['items'])->sum('cargo_paletes'),
-                'cargo_tonnes'         => collect($cargo['items'])->sum('cargo_tonnes'),
-                'cargo_weight'         => collect($cargo['items'])->sum('weight'),
-                'cargo_netto_weight'   => collect($cargo['items'])->sum('cargo_netto_weight'),
-                'cargo_volume'         => collect($cargo['items'])->sum('volume'),
-                'price'                => $cargo['price'] ?? 0,
-                'total_tax_amount'     => $cargo['total_tax_amount'] ?? 0,
-                'price_with_tax'       => $cargo['price_with_tax'] ?? 0,
-                'currency'             => $cargo['currency'] ?? 'EUR',
-                'cargo_instructions'   => $cargo['cargo_instructions'] ?? '',
-                'cargo_remarks'        => $cargo['cargo_remarks'] ?? '',
-                'payment_terms'        => $cargo['payment_terms'] ?? null,
-                'payer_type_id'        => $cargo['payer_type_id'] ?? null,
-            ]);
+       foreach ($this->cargos as $cargo) {
 
-            // Сохраняем все товары (позиции)
-            foreach ($cargo['items'] as $item) {
-                $cargoModel->items()->create([
-                    'description'        => $item['description'] ?? '',
-                    'packages'           => $item['packages'] ?? 0,
-                    'cargo_paletes'      => $item['cargo_paletes'] ?? 0,
-                    'cargo_tonnes'       => $item['cargo_tonnes'] ?? 0,
-                    'weight'             => $item['weight'] ?? 0,
-                    'cargo_netto_weight' => $item['cargo_netto_weight'] ?? 0,
-                    'volume'             => $item['volume'] ?? 0,
-                    'price'              => $item['price'] ?? 0,
-                    'tax_percent'        => $item['tax_percent'] ?? 0,
-                    'tax_amount'         => $item['tax_amount'] ?? 0,
-                    'price_with_tax'     => $item['price_with_tax'] ?? 0,
-                    'instructions'       => $item['instructions'] ?? '',
-                    'remarks'            => $item['remarks'] ?? '',
-                ]);
-            }
-        }
+    $taxPercent = floatval($cargo['tax_percent'] ?? 0);
 
+    // 🟢 Сумма всех позиций с налогом
+    $totalPriceWithTax = collect($cargo['items'])->sum('price_with_tax');
+
+    // 🟢 Вычисляем сумму без налога и сам налог
+    $priceWithoutTax = $taxPercent > 0
+        ? round($totalPriceWithTax / (1 + $taxPercent / 100), 2)
+        : $totalPriceWithTax;
+
+    $totalTaxAmount = round($totalPriceWithTax - $priceWithoutTax, 2);
+
+    // 🟢 Создаём сам груз (TripCargo)
+    $cargoModel = $trip->cargos()->create([
+        'shipper_id'           => $cargo['shipper_id'] ?? null,
+        'consignee_id'         => $cargo['consignee_id'] ?? null,
+        'customer_id'          => $cargo['customer_id'] ?? null,
+        'loading_country_id'   => $cargo['loading_country_id'] ?? null,
+        'loading_city_id'      => $cargo['loading_city_id'] ?? null,
+        'loading_address'      => $cargo['loading_address'] ?? '',
+        'loading_date'         => $cargo['loading_date'] ?? null,
+        'unloading_country_id' => $cargo['unloading_country_id'] ?? null,
+        'unloading_city_id'    => $cargo['unloading_city_id'] ?? null,
+        'unloading_address'    => $cargo['unloading_address'] ?? '',
+        'unloading_date'       => $cargo['unloading_date'] ?? null,
+        'cargo_description'    => $this->buildCargoDescription($cargo['items']),
+        'cargo_packages'       => collect($cargo['items'])->sum('packages'),
+        'cargo_paletes'        => collect($cargo['items'])->sum('cargo_paletes'),
+        'cargo_tonnes'         => collect($cargo['items'])->sum('cargo_tonnes'),
+        'cargo_weight'         => collect($cargo['items'])->sum('weight'),
+        'cargo_netto_weight'   => collect($cargo['items'])->sum('cargo_netto_weight'),
+        'cargo_volume'         => collect($cargo['items'])->sum('volume'),
+
+        // 💰 Финансы на уровне клиента
+        'tax_percent'          => $taxPercent,
+        'price'                => $priceWithoutTax,
+        'total_tax_amount'     => $totalTaxAmount,
+        'price_with_tax'       => $totalPriceWithTax,
+        'currency'             => $cargo['currency'] ?? 'EUR',
+
+        'cargo_instructions'   => $cargo['cargo_instructions'] ?? '',
+        'cargo_remarks'        => $cargo['cargo_remarks'] ?? '',
+        'payment_terms'        => $cargo['payment_terms'] ?? null,
+        'payer_type_id'        => $cargo['payer_type_id'] ?? null,
+    ]);
+
+    // 🧾 Сохраняем товары (без цен)
+  foreach ($cargo['items'] as $item) {
+    $priceWithTax = (float)($item['price_with_tax'] ?? 0);
+
+    if ($taxPercent > 0) {
+        $priceWithoutTax = round($priceWithTax / (1 + $taxPercent / 100), 2);
+        $taxAmount = round($priceWithTax - $priceWithoutTax, 2);
+    } else {
+        $priceWithoutTax = $priceWithTax;
+        $taxAmount = 0;
+    }
+
+    $cargoModel->items()->create([
+        'description'        => $item['description'] ?? '',
+        'packages'           => $item['packages'] ?? 0,
+        'cargo_paletes'      => $item['cargo_paletes'] ?? 0,
+        'cargo_tonnes'       => $item['cargo_tonnes'] ?? 0,
+        'weight'             => $item['weight'] ?? 0,
+        'cargo_netto_weight' => $item['cargo_netto_weight'] ?? 0,
+        'volume'             => $item['volume'] ?? 0,
+        'instructions'       => $item['instructions'] ?? '',
+        'remarks'            => $item['remarks'] ?? '',
+
+        // 💶 Добавим цену по позиции
+        'price'  => $priceWithoutTax,
+        'tax_amount'         => $taxAmount,
+        'price_with_tax'     => $priceWithTax,
+         'tax_percent'          => $taxPercent,
+    ]);
+}
+}
         $this->resetExcept('successMessage');
         $this->successMessage = '✅ Trip successfully created with per-item storage (no JSON)!';
 

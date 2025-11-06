@@ -50,6 +50,7 @@ class TripCargo extends Model
         'total_tax_amount',
         'tax_percent',
         'price_with_tax',
+        'tax_percent'  ,
         'currency',
         'payment_terms',
         'payer_type_id',
