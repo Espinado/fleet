@@ -1,5 +1,6 @@
 {{-- resources/views/livewire/trips/view-trip.blade.php --}}
-<div class="max-w-6xl mx-auto p-6 space-y-8" wire:ignore.self>
+<div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-10" wire:ignore.self>
+
     {{-- ✅ Notifications --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
@@ -12,14 +13,15 @@
         </div>
     @endif
 
-    <div class="bg-white shadow rounded-lg p-6 space-y-8">
-        <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+    {{-- 🧭 Основной блок рейса --}}
+    <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-6 space-y-8 transition-colors">
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             🚛 CMR Trip #{{ $trip->id }}
         </h2>
 
         {{-- 1️⃣ Expeditor --}}
         <section>
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">1️⃣ Expeditor Company</h3>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">1️⃣ Expeditor Company</h3>
             <div class="text-sm leading-relaxed">
                 <p><b>Name:</b> {{ $trip->expeditor_name ?? '—' }}</p>
                 <p><b>Address:</b> {{ $trip->expeditor_address ?? '—' }}</p>
@@ -31,17 +33,17 @@
 
         {{-- 2️⃣ Transport --}}
         <section>
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">2️⃣ Transport Details</h3>
-            <div class="grid grid-cols-3 gap-4 text-sm">
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">2️⃣ Transport Details</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                 <p><b>Driver:</b> {{ $trip->driver?->first_name }} {{ $trip->driver?->last_name }}</p>
                 <p><b>Truck:</b> {{ $trip->truck?->plate }} — {{ $trip->truck?->brand }} {{ $trip->truck?->model }}</p>
-                <p><b>Trailer:</b> {{ $trip->trailer?->brand ?? '—' }}&nbsp;{{ $trip->trailer?->plate ?? '—' }}</p>
+                <p><b>Trailer:</b> {{ $trip->trailer?->brand ?? '—' }} {{ $trip->trailer?->plate ?? '—' }}</p>
             </div>
         </section>
 
-        {{-- 3️⃣ Cargo Details --}}
+        {{-- 3️⃣ Cargo --}}
         <section>
-            <h3 class="text-lg font-semibold text-gray-700 mb-2">3️⃣ Cargo Details</h3>
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">3️⃣ Cargo Details</h3>
 
             @php
                 $grouped = $trip->cargos->groupBy(fn($c) => $c->shipper_id . '-' . $c->consignee_id);
@@ -49,10 +51,10 @@
 
             @forelse($grouped as $pair => $group)
                 @php
-                    $first      = $group->first();
-                    $customer   = $first->customer?->company_name ?? '—';
-                    $shipper    = $first->shipper?->company_name ?? '—';
-                    $consignee  = $first->consignee?->company_name ?? '—';
+                    $first = $group->first();
+                    $customer  = $first->customer?->company_name ?? '—';
+                    $shipper   = $first->shipper?->company_name ?? '—';
+                    $consignee = $first->consignee?->company_name ?? '—';
                     $payer = match ($first->payer_type_id) {
                         1 => $customer,
                         2 => $shipper,
@@ -60,7 +62,7 @@
                         default => '—',
                     };
 
-                    // 💡 Универсальная функция суммирования (item + cargo fallback)
+                    // 💡 Универсальная функция подсчёта
                     $sumItemOrCargo = function($group, $itemField, $cargoField) {
                         return $group->reduce(function($carry, $cargo) use ($itemField, $cargoField) {
                             $items = $cargo->items ?? collect();
@@ -72,7 +74,6 @@
                         }, 0.0);
                     };
 
-                    // ✅ корректные итоги
                     $totalBrutto   = $sumItemOrCargo($group, 'weight',             'cargo_weight');
                     $totalNetto    = $sumItemOrCargo($group, 'cargo_netto_weight', 'cargo_netto_weight');
                     $totalPrice    = $sumItemOrCargo($group, 'price',              'price');
@@ -80,23 +81,24 @@
                     $currency      = $group->first()->currency ?? 'EUR';
                 @endphp
 
-                <div class="border border-gray-200 rounded-lg p-5 mb-6 bg-gray-50 shadow-sm">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 mb-6 bg-gray-50 dark:bg-gray-800 shadow-sm">
+
                     {{-- 🔹 Parties --}}
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm mb-3">
-                        <div class="bg-white border border-blue-100 rounded p-2">
-                            <p class="font-semibold text-blue-700">🧾 Customer</p>
+                        <div class="bg-white dark:bg-gray-900 border border-blue-100 rounded p-2">
+                            <p class="font-semibold text-blue-700 dark:text-blue-400">🧾 Customer</p>
                             <p>{{ $customer }}</p>
                         </div>
-                        <div class="bg-white border border-orange-100 rounded p-2">
-                            <p class="font-semibold text-orange-700">📦 Shipper</p>
+                        <div class="bg-white dark:bg-gray-900 border border-orange-100 rounded p-2">
+                            <p class="font-semibold text-orange-700 dark:text-orange-400">📦 Shipper</p>
                             <p>{{ $shipper }}</p>
                         </div>
-                        <div class="bg-white border border-green-100 rounded p-2">
-                            <p class="font-semibold text-green-700">🏠 Consignee</p>
+                        <div class="bg-white dark:bg-gray-900 border border-green-100 rounded p-2">
+                            <p class="font-semibold text-green-700 dark:text-green-400">🏠 Consignee</p>
                             <p>{{ $consignee }}</p>
                         </div>
-                        <div class="bg-white border border-purple-100 rounded p-2">
-                            <p class="font-semibold text-purple-700">💰 Payer</p>
+                        <div class="bg-white dark:bg-gray-900 border border-purple-100 rounded p-2">
+                            <p class="font-semibold text-purple-700 dark:text-purple-400">💰 Payer</p>
                             <p>{{ $payer }}</p>
                         </div>
                     </div>
@@ -149,8 +151,8 @@
 
                     {{-- 📦 Cargo Table --}}
                     <div class="mt-5 overflow-x-auto">
-                        <table class="w-full text-sm border border-gray-200">
-                            <thead class="bg-gray-100">
+                        <table class="w-full text-sm border border-gray-200 dark:border-gray-700">
+                            <thead class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100">
                                 <tr>
                                     <th class="p-2 border">#</th>
                                     <th class="p-2 border text-left">Description</th>
@@ -163,9 +165,8 @@
                             <tbody>
                                 @foreach($group as $i => $cargo)
                                     @php $items = $cargo->items ?? collect(); @endphp
-
                                     @forelse($items as $item)
-                                        <tr class="bg-white">
+                                        <tr class="bg-white dark:bg-gray-900">
                                             <td class="p-2 border">{{ $i + 1 }}</td>
                                             <td class="p-2 border">
                                                 {{ $item->description ?? '—' }}
@@ -179,14 +180,13 @@
                                             <td class="p-2 border text-right">{{ number_format($item->price_with_tax ?? $cargo->price_with_tax ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</td>
                                         </tr>
                                     @empty
-                                        <tr class="bg-white italic text-gray-500">
-                                            <td class="p-2 border">{{ $item->id }}</td>
-                                            <td class="p-2 border" colspan="5">No items for this cargo</td>
+                                        <tr class="bg-white dark:bg-gray-900 italic text-gray-500">
+                                            <td class="p-2 border text-center" colspan="6">No items for this cargo</td>
                                         </tr>
                                     @endforelse
                                 @endforeach
                             </tbody>
-                            <tfoot class="bg-gray-50 font-semibold">
+                            <tfoot class="bg-gray-50 dark:bg-gray-800 font-semibold">
                                 <tr>
                                     <td colspan="2" class="p-2 border text-right">Total:</td>
                                     <td class="p-2 border text-right">{{ number_format($totalBrutto, 2, '.', ' ') }}</td>
@@ -202,14 +202,20 @@
                 <p class="text-gray-500 italic">No cargos found.</p>
             @endforelse
         </section>
+    </div>
 
-        {{-- 🔙 Back --}}
-        <div class="pt-6">
-            <a href="{{ route('trips.index') }}"
-               class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800">
-                ⬅ Back to Trips
-            </a>
-        </div>
+    {{-- 📁 Документы рейса --}}
+    <livewire:trips.trip-documents-section :trip="$trip" />
+
+    {{-- 💶 Расходы рейса --}}
+    <livewire:trips.trip-expenses-section :trip="$trip" />
+
+    {{-- 🔙 Назад --}}
+    <div class="pt-6">
+        <a href="{{ route('trips.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 dark:bg-gray-800 dark:text-gray-100">
+            ⬅ Back to Trips
+        </a>
     </div>
 </div>
 

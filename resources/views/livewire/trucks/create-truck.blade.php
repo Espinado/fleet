@@ -132,7 +132,7 @@
         {{-- Photo --}}
         <div>
             <label class="block text-gray-700 font-medium mb-1">Tech Passport Photo</label>
-            <input type="file" wire:model="tech_passport_photo" accept="image/*"
+            <input type="file" wire:model="tech_passport_photo" accept="image/*,application/pdf" capture="environment"
                    class="w-full border rounded-lg px-3 py-2 @error('tech_passport_photo') border-red-500 @enderror">
             @error('tech_passport_photo') <p class="text-red-500 text-sm mt-1" data-error>{{ $message }}</p> @enderror
 

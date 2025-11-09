@@ -261,7 +261,7 @@
                 ] as [$field,$label])
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ $label }}</label>
-                        <input type="file" wire:model="{{ $field }}" accept="image/*" capture="environment"
+                        <input type="file" wire:model="{{ $field }}" accept="image/*,application/pdf" 
                                class="w-full border rounded-lg p-2 text-sm">
                         @if ($$field)
                             <img src="{{ $$field->temporaryUrl() }}"

@@ -22,7 +22,7 @@ class CmrController extends Controller
 
     // 🟢 Если нет — создаём новый номер:
     // Формат: [НОМЕР_МАШИНЫ_БЕЗ_ПРОБЕЛОВ]/[ДЕНЬ]
-    $orderNr = str_replace(' ', '', $trip->truck->plate ?? 'NO_PLATE') . '/' . now()->format('d');
+    $orderNr = str_replace(' ', '', $trip->truck->plate ?? 'NO_PLATE') . '/' . $trip->id;
 
     // 🟢 Сохраняем номер во все грузы этой пары
     foreach ($cargos as $c) {
