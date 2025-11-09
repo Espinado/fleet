@@ -1,5 +1,6 @@
+{{-- resources/views/livewire/trips/view-trip.blade.php --}}
 <div class="max-w-6xl mx-auto p-6 space-y-8" wire:ignore.self>
-    {{-- ✅ Уведомления --}}
+    {{-- ✅ Notifications --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {{ session('success') }}
@@ -34,7 +35,7 @@
             <div class="grid grid-cols-3 gap-4 text-sm">
                 <p><b>Driver:</b> {{ $trip->driver?->first_name }} {{ $trip->driver?->last_name }}</p>
                 <p><b>Truck:</b> {{ $trip->truck?->plate }} — {{ $trip->truck?->brand }} {{ $trip->truck?->model }}</p>
-                <p><b>Trailer:</b> {{ $trip->trailer?->brand ?? '—' }}&nbsp{{ $trip->trailer?->plate ?? '—' }}</p>
+                <p><b>Trailer:</b> {{ $trip->trailer?->brand ?? '—' }}&nbsp;{{ $trip->trailer?->plate ?? '—' }}</p>
             </div>
         </section>
 
@@ -52,137 +53,149 @@
                     $customer   = $first->customer?->company_name ?? '—';
                     $shipper    = $first->shipper?->company_name ?? '—';
                     $consignee  = $first->consignee?->company_name ?? '—';
-                    $exists     = !empty($first->cmr_file) && Storage::exists('public/' . $first->cmr_file);
-                    $url        = $exists ? asset('storage/' . $first->cmr_file) : null;
-
-                    $fromCountry = getCountryById((int) $first->loading_country_id);
-                    $fromCity    = getCityById((int) $first->loading_city_id, (int) $first->loading_country_id);
-                    $toCountry   = getCountryById((int) $first->unloading_country_id);
-                    $toCity      = getCityById((int) $first->unloading_city_id, (int) $first->unloading_country_id);
-
                     $payer = match ($first->payer_type_id) {
                         1 => $customer,
                         2 => $shipper,
                         3 => $consignee,
                         default => '—',
                     };
+
+                    // 💡 Универсальная функция суммирования (item + cargo fallback)
+                    $sumItemOrCargo = function($group, $itemField, $cargoField) {
+                        return $group->reduce(function($carry, $cargo) use ($itemField, $cargoField) {
+                            $items = $cargo->items ?? collect();
+                            if ($items->isNotEmpty()) {
+                                $itemSum = $items->sum(fn($it) => (float) ($it->{$itemField} ?? 0));
+                                if ($itemSum > 0) return $carry + $itemSum;
+                            }
+                            return $carry + (float) ($cargo->{$cargoField} ?? 0);
+                        }, 0.0);
+                    };
+
+                    // ✅ корректные итоги
+                    $totalBrutto   = $sumItemOrCargo($group, 'weight',             'cargo_weight');
+                    $totalNetto    = $sumItemOrCargo($group, 'cargo_netto_weight', 'cargo_netto_weight');
+                    $totalPrice    = $sumItemOrCargo($group, 'price',              'price');
+                    $totalWithTax  = $sumItemOrCargo($group, 'price_with_tax',     'price_with_tax');
+                    $currency      = $group->first()->currency ?? 'EUR';
                 @endphp
 
                 <div class="border border-gray-200 rounded-lg p-5 mb-6 bg-gray-50 shadow-sm">
-                    {{-- 🔹 Участники перевозки --}}
+                    {{-- 🔹 Parties --}}
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm mb-3">
                         <div class="bg-white border border-blue-100 rounded p-2">
                             <p class="font-semibold text-blue-700">🧾 Customer</p>
                             <p>{{ $customer }}</p>
                         </div>
-
                         <div class="bg-white border border-orange-100 rounded p-2">
                             <p class="font-semibold text-orange-700">📦 Shipper</p>
                             <p>{{ $shipper }}</p>
                         </div>
-
                         <div class="bg-white border border-green-100 rounded p-2">
                             <p class="font-semibold text-green-700">🏠 Consignee</p>
                             <p>{{ $consignee }}</p>
                         </div>
-
                         <div class="bg-white border border-purple-100 rounded p-2">
                             <p class="font-semibold text-purple-700">💰 Payer</p>
                             <p>{{ $payer }}</p>
                         </div>
                     </div>
 
-                    {{-- 🔹 Кнопки CMR / Order / Invoice --}}
-                    <div class="flex justify-between items-start gap-4 flex-wrap">
-                        <div class="flex flex-wrap justify-end gap-3 mt-2">
-                            {{-- === CMR === --}}
-                            @if ($first->cmr_file)
-                                <div class="text-center">
-                                    <a href="{{ asset('storage/' . $first->cmr_file) }}" target="_blank"
-                                       class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded">
-                                        👁 View CMR
-                                    </a>
-                                    <div class="text-[11px] text-gray-500 mt-1">
-                                        {{ \Carbon\Carbon::parse($first->cmr_created_at)->format('d.m.Y H:i') }}
-                                    </div>
-                                </div>
-                            @else
-                                <div class="text-center">
-                                    <button wire:click="generateCmr({{ $first->id }})"
-                                            wire:loading.attr="disabled"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded">
-                                        <span wire:loading.remove wire:target="generateCmr({{ $first->id }})">📄 Generate CMR</span>
-                                        <span wire:loading wire:target="generateCmr({{ $first->id }})" class="animate-pulse">⏳ Generating...</span>
-                                    </button>
-                                </div>
-                            @endif
+                    {{-- 🔹 Action buttons --}}
+                    <div class="flex flex-wrap justify-end gap-3 mt-3">
+                        {{-- === CMR === --}}
+                        @if ($first->cmr_file)
+                            <a href="{{ asset('storage/' . $first->cmr_file) }}" target="_blank"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded">
+                                👁 View CMR
+                            </a>
+                        @else
+                            <button wire:click="generateCmr({{ $first->id }})"
+                                    wire:loading.attr="disabled"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded">
+                                <span wire:loading.remove wire:target="generateCmr({{ $first->id }})">📄 Generate CMR</span>
+                                <span wire:loading wire:target="generateCmr({{ $first->id }})" class="animate-pulse">⏳...</span>
+                            </button>
+                        @endif
 
-                            {{-- === ORDER === --}}
-                            @php
-                                $orderExists = !empty($first->order_file) && Storage::disk('public')->exists($first->order_file);
-                            @endphp
-                            @if ($orderExists)
-                                <div class="text-center">
-                                    <a href="{{ asset('storage/' . $first->order_file) }}" target="_blank"
-                                       class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-700 text-white rounded">
-                                        📑 View Order
-                                    </a>
-                                    <div class="text-[11px] text-gray-500 mt-1">
-                                        {{ \Carbon\Carbon::parse($first->order_created_at)->format('d.m.Y H:i') }}
-                                    </div>
-                                </div>
-                            @else
-                                <div class="text-center">
-                                    <button wire:click="generateOrder({{ $first->id }})"
-                                            wire:loading.attr="disabled"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded">
-                                        <span wire:loading.remove wire:target="generateOrder({{ $first->id }})">📝 Generate Order</span>
-                                        <span wire:loading wire:target="generateOrder({{ $first->id }})" class="animate-pulse">⏳ Generating...</span>
-                                    </button>
-                                </div>
-                            @endif
+                        {{-- === ORDER === --}}
+                        @if (!empty($first->order_file) && Storage::disk('public')->exists($first->order_file))
+                            <a href="{{ asset('storage/' . $first->order_file) }}" target="_blank"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded">
+                                📑 View Order
+                            </a>
+                        @else
+                            <button wire:click="generateOrder({{ $first->id }})"
+                                    wire:loading.attr="disabled"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white rounded">
+                                📝 Generate Order
+                            </button>
+                        @endif
 
-                            {{-- === INVOICE === --}}
-                            @php
-                                $invoiceExists = !empty($first->inv_file) && Storage::disk('public')->exists($first->inv_file);
-                            @endphp
-                            @if ($invoiceExists)
-                                <div class="text-center">
-                                    <a href="{{ asset('storage/' . $first->inv_file) }}" target="_blank"
-                                       class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded">
-                                        🧾 View Invoice
-                                    </a>
-                                    <div class="text-[11px] text-gray-500 mt-1">
-                                        {{ \Carbon\Carbon::parse($first->inv_created_at)->format('d.m.Y H:i') }}
-                                    </div>
-                                </div>
-                            @else
-                                <div class="text-center">
-                                    <button wire:click="generateInvoice({{ $first->id }})"
-                                            wire:loading.attr="disabled"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded">
-                                        <span wire:loading.remove wire:target="generateInvoice({{ $first->id }})">🧾 Generate Invoice</span>
-                                        <span wire:loading wire:target="generateInvoice({{ $first->id }})" class="animate-pulse">⏳ Generating...</span>
-                                    </button>
-                                </div>
-                            @endif
-                        </div>
+                        {{-- === INVOICE === --}}
+                        @if (!empty($first->inv_file) && Storage::disk('public')->exists($first->inv_file))
+                            <a href="{{ asset('storage/' . $first->inv_file) }}" target="_blank"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded">
+                                🧾 View Invoice
+                            </a>
+                        @else
+                            <button wire:click="generateInvoice({{ $first->id }})"
+                                    wire:loading.attr="disabled"
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded">
+                                🧾 Generate Invoice
+                            </button>
+                        @endif
                     </div>
 
-                    {{-- 📦 Список грузов --}}
-                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        @foreach($group as $cargo)
-                            <div class="border rounded p-3 bg-white">
-                                <p class="font-semibold text-gray-700 mb-1">📦 {{ $cargo->cargo_description ?? '—' }}</p>
-                                <p><b>Weight:</b> {{ number_format($cargo->cargo_weight ?? 0, 2, '.', ' ') }} kg</p>
-                                <p><b>Price:</b> {{ number_format($cargo->price ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</p>
-                            </div>
-                            <div class="border rounded p-3 bg-white">
-                                <p class="font-semibold text-gray-700 mb-1">📦 {{ $cargo->cargo_description ?? '—' }}</p>
-                                <p><b>Netto Weight:</b> {{ number_format($cargo->cargo_netto_weight ?? 0, 2, '.', ' ') }} kg</p>
-                                <p><b>Price with tax:</b> {{ number_format($cargo->price_with_tax ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</p>
-                            </div>
-                        @endforeach
+                    {{-- 📦 Cargo Table --}}
+                    <div class="mt-5 overflow-x-auto">
+                        <table class="w-full text-sm border border-gray-200">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="p-2 border">#</th>
+                                    <th class="p-2 border text-left">Description</th>
+                                    <th class="p-2 border text-right">Brutto (kg)</th>
+                                    <th class="p-2 border text-right">Netto (kg)</th>
+                                    <th class="p-2 border text-right">Price</th>
+                                    <th class="p-2 border text-right">Price w/Tax</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($group as $i => $cargo)
+                                    @php $items = $cargo->items ?? collect(); @endphp
+
+                                    @forelse($items as $item)
+                                        <tr class="bg-white">
+                                            <td class="p-2 border">{{ $i + 1 }}</td>
+                                            <td class="p-2 border">
+                                                {{ $item->description ?? '—' }}
+                                                @if($item->packages)
+                                                    <span class="text-gray-500">({{ $item->packages }})</span>
+                                                @endif
+                                            </td>
+                                            <td class="p-2 border text-right">{{ number_format($item->weight ?? $cargo->cargo_weight ?? 0, 2, '.', ' ') }}</td>
+                                            <td class="p-2 border text-right">{{ number_format($item->cargo_netto_weight ?? $cargo->cargo_netto_weight ?? 0, 2, '.', ' ') }}</td>
+                                            <td class="p-2 border text-right">{{ number_format($item->price ?? $cargo->price ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</td>
+                                            <td class="p-2 border text-right">{{ number_format($item->price_with_tax ?? $cargo->price_with_tax ?? 0, 2, '.', ' ') }} {{ $cargo->currency ?? 'EUR' }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr class="bg-white italic text-gray-500">
+                                            <td class="p-2 border">{{ $item->id }}</td>
+                                            <td class="p-2 border" colspan="5">No items for this cargo</td>
+                                        </tr>
+                                    @endforelse
+                                @endforeach
+                            </tbody>
+                            <tfoot class="bg-gray-50 font-semibold">
+                                <tr>
+                                    <td colspan="2" class="p-2 border text-right">Total:</td>
+                                    <td class="p-2 border text-right">{{ number_format($totalBrutto, 2, '.', ' ') }}</td>
+                                    <td class="p-2 border text-right">{{ number_format($totalNetto, 2, '.', ' ') }}</td>
+                                    <td class="p-2 border text-right">{{ number_format($totalPrice, 2, '.', ' ') }} {{ $currency }}</td>
+                                    <td class="p-2 border text-right">{{ number_format($totalWithTax, 2, '.', ' ') }} {{ $currency }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </div>
             @empty
@@ -190,7 +203,7 @@
             @endforelse
         </section>
 
-        {{-- Back --}}
+        {{-- 🔙 Back --}}
         <div class="pt-6">
             <a href="{{ route('trips.index') }}"
                class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800">
@@ -200,34 +213,28 @@
     </div>
 </div>
 
+{{-- ✅ Toast notifications --}}
 @push('scripts')
 <script>
-Livewire.on('cmrGenerated', (data) => {
-    if (data.url) window.open(data.url, '_blank');
+const toast = (text, color='bg-gray-800') => {
     const t = document.createElement('div');
-    t.textContent = '✅ CMR successfully generated!';
-    t.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-sm px-4 py-2 rounded shadow';
+    t.textContent = text;
+    t.className = `${color} fixed bottom-20 right-4 text-white text-sm px-4 py-2 rounded shadow z-50 transition`;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
-});
+};
 
-Livewire.on('orderGenerated', (data) => {
+Livewire.on('cmrGenerated', data => {
     if (data.url) window.open(data.url, '_blank');
-    const t = document.createElement('div');
-    t.textContent = '✅ Order successfully generated!';
-    t.className = 'fixed bottom-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded shadow';
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
+    toast('✅ CMR successfully generated!', 'bg-green-600');
 });
-
-// 🧾 Invoice
-Livewire.on('invoiceGenerated', (data) => {
+Livewire.on('orderGenerated', data => {
     if (data.url) window.open(data.url, '_blank');
-    const toast = document.createElement('div');
-    toast.textContent = '✅ Invoice successfully generated!';
-    toast.className = 'fixed bottom-4 right-4 bg-amber-600 text-white text-sm px-4 py-2 rounded shadow';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
+    toast('✅ Order successfully generated!', 'bg-indigo-600');
+});
+Livewire.on('invoiceGenerated', data => {
+    if (data.url) window.open(data.url, '_blank');
+    toast('✅ Invoice successfully generated!', 'bg-amber-600');
 });
 </script>
 @endpush

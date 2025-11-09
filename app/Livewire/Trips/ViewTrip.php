@@ -11,40 +11,61 @@ class ViewTrip extends Component
 {
     public Trip $trip;
 
-   public function generateCmr(int $cargoId): void
-    {
-        $cargo = TripCargo::findOrFail($cargoId);
-
-        // Генерация и получение публичного URL
-        $url = app(CmrController::class)->generateAndSave($cargo);
-
-        // Обновляем данные у рейса, чтобы сразу увидеть "View CMR"
-        $this->trip->refresh();
-
-        // 🟢 Отправляем JS-событие с URL PDF
-        $this->dispatch('cmrGenerated', url: $url);
-    }
-
-public function generateOrder($cargoId)
-{
-    $cargo = TripCargo::findOrFail($cargoId);
-    $controller = app(\App\Http\Controllers\CmrController::class);
-    $url = $controller->generateTransportOrder($cargo);
-
-    $this->dispatch('orderGenerated', ['url' => $url]);
-    $this->dispatch('$refresh');
-}
     public function mount($trip)
     {
         $this->trip = $trip instanceof Trip
             ? $trip->load([
                 'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee','cargos.customer'
+                'cargos.shipper', 'cargos.consignee', 'cargos.customer',
+                'cargos.items', // ✅ добавлено
             ])
             : Trip::with([
                 'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee','cargos.customer',
+                'cargos.shipper', 'cargos.consignee', 'cargos.customer',
+                'cargos.items', // ✅ добавлено
             ])->findOrFail($trip);
+    }
+
+    public function generateCmr(int $cargoId): void
+    {
+        $cargo = TripCargo::findOrFail($cargoId);
+        $url = app(CmrController::class)->generateAndSave($cargo);
+
+        $this->trip->load([
+            'driver', 'truck', 'trailer',
+            'cargos.shipper', 'cargos.consignee', 'cargos.customer',
+            'cargos.items', // ✅ добавлено
+        ]);
+
+        $this->dispatch('cmrGenerated', url: $url);
+    }
+
+    public function generateOrder(int $cargoId)
+    {
+        $cargo = TripCargo::findOrFail($cargoId);
+        $url = app(CmrController::class)->generateTransportOrder($cargo);
+
+        $this->trip->load([
+            'driver', 'truck', 'trailer',
+            'cargos.shipper', 'cargos.consignee', 'cargos.customer',
+            'cargos.items', // ✅ добавлено
+        ]);
+
+        $this->dispatch('orderGenerated', ['url' => $url]);
+    }
+
+    public function generateInvoice(int $cargoId)
+    {
+        $cargo = TripCargo::findOrFail($cargoId);
+        $url = app(CmrController::class)->generateInvoice($cargo);
+
+        $this->trip->load([
+            'driver', 'truck', 'trailer',
+            'cargos.shipper', 'cargos.consignee', 'cargos.customer',
+            'cargos.items', // ✅ добавлено
+        ]);
+
+        $this->dispatch('invoiceGenerated', ['url' => $url]);
     }
 
     public function render()
@@ -53,15 +74,4 @@ public function generateOrder($cargoId)
             'trip' => $this->trip,
         ])->layout('layouts.app')->title('View CMR Trip');
     }
-
- public function generateInvoice(int $cargoId)
-{
-    $cargo = TripCargo::findOrFail($cargoId);
-    $controller = app(\App\Http\Controllers\CmrController::class);
-    $url = $controller->generateInvoice($cargo);
-
-    // 🧾 Показываем уведомление и открываем PDF
-   $this->dispatch('InvoiceGenerated', ['url' => $url]);
-    $this->dispatch('$refresh');
-}
 }

@@ -11,26 +11,26 @@ use App\Helpers\CalculateTax;
 class CmrController extends Controller
 {
 
-     private function getOrCreateOrderNumber($trip, $cargos): string
-    {
-        // Проверяем — есть ли уже order_nr у одного из грузов
-        $existingOrderNr = $cargos->firstWhere('order_nr', '!=', null)?->order_nr;
+    private function getOrCreateOrderNumber($trip, $cargos): string
+{
+    // 🟢 Проверяем — есть ли уже order_nr у одного из этих грузов
+    $existingOrderNr = $cargos->firstWhere('order_nr', '!=', null)?->order_nr;
 
-        if ($existingOrderNr) {
-            return $existingOrderNr; // ✅ возвращаем существующий
-        }
-
-        // Если нет — создаём новый: [НОМЕР_МАШИНЫ_БЕЗ_ПРОБЕЛОВ]/[ДЕНЬ]
-        $orderNr = str_replace(' ', '', $trip->truck->plate ?? 'NO_PLATE') . '/' . now()->format('d');
-
-        // Сохраняем этот номер во все грузы пары
-        foreach ($cargos as $c) {
-            $c->update(['order_nr' => $orderNr]);
-        }
-
-        return $orderNr;
+    if ($existingOrderNr) {
+        return $existingOrderNr; // ✅ возвращаем существующий номер
     }
 
+    // 🟢 Если нет — создаём новый номер:
+    // Формат: [НОМЕР_МАШИНЫ_БЕЗ_ПРОБЕЛОВ]/[ДЕНЬ]
+    $orderNr = str_replace(' ', '', $trip->truck->plate ?? 'NO_PLATE') . '/' . now()->format('d');
+
+    // 🟢 Сохраняем номер во все грузы этой пары
+    foreach ($cargos as $c) {
+        $c->update(['order_nr' => $orderNr]);
+    }
+
+    return $orderNr;
+}
     private function numberToWordsLv($amount): string
 {
     $units = [

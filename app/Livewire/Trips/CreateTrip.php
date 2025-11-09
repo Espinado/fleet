@@ -25,9 +25,31 @@ class CreateTrip extends Component
     public $cargos = [];
 
     protected $rules = [
-        'expeditor_id' => 'required',
-        'driver_id'    => 'required',
-        'truck_id'     => 'required',
+       'expeditor_id' => 'required|integer',
+        'driver_id'    => 'required|integer',
+        'truck_id'     => 'required|integer',
+        'trailer_id'   => 'nullable|integer',
+        'status'       => 'required|string',
+
+        'cargos.*.customer_id'          => 'required|integer',
+        'cargos.*.shipper_id'           => 'required|integer',
+        'cargos.*.consignee_id'         => 'required|integer',
+        'cargos.*.loading_country_id'   => 'required|integer',
+        'cargos.*.loading_city_id'      => 'required|integer',
+        'cargos.*.loading_address'      => 'required|string|min:3',
+        'cargos.*.loading_date'         => 'required|date',
+        'cargos.*.unloading_country_id' => 'required|integer',
+        'cargos.*.unloading_city_id'    => 'required|integer',
+        'cargos.*.unloading_address'    => 'required|string|min:3',
+        'cargos.*.unloading_date'       => 'required|date',
+        'cargos.*.payment_terms'        => 'required|date',
+        'cargos.*.payer_type_id'        => 'required|integer',
+        'cargos.*.tax_percent'          => 'required|numeric|min:0',
+
+        'cargos.*.items.*.description'    => 'required|string|min:2',
+        'cargos.*.items.*.packages'       => 'required|numeric|min:1',
+        'cargos.*.items.*.weight'         => 'required|numeric|min:0',
+        'cargos.*.items.*.price_with_tax' => 'required|numeric|min:0',
     ];
 
     public function mount()
@@ -66,7 +88,7 @@ class CreateTrip extends Component
             'total_tax_amount'     => 0,
             'price_with_tax'       => 0,
             'price_with_tax'       => 0,
-           'tax_percent'          => 0, // 👈 добавили
+           'tax_percent'          => null, // 👈 добавили
             'currency'             => 'EUR',
             'payment_terms'        => '',
             'payer_type_id'        => '',
@@ -347,4 +369,34 @@ class CreateTrip extends Component
             'trailers'   => $this->trailers,
         ])->layout('layouts.app');
     }
+
+    protected $messages = [
+    // === Общие ===
+    'expeditor_id.required' => 'Please select an expeditor company.',
+    'driver_id.required'    => 'Driver is required.',
+    'truck_id.required'     => 'Truck is required.',
+
+    // === Грузы ===
+    'cargos.*.customer_id.required'          => 'Customer must be selected.',
+    'cargos.*.shipper_id.required'           => 'Shipper is required.',
+    'cargos.*.consignee_id.required'         => 'Consignee is required.',
+    'cargos.*.loading_country_id.required'   => 'Loading country is required.',
+    'cargos.*.loading_city_id.required'      => 'Loading city is required.',
+    'cargos.*.loading_address.required'      => 'Enter loading address.',
+    'cargos.*.loading_date.required'         => 'Specify loading date.',
+    'cargos.*.unloading_country_id.required' => 'Unloading country is required.',
+    'cargos.*.unloading_city_id.required'    => 'Unloading city is required.',
+    'cargos.*.unloading_address.required'    => 'Enter unloading address.',
+    'cargos.*.unloading_date.required'       => 'Specify unloading date.',
+    'cargos.*.tax_percent.required'          => 'Tax percentage must be selected.',
+
+    // === Items ===
+    'cargos.*.items.*.description.required'    => 'Please enter item description.',
+    'cargos.*.items.*.packages.required'       => 'Enter number of packages.',
+    'cargos.*.items.*.weight.required'         => 'Enter weight in kg.',
+    'cargos.*.items.*.price_with_tax.required' => 'Enter item price (with tax).',
+      'cargos.*.tax_percent.required' => 'Please select tax percentage.',
+    'cargos.*.tax_percent.numeric'  => 'Tax must be a number.',
+];
+
 }
