@@ -368,6 +368,9 @@ public function generateInvoice(TripCargo $cargo)
             'country' => $trip->expeditor_country ?? '—',
             'phone'   => $trip->expeditor_phone ?? '',
             'email'   => $trip->expeditor_email ?? '',
+             'bank_name' => $trip->expeditor_bank ?? '—',
+           'iban'      => $trip->expeditor_iban ?? '—',
+         'bic'       => $trip->expeditor_bic ?? '—',
         ],
 
         'payer' => [

@@ -103,6 +103,8 @@
                 <div>Valsts: {{ $expeditor['country'] ?? '' }}</div>
                 <div>E-pasts: {{ $expeditor['email'] ?? '' }}</div>
                 <div>Tālrunis: {{ $expeditor['phone'] ?? '' }}</div>
+                <div>Banka: {{ $expeditor['bank_name'] ?? '' }}&nbsp {{ $expeditor['bic'] ?? '' }}</div>
+                  <div>Konts: {{ $expeditor['iban'] ?? '' }}</div>
             </td>
 
             {{-- 💳 Payer --}}
