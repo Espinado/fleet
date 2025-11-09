@@ -308,7 +308,7 @@ public function generateInvoice(TripCargo $cargo)
 {
     $trip = $cargo->trip;
 
-    // 🟢 Грузы для пары shipper → consignee → customer
+    // 🟢 Грузы для той же пары shipper → consignee → customer
     $cargos = $trip->cargos()
         ->where('shipper_id', $cargo->shipper_id)
         ->where('consignee_id', $cargo->consignee_id)
@@ -323,40 +323,50 @@ public function generateInvoice(TripCargo $cargo)
     $consignee = $cargos->first()->consignee;
     $customer  = $cargos->first()->customer;
 
-    // 🧾 Единый номер (совпадает с CMR и ORDER)
+    // 🧾 Единый номер (совпадает с ORDER и CMR)
     $invoiceNr = $this->getOrCreateOrderNumber($trip, $cargos);
 
-    // 📆 Даты
-    $invoiceDate = now();
+    // 📅 Даты
+    $invoiceDate  = now();
     $paymentTerms = $cargos->firstWhere('payment_terms', '!=', null)?->payment_terms ?? null;
-    $dueDate = $paymentTerms ? Carbon::parse($paymentTerms) : $invoiceDate->copy()->addDays(7);
+    $dueDate      = $paymentTerms ? Carbon::parse($paymentTerms) : $invoiceDate->copy()->addDays(7);
 
-    // 💶 Итоги
+    // 💶 Суммы
     $totals = \App\Helpers\CalculateTax::forCargos($cargos);
     $subtotal = $totals['subtotal'];
-    $vat = $totals['vat'];
-    $total = $totals['total'];
+    $vat      = $totals['vat'];
+    $total    = $totals['total'];
     $sumInWords = $this->numberToWordsLv($total);
 
-    // 💰 Плательщик
+    // 💰 Определяем плательщика с fallback
     $payerType = $cargo->payer_type_id;
-    $payerLabel = config("payers.$payerType.label") ?? 'Unknown';
-    switch ($payerType) {
-        case 1: $payer = $cargo->shipper; break;
-        case 2: $payer = $cargo->consignee; break;
-        case 3: $payer = $cargo->customer; break;
-        default: $payer = null; break;
+    $payer = null;
+    $payerLabel = 'Unknown';
+
+    if ($payerType === 1 && $cargo->shipper) {
+        $payer = $cargo->shipper;
+        $payerLabel = 'Shipper (Nosūtītājs)';
+    } elseif ($payerType === 2 && $cargo->consignee) {
+        $payer = $cargo->consignee;
+        $payerLabel = 'Consignee (Saņēmējs)';
+    } elseif ($payerType === 3 && $cargo->customer) {
+        $payer = $cargo->customer;
+        $payerLabel = 'Customer (Pasūtītājs)';
+    } else {
+        // 🧩 fallback: если тип не указан или не найден — используем shipper
+        $payer = $cargo->shipper;
+        $payerLabel = 'Shipper (Nosūtītājs)';
     }
 
-    // 🧾 ISO-коды стран загрузки и разгрузки (берём из первого груза пары)
+    // 🌍 ISO-коды стран загрузки и разгрузки
     $firstCargo = $cargos->first();
     $loadingCountryIso   = getCountryIsoById($firstCargo->loading_country_id);
     $unloadingCountryIso = getCountryIsoById($firstCargo->unloading_country_id);
 
-    // 🧾 Формируем массив для шаблона
+    // 🧾 Данные для шаблона PDF
     $data = [
         'invoice_nr'   => $invoiceNr,
-        'order_nr'   => $invoiceNr,
+        'order_nr'     => $invoiceNr,
         'invoice_date' => $invoiceDate->format('d.m.Y'),
         'due_date'     => $dueDate->format('d.m.Y'),
 
@@ -368,9 +378,9 @@ public function generateInvoice(TripCargo $cargo)
             'country' => $trip->expeditor_country ?? '—',
             'phone'   => $trip->expeditor_phone ?? '',
             'email'   => $trip->expeditor_email ?? '',
-             'bank_name' => $trip->expeditor_bank ?? '—',
-           'iban'      => $trip->expeditor_iban ?? '—',
-         'bic'       => $trip->expeditor_bic ?? '—',
+            'bank_name' => $trip->expeditor_bank ?? '—',
+            'iban'      => $trip->expeditor_iban ?? '—',
+            'bic'       => $trip->expeditor_bic ?? '—',
         ],
 
         'payer' => [
@@ -386,19 +396,18 @@ public function generateInvoice(TripCargo $cargo)
         'consignee' => $consignee,
         'customer'  => $customer,
 
-        'cargos'    => $cargos,
+        'cargos'       => $cargos,
         'sum_in_words' => $sumInWords,
-        'subtotal'  => $subtotal,
-        'vat'       => $vat,
-        'total'     => $total,
-        'trip'      => $trip,
+        'subtotal'     => $subtotal,
+        'vat'          => $vat,
+        'total'        => $total,
+        'trip'         => $trip,
 
-        // ✳️ Новые поля для шаблона
         'loading_country_iso'   => $loadingCountryIso,
         'unloading_country_iso' => $unloadingCountryIso,
     ];
 
-    // 🗂️ Папка и имя файла
+    // 🗂️ Папка и имя PDF
     $dir = "invoices/trip_{$trip->id}";
     $fileName = "invoice_{$cargo->shipper_id}_{$cargo->consignee_id}.pdf";
     Storage::disk('public')->makeDirectory($dir);
@@ -408,12 +417,13 @@ public function generateInvoice(TripCargo $cargo)
         ->setPaper('A4')
         ->setOptions([
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'defaultFont' => 'DejaVu Sans',
+            'isRemoteEnabled'      => true,
+            'defaultFont'          => 'DejaVu Sans',
         ]);
 
     Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
 
+    // 🔁 Обновляем все грузы этой пары
     foreach ($cargos as $c) {
         $c->update([
             'inv_nr'         => $invoiceNr,
@@ -425,10 +435,14 @@ public function generateInvoice(TripCargo $cargo)
     \Log::info('✅ Invoice PDF generated successfully', [
         'trip' => $trip->id,
         'path' => "{$dir}/{$fileName}",
+        'payer_type_id' => $payerType,
+        'payer' => $payer?->company_name,
     ]);
 
     return asset("storage/{$dir}/{$fileName}");
 }
+
+
 
 
 

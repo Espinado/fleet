@@ -3,31 +3,67 @@
 namespace Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Carbon\Carbon;
+use Illuminate\Support\Arr;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Driver>
  */
 class DriverFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         $faker = $this->faker;
 
-        // === Персональный код ===
-        $birthDate  = $faker->dateTimeBetween('1970-01-01', '2000-12-31');
-        $datePart   = $birthDate->format('ymd'); // например: 850321
-        $randomPart = $faker->numerify('#####'); // например: 12345
-        $persCode   = $datePart . '-' . $randomPart;
+        // === 🌍 Разрешённые страны (из config/countries.php)
+        $countryPool = [16, 17, 13, 21, 8]; // LV, LT, HU, EE, DE
 
-        // === Даты медосмотра ===
+        $declaredCountryId = Arr::random($countryPool);
+        $actualCountryId   = Arr::random($countryPool);
+        $citizenshipId     = Arr::random($countryPool);
+
+        // === Определяем ISO-коды стран
+        $declaredIso = config("countries.$declaredCountryId.iso") ?? 'lv';
+        $actualIso   = config("countries.$actualCountryId.iso") ?? 'lv';
+
+        // === Получаем города из config/cities/{iso}.php
+        $declaredCities = config("cities.$declaredIso") ?? [];
+        $actualCities   = config("cities.$actualIso") ?? [];
+
+        // === Fallback если городов нет
+        if (empty($declaredCities)) {
+            $declaredCities = [
+                1 => ['name' => 'Rīga'],
+                2 => ['name' => 'Liepāja'],
+                3 => ['name' => 'Daugavpils'],
+            ];
+        }
+        if (empty($actualCities)) {
+            $actualCities = [
+                1 => ['name' => 'Rīga'],
+                2 => ['name' => 'Liepāja'],
+                3 => ['name' => 'Daugavpils'],
+            ];
+        }
+
+        $declaredCityId = array_rand($declaredCities);
+        $actualCityId   = array_rand($actualCities);
+
+        // === 👤 Персональные данные
+        $birthDate = $faker->dateTimeBetween('1970-01-01', '2000-12-31');
+        $persCode  = $birthDate->format('ymd') . '-' . $faker->numerify('#####');
+
+        // === 📸 Фото (placeholder)
+        $photoPerson  = 'https://placehold.co/400x400?text=Driver';
+        $photoLicense = 'https://placehold.co/400x400?text=License';
+        $photoMedical = 'https://placehold.co/400x400?text=Medical';
+
+        // === 🩺 Медосмотр
         $passed  = $faker->dateTimeBetween('-1 month', 'yesterday');
         $expired = (clone $passed)->modify('+' . rand(1, 4) . ' months');
+
+        // === 🪪 Разрешения и документы
+        $permitIssuedDate = $faker->optional()->dateTimeBetween('-2 years', '-1 years');
+        $permitIssued     = $permitIssuedDate ? $permitIssuedDate->format('Y-m-d') : null;
 
         return [
             // 📛 Личные данные
@@ -35,12 +71,12 @@ class DriverFactory extends Factory
             'last_name'  => $faker->lastName(),
             'pers_code'  => $persCode,
 
-            // 🌍 Страна и гражданство (числовые ID)
-            'citizenship_id'      => $faker->numberBetween(1, 15),
-            'declared_country_id' => $faker->numberBetween(1, 17),
-            'declared_city_id'    => $faker->numberBetween(1, 13),
-            'actual_country_id'   => $faker->numberBetween(1, 15),
-            'actual_city_id'      => $faker->numberBetween(1, 13),
+            // 🌍 Страна и гражданство
+            'citizenship_id'      => $citizenshipId,
+            'declared_country_id' => $declaredCountryId,
+            'declared_city_id'    => $declaredCityId,
+            'actual_country_id'   => $actualCountryId,
+            'actual_city_id'      => $actualCityId,
 
             // 🏠 Адреса
             'declared_street'   => $faker->streetName(),
@@ -52,7 +88,7 @@ class DriverFactory extends Factory
             'actual_room'       => $faker->numberBetween(1, 100),
 
             // 📞 Контакты
-            'phone' => $faker->phoneNumber(),
+            'phone' => $faker->e164PhoneNumber(),
             'email' => $faker->unique()->safeEmail(),
 
             // 🚗 Водительские данные
@@ -60,25 +96,25 @@ class DriverFactory extends Factory
             'license_issued' => $faker->dateTimeBetween('-10 years', '-5 years'),
             'license_end'    => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
 
-            'code95_issued'  => $faker->date(),
-            'code95_end'     => $faker->date(),
-            'permit_issued'  => $faker->optional()->date(),
+            'code95_issued'  => $faker->dateTimeBetween('-5 years', '-2 years')->format('Y-m-d'),
+            'code95_end'     => $faker->dateTimeBetween('+1 months', '+6 months')->format('Y-m-d'),
+            'permit_issued'  => $permitIssued,
             'permit_expired' => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
 
             // 🩺 Медсправки
-            'medical_issued'  => $faker->dateTimeBetween('-3 years', '-1 years'),
-            'medical_expired' => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
-            'declaration_issued'  => $faker->date(),
+            'medical_issued'      => $faker->dateTimeBetween('-3 years', '-1 years')->format('Y-m-d'),
+            'medical_expired'     => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
+            'declaration_issued'  => $faker->dateTimeBetween('-1 years', '-6 months')->format('Y-m-d'),
             'declaration_expired' => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
 
-            // 📸 Фото и документы
-            'photo'                      => $faker->imageUrl(640, 480, 'people'),
-            'license_photo'              => $faker->imageUrl(640, 480, 'documents'),
-            'medical_certificate_photo'  => $faker->imageUrl(640, 480, 'documents'),
-            'medical_exam_passed'        => $passed->format('Y-m-d'),
-            'medical_exam_expired'       => $expired->format('Y-m-d'),
+            // 📸 Фото
+            'photo'                     => $photoPerson,
+            'license_photo'             => $photoLicense,
+            'medical_certificate_photo' => $photoMedical,
+            'medical_exam_passed'       => $passed->format('Y-m-d'),
+            'medical_exam_expired'      => $expired->format('Y-m-d'),
 
-            // ⚙️ Прочее
+            // ⚙️ Статус
             'status'    => 1,
             'is_active' => true,
 

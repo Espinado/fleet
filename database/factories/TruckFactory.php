@@ -22,7 +22,7 @@ class TruckFactory extends Factory
         return [
             // 🚚 Основные данные
             'brand' => $faker->randomElement(['Volvo', 'Scania', 'MAN', 'Mercedes', 'DAF', 'Iveco', 'Renault']),
-            'model' => $faker->word(),
+            'model' => ucfirst($faker->word()),
             'plate' => strtoupper($faker->bothify('??####')),
             'year'  => $faker->year(),
 
@@ -41,7 +41,7 @@ class TruckFactory extends Factory
             'tech_passport_nr' => 'TP-' . $faker->numerify('#####'),
             'tech_passport_issued' => $faker->dateTimeBetween('-5 years', '-2 years')->format('Y-m-d'),
             'tech_passport_expired' => $faker->dateTimeBetween('+1 years', '+3 years')->format('Y-m-d'),
-            'tech_passport_photo' => $faker->imageUrl(640, 480, 'documents'),
+            'tech_passport_photo' => 'https://placehold.co/600x400?text=Tech+Passport',
 
             // ⚙️ Статус и принадлежность
             'status'    => 1,
