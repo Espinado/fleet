@@ -8,12 +8,14 @@
     @endif
 
     {{-- 🔄 Лоадер --}}
-    <div wire:loading.flex wire:target="save, addCargo, removeCargo, addCargoItem, removeCargoItem"
+    <div wire:loading.flex wire:target="save, addCargo, removeCargo, addCargoItem, removeCargoItem, expeditor_id"
          class="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
         <div class="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
     </div>
 
-    <h2 class="text-2xl font-bold text-gray-800 text-center">🚛 Create New Trip with Multiple Clients</h2>
+    <h2 class="text-2xl font-bold text-gray-800 text-center">
+        🚛 Create New Trip with Multiple Clients
+    </h2>
 
     <form wire:submit.prevent="save" class="space-y-10">
 
@@ -21,13 +23,28 @@
         <section class="border-b pb-6 space-y-4">
             <h3 class="text-lg font-semibold text-gray-800">1️⃣ Expeditor Company</h3>
 
+            {{-- Выбор экспедитора --}}
             <x-select label="Select Expeditor *" model="expeditor_id" :options="$companies" live />
             @error('expeditor_id')
                 <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
             @enderror
 
+            {{-- Выбор банка (если есть) --}}
+            @if(!empty($banks))
+                <x-select 
+                    label="Select Bank Account *" 
+                    model="bank_index"
+                    :options="collect($banks)->mapWithKeys(fn($b, $i) => [$i => $b['name'] . ' — ' . $b['iban']])->toArray()"
+                    live
+                />
+                @error('bank_index')
+                    <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
+                @enderror
+            @endif
+
+            {{-- Карточка экспедитора --}}
             @if($expeditorData)
-                <div class="mt-2 bg-gray-50 border border-gray-200 rounded p-4 text-sm leading-relaxed">
+                <div class="mt-3 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm leading-relaxed">
                     <p><b>Name:</b> {{ $expeditorData['name'] ?? '-' }}</p>
                     <p><b>Reg. Nr:</b> {{ $expeditorData['reg_nr'] ?? '-' }}</p>
                     <p><b>Address:</b> {{ $expeditorData['address'] ?? '-' }}, {{ $expeditorData['city'] ?? '' }}</p>
@@ -43,18 +60,9 @@
             <h3 class="text-lg font-semibold text-gray-800">2️⃣ Transport Details</h3>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                <div>
-                    <x-select label="Driver *" model="driver_id" :options="$drivers" />
-                    @error('driver_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <x-select label="Truck *" model="truck_id" :options="$trucks" />
-                    @error('truck_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <x-select label="Trailer" model="trailer_id" :options="$trailers" />
-                    @error('trailer_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
+                <x-select label="Driver *" model="driver_id" :options="$drivers" />
+                <x-select label="Truck *" model="truck_id" :options="$trucks" />
+                <x-select label="Trailer" model="trailer_id" :options="$trailers" />
             </div>
         </section>
 
@@ -63,159 +71,71 @@
             <h3 class="text-lg font-semibold text-gray-800">3️⃣ Client Shipments</h3>
 
             @foreach ($cargos as $index => $cargo)
-                <div class="border rounded-xl p-5 bg-white shadow-sm relative"
-                     wire:key="cargo-{{ $index }}">
-                    <div class="absolute top-2 right-2">
-                        <button type="button" wire:click="removeCargo({{ $index }})"
-                                class="text-red-500 hover:text-red-700 text-sm">✖</button>
+                <div class="border rounded-xl p-5 bg-white shadow-sm relative" wire:key="cargo-{{ $index }}">
+                    <button type="button" wire:click="removeCargo({{ $index }})"
+                            class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm">✖</button>
+
+                    <h4 class="font-semibold text-blue-700 mb-3">📦 Cargo #{{ $index + 1 }}</h4>
+
+                    {{-- Клиенты --}}
+                    <x-select label="Select Customer *" model="cargos.{{ $index }}.customer_id" :options="$customers" live />
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-3">
+                        <x-select label="Select Shipper *" model="cargos.{{ $index }}.shipper_id" :options="$clients" live />
+                        <x-select label="Select Consignee *" model="cargos.{{ $index }}.consignee_id" :options="$clients" live />
                     </div>
 
-                    <h4 class="font-semibold text-blue-700 mb-3">
-                        📦 Cargo #{{ (int) $index + 1 }}
-                    </h4>
-
-                    {{-- 👤 Customer --}}
-                    <div class="mb-6">
-                        <x-select label="Select Customer *"
-                                  model="cargos.{{ $index }}.customer_id"
-                                  :options="$customers"
-                                  live />
-                        @error('cargos.' . $index . '.customer_id')
-                            <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    {{-- 🧾 Shipper / Consignee --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <x-select label="Select Shipper *"
-                                      model="cargos.{{ $index }}.shipper_id"
-                                      :options="$clients"
-                                      live />
-                            @error('cargos.' . $index . '.shipper_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <x-select label="Select Consignee *"
-                                      model="cargos.{{ $index }}.consignee_id"
-                                      :options="$clients"
-                                      live />
-                            @error('cargos.' . $index . '.consignee_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    {{-- 🗺 Route --}}
-                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {{-- Маршрут --}}
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {{-- Loading --}}
                         <div>
                             <h5 class="font-medium text-gray-700 mb-1">📍 Loading</h5>
-
-                            <x-select label="Country *"
-                                      model="cargos.{{ $index }}.loading_country_id"
-                                      :options="$countries" live />
-                            @error('cargos.' . $index . '.loading_country_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
+                            <x-select label="Country *" model="cargos.{{ $index }}.loading_country_id" :options="$countries" live />
 
                             <label class="block text-sm font-medium mb-1 mt-2">City *</label>
-                            <select wire:model.live="cargos.{{ $index }}.loading_city_id"
-                                    class="border rounded p-2 w-full">
+                            <select wire:model.live="cargos.{{ $index }}.loading_city_id" class="border rounded-lg w-full p-2 text-sm">
                                 <option value="">— Select city —</option>
                                 @foreach(($cargo['loadingCities'] ?? []) as $cid => $cname)
                                     <option value="{{ $cid }}">{{ $cname }}</option>
                                 @endforeach
                             </select>
-                            @error('cargos.' . $index . '.loading_city_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
 
                             <x-input label="Address *" model="cargos.{{ $index }}.loading_address" placeholder="Street, building..." />
-                            @error('cargos.' . $index . '.loading_address')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-
                             <x-input type="date" label="Date *" model="cargos.{{ $index }}.loading_date" />
-                            @error('cargos.' . $index . '.loading_date')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
 
+                        {{-- Unloading --}}
                         <div>
                             <h5 class="font-medium text-gray-700 mb-1">🏁 Unloading</h5>
-
-                            <x-select label="Country *"
-                                      model="cargos.{{ $index }}.unloading_country_id"
-                                      :options="$countries" live />
-                            @error('cargos.' . $index . '.unloading_country_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
+                            <x-select label="Country *" model="cargos.{{ $index }}.unloading_country_id" :options="$countries" live />
 
                             <label class="block text-sm font-medium mb-1 mt-2">City *</label>
-                            <select wire:model.live="cargos.{{ $index }}.unloading_city_id"
-                                    class="border rounded p-2 w-full">
+                            <select wire:model.live="cargos.{{ $index }}.unloading_city_id" class="border rounded-lg w-full p-2 text-sm">
                                 <option value="">— Select city —</option>
                                 @foreach(($cargo['unloadingCities'] ?? []) as $cid => $cname)
                                     <option value="{{ $cid }}">{{ $cname }}</option>
                                 @endforeach
                             </select>
-                            @error('cargos.' . $index . '.unloading_city_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
 
                             <x-input label="Address *" model="cargos.{{ $index }}.unloading_address" placeholder="Street, building..." />
-                            @error('cargos.' . $index . '.unloading_address')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-
                             <x-input type="date" label="Date *" model="cargos.{{ $index }}.unloading_date" />
-                            @error('cargos.' . $index . '.unloading_date')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                     </div>
 
-                    {{-- 📦 Cargo Items --}}
+                    {{-- Товары --}}
                     @foreach ($cargo['items'] as $itemIndex => $item)
-                        <div class="mt-5 border border-gray-200 rounded-lg p-4 bg-gray-50 relative"
-                             wire:key="cargo-item-{{ $index }}-{{ $itemIndex }}">
-                            <div class="absolute top-2 right-2">
-                                @if($itemIndex > 0)
-                                    <button type="button"
-                                            wire:click="removeCargoItem({{ $index }}, {{ $itemIndex }})"
-                                            class="text-red-500 hover:text-red-700 text-xs">✖</button>
-                                @endif
-                            </div>
+                        <div class="mt-5 border border-gray-200 rounded-lg p-4 bg-gray-50 relative" wire:key="cargo-item-{{ $index }}-{{ $itemIndex }}">
+                            @if($itemIndex > 0)
+                                <button type="button" wire:click="removeCargoItem({{ $index }}, {{ $itemIndex }})"
+                                        class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-xs">✖</button>
+                            @endif
 
                             <h5 class="font-semibold text-gray-700 mb-3">🧱 Item #{{ $itemIndex + 1 }}</h5>
 
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div>
-                                    <x-textarea label="Description *" model="cargos.{{ $index }}.items.{{ $itemIndex }}.description" rows="2" />
-                                    @error('cargos.' . $index . '.items.' . $itemIndex . '.description')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <x-input type="number" label="Packages" model="cargos.{{ $index }}.items.{{ $itemIndex }}.packages" min="1" />
-                                    @error('cargos.' . $index . '.items.' . $itemIndex . '.packages')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <x-input type="number" label="Gross Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.weight" step="0.01" />
-                                    @error('cargos.' . $index . '.items.' . $itemIndex . '.weight')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <x-input type="number" label="Price (€)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price_with_tax" step="0.01" />
-                                    @error('cargos.' . $index . '.items.' . $itemIndex . '.price_with_tax')
-                                        <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                                <x-textarea label="Description *" model="cargos.{{ $index }}.items.{{ $itemIndex }}.description" rows="2" />
+                                <x-input type="number" label="Packages" model="cargos.{{ $index }}.items.{{ $itemIndex }}.packages" min="1" />
+                                <x-input type="number" label="Gross Weight (kg)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.weight" step="0.01" />
+                                <x-input type="number" label="Price (€)" model="cargos.{{ $index }}.items.{{ $itemIndex }}.price_with_tax" step="0.01" />
                             </div>
                         </div>
                     @endforeach
@@ -227,27 +147,11 @@
                         </button>
                     </div>
 
-                    {{-- 💶 Payment --}}
+                    {{-- Оплата --}}
                     <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div>
-                            <x-input type="date" label="Payment Due Date" model="cargos.{{ $index }}.payment_terms" />
-                            @error('cargos.' . $index . '.payment_terms')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <x-select label="Payer Type" model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
-                            @error('cargos.' . $index . '.payer_type_id')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                        <div>
-                            <x-select label="Tax (%)" model="cargos.{{ $index }}.tax_percent"
-                                      :options="[0 => '0%', 10 => '10%', 21 => '21%']" />
-                            @error('cargos.' . $index . '.tax_percent')
-                                <p class="text-red-600 text-xs mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <x-input type="date" label="Payment Due Date" model="cargos.{{ $index }}.payment_terms" />
+                        <x-select label="Payer Type" model="cargos.{{ $index }}.payer_type_id" :options="$payerTypes" />
+                        <x-select label="Tax (%)" model="cargos.{{ $index }}.tax_percent" :options="[0 => '0%', 10 => '10%', 21 => '21%']" />
                     </div>
                 </div>
             @endforeach
@@ -266,7 +170,6 @@
             <x-select label="Trip Status"
                       model="status"
                       :options="['planned' => 'Planned', 'in_progress' => 'In Progress', 'completed' => 'Completed']" />
-            @error('status') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
         </section>
 
         {{-- 🟢 Fixed Save Button for PWA --}}

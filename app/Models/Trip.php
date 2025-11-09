@@ -14,7 +14,10 @@ class Trip extends Model
         // === Expeditor Snapshot ===
         'expeditor_id', 'expeditor_name', 'expeditor_reg_nr',
         'expeditor_country', 'expeditor_city', 'expeditor_address',
-        'expeditor_post_code', 'expeditor_email', 'expeditor_phone',
+        'expeditor_post_code', 'expeditor_email', 'expeditor_phone', 'expeditor_bank_id',
+'expeditor_bank',
+'expeditor_iban',
+'expeditor_bic',
 
         // === Relations ===
         'driver_id', 'truck_id', 'trailer_id',
