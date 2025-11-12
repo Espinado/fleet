@@ -16,16 +16,18 @@ class TrucksTable extends Component
     public int $perPage = 10;
 
     protected $queryString = [
-        'search' => ['except' => ''],
-        'sortField' => ['except' => 'last_name'],
+        'search'        => ['except' => ''],
+        'sortField'     => ['except' => 'brand'],
         'sortDirection' => ['except' => 'asc'],
-        'perPage' => ['except' => 10],
-        'page' => ['except' => 1],
+        'perPage'       => ['except' => 10],
+        'page'          => ['except' => 1],
     ];
 
-    public function updatingSearch() { $this->resetPage(); }
+    // 🔁 Автосброс страницы при изменении фильтров
+    public function updatingSearch()  { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
+    // 🔽 Логика сортировки
     public function sortBy($field): void
     {
         if ($this->sortField === $field) {
@@ -46,28 +48,27 @@ class TrucksTable extends Component
                       ->orWhere('plate', 'like', "%{$this->search}%")
                       ->orWhere('year', 'like', "%{$this->search}%")
                       ->orWhere('vin', 'like', "%{$this->search}%")
-                       ->orWhere('inspection_issued', 'like', "%{$this->search}%")
-                        ->orWhere('inspection_expired', 'like', "%{$this->search}%")
-                         ->orWhere('insurance_number', 'like', "%{$this->search}%")
-                          ->orWhere('insurance_issued', 'like', "%{$this->search}%")
-                           ->orWhere('insurance_expired', 'like', "%{$this->search}%")
-                      ->orWhere('insurance_company', 'like', "%{$this->search}%")
+                      ->orWhere('inspection_issued', 'like', "%{$this->search}%")
+                      ->orWhere('inspection_expired', 'like', "%{$this->search}%")
+                      ->orWhere('insurance_number', 'like', "%{$this->search}%")
+                      ->orWhere('insurance_issued', 'like', "%{$this->search}%")
+                      ->orWhere('insurance_expired', 'like', "%{$this->search}%")
                       ->orWhere('insurance_company', 'like', "%{$this->search}%");
                 });
             })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-
-              $trucks->getCollection()->transform(function ($truck) {
+        // 🔧 Подставляем название компании из конфига
+        $trucks->getCollection()->transform(function ($truck) {
             $truck->company_name = config('companies')[$truck->company]['name'] ?? '-';
             return $truck;
         });
 
-
-
         return view('livewire.trucks-table', [
             'items' => $trucks,
+            'sortField' => $this->sortField,
+            'sortDirection' => $this->sortDirection,
         ])->layout('layouts.app');
     }
 }
