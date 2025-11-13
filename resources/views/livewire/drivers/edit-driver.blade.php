@@ -30,11 +30,11 @@
     @endif
 
     {{-- 🧾 Форма --}}
-    <form wire:submit.prevent="update"
+    <form wire:submit.prevent="save"
           class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-10 relative">
 
         {{-- 🔄 Глобальный лоадер --}}
-        <div wire:loading.flex wire:target="update, photo, license_photo, medical_certificate_photo"
+        <div wire:loading.flex wire:target="save, photo, license_photo, medical_certificate_photo"
              class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl">
             <div class="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
             <p class="text-blue-600 text-sm">Updating driver...</p>
@@ -272,11 +272,11 @@
             <button type="submit"
                     class="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 text-sm transition flex items-center justify-center gap-2"
                     wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="update">💾 Save Changes</span>
-                <span wire:loading wire:target="update" class="inline-flex items-center gap-2">
-                    <div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    Updating...
-                </span>
+               <span wire:loading.remove wire:target="save">💾 Save Changes</span>
+<span wire:loading wire:target="save" class="inline-flex items-center gap-2">
+    <div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+    Saving...
+</span>
             </button>
         </div>
     </form>

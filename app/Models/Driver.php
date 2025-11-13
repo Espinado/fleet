@@ -8,8 +8,7 @@ use App\Enums\DriverStatus;
 
 class Driver extends Model
 {
-
-  use HasFactory;
+    use HasFactory;
 
     protected $table = 'drivers';
 
@@ -45,38 +44,64 @@ class Driver extends Model
         'declaration_expired',
         'status',
         'is_active',
-          'pers_code',
-                'photo',
-                'license_photo',
-                'medical_certificate_photo',
-                'medical_exam_passed',
-                'medical_exam_expired',
+        'photo',
+        'license_photo',
+        'medical_certificate_photo',
+        'medical_exam_passed',
+        'medical_exam_expired',
     ];
 
     protected $casts = [
-        'license_issued'     => 'date',
-        'license_end'        => 'date',
-        'permit_issued'      => 'date',
-        'permit_expired'     => 'date',
-        'medical_issued'     => 'date',
-        'medical_expired'    => 'date',
-        'declaration_issued' => 'date',
-        'declaration_expired'=> 'date',
-        'is_active'          => 'boolean',
-        'status' => DriverStatus::class,
+        'license_issued'      => 'date',
+        'license_end'         => 'date',
+        'permit_issued'       => 'date',
+        'permit_expired'      => 'date',
+        'medical_issued'      => 'date',
+        'medical_expired'     => 'date',
+        'declaration_issued'  => 'date',
+        'declaration_expired' => 'date',
+        'is_active' => 'boolean',
+        'status'    => DriverStatus::class, // ОК: enum<int>
     ];
 
-
     /**
-     * Удобный аксессор для ФИО
+     * 🧾 Удобный аксессор для ФИО
      */
     public function getFullNameAttribute(): string
     {
         return "{$this->first_name} {$this->last_name}";
     }
 
-     public function getStatusLabelAttribute(): string
+    /**
+     * 🚦 Аксессор для текстовой метки статуса
+     */
+    public function getStatusLabelAttribute(): string
     {
-        return $this->status?->label() ?? '❓ Unknown';
+        // status — это DriverStatus|nullable благодаря casts
+        return $this->status?->label() ?? 'Unknown';
     }
+
+    public function getStatusColorAttribute(): string
+    {
+        return $this->status?->color() ?? 'gray';
+    }
+
+ public function getPhotoUrlAttribute(): ?string
+{
+    if (!$this->photo) {
+        return null;
+    }
+
+    // Если фото уже полный URL
+    if (str_starts_with($this->photo, 'http://') || str_starts_with($this->photo, 'https://')) {
+        return $this->photo;
+    }
+
+    // Проверяем, не содержит ли путь "public/"
+    $path = str_replace('public/', '', $this->photo);
+
+    // Строим корректный URL для публичного доступа
+    return asset('storage/' . $path);
+}
+
 }

@@ -177,8 +177,52 @@ class ExpiringDocumentsTable extends Component
             ]);
         }
     });
+     $invoiceDocs = collect();
 
-    return $driversDocs->concat($trucksDocs)->concat($trailersDocs)->values();
+    \App\Models\TripCargo::select('id','customer_id','price_with_tax','payment_terms','trip_id')
+        ->whereNotNull('payment_terms')
+        ->get()
+        ->each(function($c) use (&$invoiceDocs, $today, $deadline) {
+
+            $expiry = $this->safeParseDate($c->payment_terms);
+            if (!$expiry) return;
+
+            // Добавляем только те, что истекают до 30 дней или уже просрочены
+            if ($expiry->gt($deadline)) return;
+
+            $daysLeft = $today->diffInDays($expiry, false);
+
+            // Получим клиента
+            $customer = $c->customer?->name ?? '—';
+
+            // Решаем статус цвета
+            $color = 'green';
+            if ($daysLeft === 0) {
+                $color = 'yellow';
+            } elseif ($daysLeft < 0) {
+                $color = 'red';
+            } elseif ($daysLeft <= 3) {
+                $color = 'green'; // ≤3 → остаётся зелёный
+            }
+
+            $invoiceDocs->push((object)[
+                'type'        => 'Invoice',
+                'name'        => $customer,
+                'document'    => 'Payment terms',
+                'expiry_date' => $expiry,
+                'days_left'   => $daysLeft,
+                'company'     => '-', // при желании можно достать компанию из trip
+                'status'      => $color, // цветовая категория
+                'is_active'   => true,
+                'id'          => $c->id,
+            ]);
+        });
+
+   return $driversDocs
+    ->concat($trucksDocs)
+    ->concat($trailersDocs)
+    ->concat($invoiceDocs)
+    ->values();
 }
 
 
