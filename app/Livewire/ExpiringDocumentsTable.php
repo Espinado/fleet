@@ -177,47 +177,77 @@ class ExpiringDocumentsTable extends Component
             ]);
         }
     });
-     $invoiceDocs = collect();
+    $invoiceDocs = collect();
 
-    \App\Models\TripCargo::select('id','customer_id','price_with_tax','payment_terms','trip_id')
-        ->whereNotNull('payment_terms')
-        ->get()
-        ->each(function($c) use (&$invoiceDocs, $today, $deadline) {
+\App\Models\TripCargo::select(
+        'id',
+        'shipper_id',
+        'consignee_id',
+        'customer_id',
+        'payer_type_id',
+        'price_with_tax',
+        'payment_terms',
+        'trip_id',
+        'inv_nr'
+    )
+    ->whereNotNull('payment_terms')
+    ->get()
+    ->each(function($c) use (&$invoiceDocs, $today, $deadline) {
 
-            $expiry = $this->safeParseDate($c->payment_terms);
-            if (!$expiry) return;
+        $expiry = $this->safeParseDate($c->payment_terms);
+        if (!$expiry) return;
 
-            // Добавляем только те, что истекают до 30 дней или уже просрочены
-            if ($expiry->gt($deadline)) return;
+        // Берём только те, что истекают до 30 дней или просрочены
+        if ($expiry->gt($deadline)) return;
 
-            $daysLeft = $today->diffInDays($expiry, false);
+        $daysLeft = $today->diffInDays($expiry, false);
 
-            // Получим клиента
-            $customer = $c->customer?->name ?? '—';
+        /**
+         * ---------------------------------------
+         * 🔥 Who is the payer?
+         * ---------------------------------------
+         * 1 = Shipper
+         * 2 = Consignee
+         * 3 = Customer
+         */
+        $payerMap = [
+            1 => $c->shipper,
+            2 => $c->consignee,
+            3 => $c->customer,
+        ];
 
-            // Решаем статус цвета
-            $color = 'green';
-            if ($daysLeft === 0) {
-                $color = 'yellow';
-            } elseif ($daysLeft < 0) {
-                $color = 'red';
-            } elseif ($daysLeft <= 3) {
-                $color = 'green'; // ≤3 → остаётся зелёный
-            }
+        $payer = $payerMap[$c->payer_type_id] ?? null;
+        $payerName = $payer?->name ?? '—';
 
-            $invoiceDocs->push((object)[
-                'type'        => 'Invoice',
-                'name'        => $customer,
-                'document'    => 'Payment terms',
-                'expiry_date' => $expiry,
-                'days_left'   => $daysLeft,
-                'company'     => '-', // при желании можно достать компанию из trip
-                'status'      => $color, // цветовая категория
-                'is_active'   => true,
-                'id'          => $c->id,
-            ]);
-        });
+        /**
+         * ---------------------------------------
+         * 🎨 Цветовая категория (Soft PWA colors)
+         * ---------------------------------------
+         *
+         * < 0  → expired (rose)
+         * ≤10  → red
+         * ≤20  → orange
+         * ≤30  → yellow
+         *  >30 → white
+         */
+        $color =
+            $daysLeft < 0 ? 'rose' :
+            ($daysLeft <= 10 ? 'red' :
+            ($daysLeft <= 20 ? 'orange' :
+            ($daysLeft <= 30 ? 'yellow' : 'white')));
 
+        $invoiceDocs->push((object) [
+            'type'        => 'Invoice',
+            'name'        => $payer?->company_name ?? '—',
+            'document'    => 'Payment terms',
+            'expiry_date' => $expiry,
+            'days_left'   => $daysLeft,
+            'company'     => $payer?->company_name ?? '—',
+            'status'      => $color,
+            'is_active'   => true,
+            'id'          => $c->id,
+        ]);
+    });
    return $driversDocs
     ->concat($trucksDocs)
     ->concat($trailersDocs)
