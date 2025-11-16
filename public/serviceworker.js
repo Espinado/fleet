@@ -1,8 +1,10 @@
-var staticCacheName = "pwa-v" + new Date().getTime();
-var filesToCache = [
+// Versioned cache name
+const staticCacheName = "pwa-v" + new Date().getTime();
+
+// Only cache resources that are static and do NOT change between builds.
+// Vite assets НЕ добавляем, их имена хэшируются и часто меняются.
+const filesToCache = [
     '/offline',
-    '/css/app.css',
-    '/js/app.js',
     '/images/icons/icon-72x72.png',
     '/images/icons/icon-96x96.png',
     '/images/icons/icon-128x128.png',
@@ -15,38 +17,36 @@ var filesToCache = [
 
 // Cache on install
 self.addEventListener("install", event => {
-    this.skipWaiting();
+    self.skipWaiting();
     event.waitUntil(
-        caches.open(staticCacheName)
-            .then(cache => {
-                return cache.addAll(filesToCache);
-            })
-    )
-});
-
-// Clear cache on activate
-self.addEventListener('activate', event => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames
-                    .filter(cacheName => (cacheName.startsWith("pwa-")))
-                    .filter(cacheName => (cacheName !== staticCacheName))
-                    .map(cacheName => caches.delete(cacheName))
-            );
+        caches.open(staticCacheName).then(cache => {
+            return cache.addAll(filesToCache);
         })
     );
 });
 
-// Serve from Cache
+// Clear old caches
+self.addEventListener("activate", event => {
+    event.waitUntil(
+        caches.keys().then(names => {
+            return Promise.all(
+                names
+                    .filter(name => name.startsWith("pwa-"))
+                    .filter(name => name !== staticCacheName)
+                    .map(name => caches.delete(name))
+            );
+        })
+    );
+    self.clients.claim();
+});
+
+// Serve from cache, fallback to offline page
 self.addEventListener("fetch", event => {
     event.respondWith(
-        caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
-            })
-            .catch(() => {
-                return caches.match('offline');
-            })
-    )
+        caches.match(event.request).then(response => {
+            return response || fetch(event.request).catch(() => {
+                return caches.match('/offline');
+            });
+        })
+    );
 });
