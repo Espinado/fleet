@@ -32,13 +32,14 @@ class Truck extends Model
                 'tech_passport_photo',
     ];
 
-    protected $casts = [
-        'inspection_issued' => 'date',
-        'inspection_expired'=> 'date',
-        'insurance_issued'  => 'date',
-        'insurance_expired' => 'date',
-        'year'              => 'integer',
-    ];
+   protected $casts = [
+    'inspection_issued' => 'date',
+    'inspection_expired' => 'date',
+    'insurance_issued' => 'date',
+    'insurance_expired' => 'date',
+    'tech_passport_issued' => 'date',
+    'tech_passport_expired' => 'date',
+];
 
     public function getDisplayNameAttribute(): string
     {

@@ -20,27 +20,36 @@ class EditTruck extends Component
     public $tech_passport_photo; // новое фото (temporary)
     public $existing_photo;      // старое фото (из базы)
     public $company;
+   
     public function mount(Truck $truck)
-    {
-        $this->truck = $truck;
+{
+    $this->truck = $truck;
 
-        $this->brand = $truck->brand;
-        $this->model = $truck->model;
-        $this->plate = $truck->plate;
-        $this->year = $truck->year;
-        $this->company = $truck->company;
-        $this->inspection_issued = $truck->inspection_issued;
-        $this->inspection_expired = $truck->inspection_expired;
-        $this->insurance_company = $truck->insurance_company;
-        $this->insurance_number = $truck->insurance_number;
-        $this->insurance_issued = $truck->insurance_issued;
-        $this->insurance_expired = $truck->insurance_expired;
-        $this->vin = $truck->vin;
-        $this->tech_passport_nr = $truck->tech_passport_nr;
-        $this->tech_passport_issued = $truck->tech_passport_issued;
-        $this->tech_passport_expired = $truck->tech_passport_expired;
-        $this->existing_photo = $truck->tech_passport_photo;
-    }
+    $this->brand = $truck->brand;
+    $this->model = $truck->model;
+    $this->plate = $truck->plate;
+    $this->year = $truck->year;
+
+    $this->company = $truck->company;
+
+    // === FIX: Convert Carbon → Y-m-d for HTML date fields ===
+    $this->inspection_issued  = optional($truck->inspection_issued)->format('Y-m-d');
+    $this->inspection_expired = optional($truck->inspection_expired)->format('Y-m-d');
+
+    $this->insurance_company = $truck->insurance_company;
+    $this->insurance_number  = $truck->insurance_number;
+
+    $this->insurance_issued  = optional($truck->insurance_issued)->format('Y-m-d');
+    $this->insurance_expired = optional($truck->insurance_expired)->format('Y-m-d');
+
+    $this->vin = $truck->vin;
+
+    $this->tech_passport_nr = $truck->tech_passport_nr;
+    $this->tech_passport_issued  = optional($truck->tech_passport_issued)->format('Y-m-d');
+    $this->tech_passport_expired = optional($truck->tech_passport_expired)->format('Y-m-d');
+
+    $this->existing_photo = $truck->tech_passport_photo;
+}
 
     public function save()
     {
@@ -62,6 +71,7 @@ class EditTruck extends Component
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
             'tech_passport_photo' => 'nullable|image', // необязательное новое фото
         ]);
+        $this->dispatch('scroll-top');
 
         if ($this->tech_passport_photo) {
             $path = $this->tech_passport_photo->store('trucks', 'public');
