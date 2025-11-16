@@ -17,7 +17,7 @@ class Driver extends Model
         'last_name',
         'pers_code',
         'company',
-        'citizenship',
+        'citizenship_id',
         'declared_country_id',
         'declared_city_id',
         'declared_street',
@@ -52,6 +52,8 @@ class Driver extends Model
     ];
 
     protected $casts = [
+        'code95_issued'      => 'date',
+        'code95_end'         => 'date',
         'license_issued'      => 'date',
         'license_end'         => 'date',
         'permit_issued'       => 'date',
