@@ -22,10 +22,11 @@ class Kernel extends ConsoleKernel
         // Запуск команды несколько раз в день
         $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
         $schedule->command('expiring-docs:notify')->dailyAt('02:30');
-        $schedule->command('expiring-docs:notify')->dailyAt('14:00');
-        $schedule->command('expiring-docs:notify')->dailyAt('23:50');
-        $schedule->command('expiring-docs:notify')->dailyAt('23:52');
-        $schedule->command('expiring-docs:notify')->dailyAt('23:54');
+        $schedule->command('expiring-docs:notify')->dailyAt('10:00');
+        $schedule->command('expiring-docs:notify')->dailyAt('10:30');
+        $schedule->command('expiring-docs:notify')->dailyAt('11:00');
+        $schedule->command('expiring-docs:notify')->dailyAt('12:00');
+         $schedule->command('expiring-docs:notify')->dailyAt('13:00');
 
         \Log::info('✅ Scheduler is running fine: ' . now());
     }
