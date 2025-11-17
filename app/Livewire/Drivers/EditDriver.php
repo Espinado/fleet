@@ -59,9 +59,9 @@ class EditDriver extends Component
         'medical_exam_expired' => 'nullable|date',
         'declaration_issued' => 'nullable|date',
         'declaration_expired' => 'nullable|date',
-        'photo' => 'nullable|image|max:2048',
-        'license_photo' => 'nullable|image|max:2048',
-        'medical_certificate_photo' => 'nullable|image|max:2048',
+        'photo' => 'nullable|image|max:22048',
+        'license_photo' => 'nullable|image|max:22048',
+        'medical_certificate_photo' => 'nullable|image|max:22048',
     ];
 
     public function mount(Driver $driver)

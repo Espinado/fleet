@@ -17,9 +17,10 @@ class ExpiringDocumentsReport extends Mailable
         $this->items = $items;
     }
 
-    public function build()
-    {
-        return $this->subject('Документы с истекающим сроком (30 дней)')
-                    ->markdown('emails.expiring-docs');
-    }
+  public function build()
+{
+    return $this->subject('Dokumenti ar beigu termiņu (30 dienas)')
+        ->from('no-reply@arguss.lv', 'Fleet Manager')
+        ->markdown('emails.expiring-docs');
+}
 }

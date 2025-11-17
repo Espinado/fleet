@@ -84,7 +84,7 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
             'tech_passport_nr' => 'nullable|string|max:255',
             'tech_passport_issued' => 'nullable|date|required_with:tech_passport_expired',
             'tech_passport_expired' => 'nullable|date|after_or_equal:tech_passport_issued',
-            'tech_passport_photo' => 'nullable|image|max:2048',
+            'tech_passport_photo' => 'nullable|image|max:22048',
         ];
     }
 

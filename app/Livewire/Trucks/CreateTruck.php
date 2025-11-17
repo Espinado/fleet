@@ -55,7 +55,7 @@ class CreateTruck extends Component
             'tech_passport_nr' => 'required|string|max:255',
             'tech_passport_issued' => 'required|date',
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
-            'tech_passport_photo' => 'nullable|image|max:4096', // up to 4MB
+            'tech_passport_photo' => 'nullable|image|max:24096', // up to 4MB
         ];
     }
 
