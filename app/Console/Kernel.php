@@ -10,9 +10,7 @@ class Kernel extends ConsoleKernel
     /**
      * Зарегистрированные Artisan команды.
      */
-    protected $commands = [
-        \App\Console\Commands\SendExpiringDocsNotifications::class,
-    ];
+   protected $commands = [];
 
     /**
      * Определяет планировщик команд.
