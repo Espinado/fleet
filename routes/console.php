@@ -8,4 +8,7 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('expiring-docs:notify')->everyMinute();
+Schedule::command('expiring-docs:notify')
+    ->dailyAt('09:00')
+    ->dailyAt('15:00')
+    ->dailyAt('21:00');
