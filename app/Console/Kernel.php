@@ -22,14 +22,14 @@ class Kernel extends ConsoleKernel
 
         \Log::info('Scheduler loaded from: ' . __FILE__);
         \Log::info('Kernel hash: ' . md5_file(__FILE__));
-        // Запуск команды несколько раз в день
-        $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
-        $schedule->command('expiring-docs:notify')->dailyAt('02:30');
-        $schedule->command('expiring-docs:notify')->dailyAt('10:00');
-        $schedule->command('expiring-docs:notify')->dailyAt('10:30');
-        $schedule->command('expiring-docs:notify')->dailyAt('11:00');
-        $schedule->command('expiring-docs:notify')->dailyAt('12:00');
-         $schedule->command('expiring-docs:notify')->dailyAt('13:00');
+        // // Запуск команды несколько раз в день
+        // $schedule->command('expiring-docs:notify')->twiceDaily(8, 15);
+        // $schedule->command('expiring-docs:notify')->dailyAt('02:30');
+        // $schedule->command('expiring-docs:notify')->dailyAt('10:00');
+        // $schedule->command('expiring-docs:notify')->dailyAt('10:30');
+        // $schedule->command('expiring-docs:notify')->dailyAt('11:00');
+        // $schedule->command('expiring-docs:notify')->dailyAt('12:00');
+        //  $schedule->command('expiring-docs:notify')->dailyAt('13:00');
          $schedule->command('expiring-docs:notify')->everyMinute();
 
         \Log::info('✅ Scheduler is running fine: ' . now());
