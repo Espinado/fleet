@@ -8,13 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-protected function schedule(Schedule $schedule)
-{
-   $schedule->command('expiring-docs:notify')->dailyAt('09:00');
-    $schedule->command('expiring-docs:notify')->dailyAt('11:00');
-    $schedule->command('expiring-docs:notify')->dailyAt('12:00');
-       $schedule->command('expiring-docs:notify')->dailyAt('09:00');
-    $schedule->command('expiring-docs:notify')->dailyAt('21:15');
-    $schedule->command('expiring-docs:notify')->dailyAt('21:30');
-
-    }
+Schedule::command('expiring-docs:notify')->dailyAt('09:00');
+Schedule::command('expiring-docs:notify')->dailyAt('11:00');
+Schedule::command('expiring-docs:notify')->dailyAt('12:00');
+Schedule::command('expiring-docs:notify')->dailyAt('21:15');
+Schedule::command('expiring-docs:notify')->dailyAt('21:30');
