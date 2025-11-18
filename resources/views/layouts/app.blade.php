@@ -144,6 +144,19 @@ if ('serviceWorker' in navigator) {
 }
 
 </script>
+<script>
+    const VAPID_PUBLIC_KEY = "{{ config('webpush.vapid.public_key') }}";
+</script>
+
+<script src="/pwa/push.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    if ("serviceWorker" in navigator && "PushManager" in window) {
+        subscribeForPush();
+    }
+});
+</script>
 @stack('scripts')
 </body>
 </html>
