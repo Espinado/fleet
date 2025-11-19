@@ -65,17 +65,27 @@ self.addEventListener("fetch", event => {
 });
 
 self.addEventListener("push", event => {
-    if (!event.data) return;
+    let data = {};
 
-    const data = event.data.json();
+    try {
+        // Попытаться распарсить JSON
+        data = event.data.json();
+    } catch (e) {
+        // DevTools Test Push шлёт обычную строку
+        data = {
+            title: event.data.text() || "Fleet Manager",
+            body: "",
+            data: {}
+        };
+    }
 
     event.waitUntil(
         self.registration.showNotification(
             data.title || "Fleet Manager",
             {
                 body: data.body || "",
-                icon: "/icons/icon-192x192.png",
-                badge: "/icons/badge-72x72.png",
+                icon: "/images/icons/icon-192x192.png",
+                badge: "/images/icons/icon-72x72.png",
                 data: data.data || {},
             }
         )
