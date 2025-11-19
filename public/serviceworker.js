@@ -42,6 +42,19 @@ self.addEventListener("activate", event => {
 
 // Serve from cache, fallback to offline page
 self.addEventListener("fetch", event => {
+
+    const url = new URL(event.request.url);
+
+    // 🚫 1) НЕ перехватываем API-запросы
+    if (url.pathname.startsWith('/api/')) {
+        return; // запрос пойдет напрямую в интернет → Laravel получит POST
+    }
+
+    // 🚫 2) НЕ перехватываем POST-запросы вообще
+    if (event.request.method !== 'GET') {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request).then(response => {
             return response || fetch(event.request).catch(() => {
