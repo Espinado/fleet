@@ -22,20 +22,13 @@ use NotificationChannels\WebPush\WebPushMessage;
 Route::redirect('/', '/dashboard');
 
 Route::get('/test-push', function () {
-
     $user = Auth::user();
 
     if (!$user) {
         return "❌ You are not logged in";
     }
 
-    $user->notify(
-        (new \NotificationChannels\WebPush\WebPushMessage())
-            ->title('🔔 Test Push from Laravel')
-            ->body('If you see this on your phone — PUSH works!')
-            ->icon('/images/icons/icon-192x192.png')
-            ->badge('/images/icons/icon-72x72.png')
-    );
+    $user->notify(new TestPushNotification());
 
     return "✅ Push sent to user {$user->email}";
 });
