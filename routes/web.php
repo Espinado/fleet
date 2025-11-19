@@ -16,9 +16,29 @@ use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
 use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
 use App\Livewire\TripsTable;
 use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
+use NotificationChannels\WebPush\WebPushMessage;
 
 // Главная страница → редирект на дашборд
 Route::redirect('/', '/dashboard');
+
+Route::get('/test-push', function () {
+
+    $user = Auth::user();
+
+    if (!$user) {
+        return "❌ You are not logged in";
+    }
+
+    $user->notify(
+        (new \NotificationChannels\WebPush\WebPushMessage())
+            ->title('🔔 Test Push from Laravel')
+            ->body('If you see this on your phone — PUSH works!')
+            ->icon('/images/icons/icon-192x192.png')
+            ->badge('/images/icons/icon-72x72.png')
+    );
+
+    return "✅ Push sent to user {$user->email}";
+});
 
 
 // === Защищённые маршруты (требуют авторизацию) ===
