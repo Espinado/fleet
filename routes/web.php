@@ -16,7 +16,8 @@ use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
 use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
 use App\Livewire\TripsTable;
 use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
-use NotificationChannels\WebPush\WebPushMessage;
+use App\Notifications\TestPushNotification;
+use Illuminate\Support\Facades\Auth;
 
 // Главная страница → редирект на дашборд
 Route::redirect('/', '/dashboard');

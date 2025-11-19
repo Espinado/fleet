@@ -5,8 +5,6 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use NotificationChannels\WebPush\WebPushMessage;
-use App\Notifications\TestPushNotification;
-use Illuminate\Support\Facades\Auth;
 
 class TestPushNotification extends Notification
 {
