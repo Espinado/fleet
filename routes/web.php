@@ -1,8 +1,7 @@
 <?php
 
-
-
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 use App\Livewire\ExpiringDocumentsTable;
 use App\Http\Controllers\CmrController;
@@ -10,35 +9,37 @@ use App\Livewire\DriversTable;
 use App\Livewire\TrucksTable;
 use App\Livewire\TrailersTable;
 use App\Livewire\ClientsTable;
+
 use App\Livewire\Drivers\{ShowDriver, EditDriver, CreateDriver};
 use App\Livewire\Trucks\{ShowTruck, EditTruck, CreateTruck};
 use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
 use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
+
 use App\Livewire\TripsTable;
 use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
-use App\Notifications\TestPushNotification;
-use Illuminate\Support\Facades\Auth;
 
-// Главная страница → редирект на дашборд
+use App\Notifications\TestPushNotification;
+
+// Главная страница
 Route::redirect('/', '/dashboard');
 
+// test push
 Route::get('/test-push', function () {
     $user = Auth::user();
 
-    if (!$user) {
-        return "❌ You are not logged in";
-    }
+    if (!$user) return "❌ You are not logged in";
 
     $user->notify(new TestPushNotification());
-
-    return "✅ Push sent to user {$user->email}";
+    return "✅ Push sent to {$user->email}";
 });
 
+// === ЛОГИН ВОДИТЕЛЯ (публичный) ===
+Route::get('/driver/login', \App\Livewire\Driver\Login::class)
+    ->name('driver.login');
 
-// === Защищённые маршруты (требуют авторизацию) ===
+// === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    // Dashboard
     Route::get('/dashboard', ExpiringDocumentsTable::class)->name('dashboard');
 
     // Drivers
@@ -63,20 +64,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/trailers/destroy', ShowTrailer::class)->name('trailers.destroy');
 
     // Clients
-      Route::get('/clients', ClientsTable::class)->name('clients.index');
+    Route::get('/clients', ClientsTable::class)->name('clients.index');
     Route::get('/clients/create', CreateClient::class)->name('clients.create');
-      Route::get('/clients/{client}', ShowClient::class)->name('clients.show'); // 👈 просмотр
+    Route::get('/clients/{client}', ShowClient::class)->name('clients.show');
     Route::get('/clients/{client}/edit', EditClient::class)->name('clients.edit');
 
-     Route::get('/trips', TripsTable::class)->name('trips.index');       // список рейсов
-    Route::get('/trips/create', CreateTrip::class)->name('trips.create'); // создание нового рейса
+    // Trips
+    Route::get('/trips', TripsTable::class)->name('trips.index');
+    Route::get('/trips/create', CreateTrip::class)->name('trips.create');
     Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
-    Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit'); // редактирование рейса
-   
-   Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
-    ->name('cmr.generate');
+    Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit');
 
-   
+    Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
+        ->name('cmr.generate');
 
     Route::post('/logout', function () {
         Auth::logout();
@@ -84,10 +84,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('logout');
 });
 
-// === Профиль (опционально) ===
-Route::view('profile', 'profile')
+// === МАРШРУТЫ ВОДИТЕЛЯ (ТОЛЬКО driver middleware) ===
+Route::middleware(['driver'])->group(function () {
+
+    Route::get('/driver/dashboard', \App\Livewire\Driver\Dashboard::class)
+        ->name('driver.dashboard');
+
+    Route::get('/driver/trip/{trip}', \App\Livewire\Driver\TripDetails::class)
+        ->name('driver.trip.details');
+
+    Route::post('/driver/logout', function () {
+        Auth::logout();
+        return redirect()->route('driver.login');
+    })->name('driver.logout');
+});
+
+// === Profile ===
+Route::view('/profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
 
-// === Breeze аутентификация ===
+// === Breeze ===
 require __DIR__.'/auth.php';

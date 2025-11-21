@@ -1,0 +1,41 @@
+<?php
+
+namespace App\Livewire\Driver;
+
+use Livewire\Component;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Driver;
+
+class Login extends Component
+{
+    public $pin = '';
+
+    public function login()
+    {
+        $this->validate([
+            'pin' => 'required|digits_between:4,6',
+        ], [
+            'pin.required' => 'Введите PIN',
+            'pin.digits_between' => 'PIN должен быть от 4 до 6 цифр',
+        ]);
+
+        $driver = Driver::whereNotNull('login_pin')
+            ->where('login_pin', $this->pin)
+            ->first();
+
+        if (!$driver || !$driver->user) {
+            $this->addError('pin', 'Неверный PIN');
+            return;
+        }
+
+        Auth::login($driver->user);
+
+        return redirect()->route('driver.dashboard');
+    }
+
+    public function render()
+    {
+        return view('livewire.driver.login')
+            ->layout('components.layouts.driver-guest'); //  <-- ВАЖНО
+    }
+}

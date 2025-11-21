@@ -49,6 +49,8 @@ class Driver extends Model
         'medical_certificate_photo',
         'medical_exam_passed',
         'medical_exam_expired',
+        'login_pin',
+        'user_id',
     ];
 
     protected $casts = [
@@ -104,6 +106,11 @@ class Driver extends Model
 
     // Строим корректный URL для публичного доступа
     return asset('storage/' . $path);
+}
+
+public function user()
+{
+    return $this->belongsTo(User::class);
 }
 
 }

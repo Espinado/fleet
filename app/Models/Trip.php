@@ -78,4 +78,13 @@ public function cargos()
 {
     return $this->hasMany(TripCargo::class);
 }
+
+public function history()
+{
+    return $this->hasMany(TripStatusHistory::class);
+}
+public function steps()
+{
+    return $this->hasMany(\App\Models\TripStep::class)->orderBy('order');
+}
 }
