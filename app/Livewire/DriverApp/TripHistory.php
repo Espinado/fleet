@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Driver;
+namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
 use App\Models\Trip;

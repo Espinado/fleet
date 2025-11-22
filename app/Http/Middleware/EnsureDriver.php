@@ -11,7 +11,7 @@ class EnsureDriver
     {
         $user = Auth::user();
 
-        // водитель = пользователь, у которого есть driver-модель
+        // Водитель = пользователь, у которого есть driver-модель
         if (!$user || !$user->driver) {
             return redirect()->route('driver.login');
         }

@@ -113,4 +113,12 @@ public function user()
     return $this->belongsTo(User::class);
 }
 
+public function activeTrip()
+{
+    return $this->hasOne(\App\Models\Trip::class, 'driver_id', 'id')
+        ->where('status', '!=', 'completed')
+        ->latest();
+}
+
+
 }

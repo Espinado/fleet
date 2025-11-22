@@ -63,7 +63,7 @@
                 Статус: <strong class="text-blue-700">{{ $trip->status }}</strong>
             </p>
 
-            <a href="{{ route('driver.trip.details', $trip) }}"
+            <a href="{{ route('driver.trip', $trip) }}"
    class="block text-center bg-blue-600 text-white py-2 rounded-xl font-medium mt-3">
     Открыть детали рейса
 </a>

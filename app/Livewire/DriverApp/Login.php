@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Driver;
+namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +35,9 @@ class Login extends Component
 
     public function render()
     {
-        return view('livewire.driver.login')
-            ->layout('components.layouts.driver-guest'); //  <-- ВАЖНО
+         return view('driver-app.pages.login')
+        ->layout('driver-app.layouts.auth', [
+            'title' => 'Авторизация водителя'
+        ]);
     }
 }

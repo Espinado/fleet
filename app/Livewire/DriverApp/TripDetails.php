@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Driver;
+namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +16,7 @@ class TripDetails extends Component
     {
         $user = Auth::user();
 
-        if (!$user || $user->role !== 'driver') {
+        if (!$user || !$user->driver) {
             return redirect()->route('driver.login');
         }
 
@@ -35,8 +35,10 @@ class TripDetails extends Component
 
     public function render()
     {
-        return view('livewire.driver.trip-details', [
+       return view('driver-app.pages.trip-details', [
             'history' => $this->history,
-        ])->layout('components.layouts.driver');
+        ])->layout('driver-app.layouts.app', [
+            'title' => 'Детали рейса'
+        ]);
     }
 }

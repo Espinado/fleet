@@ -32,4 +32,24 @@ class TripStep extends Model
     {
         return $this->belongsTo(TripCargo::class, 'trip_cargo_id');
     }
+
+    public function cargos()
+{
+    return $this->trip->cargos()->where(function ($q) {
+        if ($this->type === 'loading') {
+            $q->where('loading_country_id', $this->country_id)
+              ->where('loading_city_id', $this->city_id)
+              ->where('loading_address', $this->address);
+        } else {
+            $q->where('unloading_country_id', $this->country_id)
+              ->where('unloading_city_id', $this->city_id)
+              ->where('unloading_address', $this->address);
+        }
+    });
+}
+
+public function documents()
+{
+    return $this->hasMany(TripDocument::class, 'step_id');
+}
 }

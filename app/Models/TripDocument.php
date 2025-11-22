@@ -16,9 +16,12 @@ class TripDocument extends Model
         'file_path',
         'uploaded_by',
         'uploaded_at',
+        'step_id',
     ];
 
     protected $casts = [
+    'uploaded_at' => 'datetime',
+     'type' => \App\Enums\TripDocumentType::class,
     'uploaded_at' => 'datetime',
 ];
 
@@ -38,4 +41,9 @@ class TripDocument extends Model
     {
         return asset('storage/' . $this->file_path);
     }
+
+    public function step()
+{
+    return $this->belongsTo(TripStep::class);
+}
 }

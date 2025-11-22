@@ -34,8 +34,6 @@ Route::get('/test-push', function () {
 });
 
 // === ЛОГИН ВОДИТЕЛЯ (публичный) ===
-Route::get('/driver/login', \App\Livewire\Driver\Login::class)
-    ->name('driver.login');
 
 // === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -84,20 +82,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('logout');
 });
 
-// === МАРШРУТЫ ВОДИТЕЛЯ (ТОЛЬКО driver middleware) ===
-Route::middleware(['driver'])->group(function () {
-
-    Route::get('/driver/dashboard', \App\Livewire\Driver\Dashboard::class)
-        ->name('driver.dashboard');
-
-    Route::get('/driver/trip/{trip}', \App\Livewire\Driver\TripDetails::class)
-        ->name('driver.trip.details');
-
-    Route::post('/driver/logout', function () {
-        Auth::logout();
-        return redirect()->route('driver.login');
-    })->name('driver.logout');
-});
 
 // === Profile ===
 Route::view('/profile', 'profile')

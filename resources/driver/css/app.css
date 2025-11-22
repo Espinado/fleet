@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================== */
+/* Driver App Base UI Styles  */
+/* ========================== */
+
+:root {
+    --driver-bg: #f5f7fa;
+    --driver-card-bg: #ffffff;
+    --driver-primary: #2563eb; /* blue-600 */
+    --driver-primary-light: #dbeafe;
+    --driver-danger: #dc2626;
+    --driver-success: #16a34a;
+    --driver-text: #1f2937; /* gray-800 */
+    --driver-muted: #6b7280; /* gray-500 */
+
+    --radius-lg: 14px;
+    --radius-md: 10px;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* Body style */
+body {
+    background-color: var(--driver-bg);
+    color: var(--driver-text);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Driver card */
+.driver-card {
+    background: var(--driver-card-bg);
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--driver-primary);
+    color: white;
+    padding: 0.7rem 1rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    text-align: center;
+}
+
+.btn-primary:hover {
+    background-color: #1e40af; /* blue-800 */
+}
+
+/* Input */
+.driver-input {
+    width: 100%;
+    padding: 0.75rem;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+}
+
+.driver-input:focus {
+    border-color: var(--driver-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--driver-primary-light);
+}
+
+/* Bottom navigation */
+.driver-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 0.78rem;
+    color: var(--driver-muted);
+}
+
+.driver-nav-link.active {
+    color: var(--driver-primary);
+}

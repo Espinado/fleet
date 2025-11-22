@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Driver;
+namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -31,7 +31,9 @@ class Dashboard extends Component
     {
        
      
-   return view('livewire.driver.dashboard')
-        ->layout('components.layouts.driver-app');
+   return view('driver-app.pages.dashboard')
+        ->layout('driver-app.layouts.app', [
+            'title' => 'Dashboard'
+        ]);
     }
 }
