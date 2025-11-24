@@ -6,123 +6,100 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 use App\Models\Trip;
 use App\Models\TripStep;
+use App\Helpers\TripStepSorter;
 
 class TripRouteEditor extends Component
 {
-    public int $tripId;
     public Trip $trip;
+    public int $tripId;
+
     public array $steps = [];
     public bool $readonly = false;
 
-    public function mount(int $tripId)
+    public function mount(Trip $trip)
     {
-        $this->tripId = $tripId;
-        $this->trip = Trip::findOrFail($tripId);
+        $this->trip = $trip->load('steps');
+        $this->tripId = $trip->id;
 
-        // 🔒 Водитель не должен менять порядок
-        $this->readonly = auth()->user()?->driver ? true : false;
+        // водитель не может сортировать
+        $this->readonly = auth()->user()?->role === 'driver';
 
-        // 🧠 Авто-сортировка только если порядок ещё НИ РАЗУ не задавался вручную
-        if (!$this->readonly && !$this->isManuallySorted()) {
-            $this->autoSortSteps();
+        // автосортировка только один раз, если все order = null
+        if (!$this->readonly && !$this->hasManualOrder()) {
+            $this->autoSort();
         }
 
         $this->loadSteps();
     }
 
-    /**
-     * Проверка: есть ли хотя бы один пустой order?
-     * Если нет — значит порядок установлен вручную.
-     */
-private function isManuallySorted(): bool
-{
-    $steps = TripStep::where('trip_id', $this->tripId)->get();
-
-    return $steps->contains(fn($s) => $s->order > 0);
-}
-
-    /**
-     * Автоматическая первичная сортировка (до первой ручной)
-     */
-    private function autoSortSteps()
+    private function hasManualOrder(): bool
     {
-        $steps = TripStep::where('trip_id', $this->tripId)->get();
-        if ($steps->isEmpty()) return;
+        return TripStep::where('trip_id', $this->tripId)
+            ->whereNotNull('order')
+            ->where('order', '>', 0)
+            ->exists();
+    }
 
-        $sorted = $steps->sort(function ($a, $b) {
-
-            // 1) сортируем по дате
-            $dateCmp = strtotime($a->date) <=> strtotime($b->date);
-            if ($dateCmp !== 0) return $dateCmp;
-
-            // 2) loading → unloading
-            if ($a->type !== $b->type) {
-                return $a->type === 'loading' ? -1 : 1;
-            }
-
-            // 3) сортировка по cargo
-            return $a->trip_cargo_id <=> $b->trip_cargo_id;
-
-        })->values();
+    private function autoSort(): void
+    {
+        $sorted = TripStepSorter::sort($this->trip->steps);
 
         foreach ($sorted as $i => $step) {
             $step->update(['order' => $i + 1]);
         }
     }
 
-    /**
-     * Загружаем шаги по order
-     */
-    private function loadSteps()
+    private function loadSteps(): void
     {
         $this->steps = TripStep::where('trip_id', $this->tripId)
             ->orderBy('order')
+            ->orderBy('id')
             ->get()
-            ->map(function ($s) {
+            ->map(function (TripStep $s) {
 
-                $countryName = $s->country_id
-                    ? config("countries.{$s->country_id}.name") ?? '—'
-                    : '—';
+                $country = config("countries.{$s->country_id}.name") ?? '—';
 
-                $cityName = '—';
+                $city = '—';
                 if ($s->country_id && $s->city_id) {
                     $cities = getCitiesByCountryId($s->country_id);
-                    $cityName = $cities[$s->city_id]['name'] ?? '—';
+                    $city = $cities[$s->city_id]['name'] ?? '—';
                 }
 
                 return [
                     'id'      => $s->id,
                     'type'    => $s->type,
-                    'country' => $countryName,
-                    'city'    => $cityName,
-                    'address' => $s->address,
+                    'country' => $country,
+                    'city'    => $city,
+                    'address' => $s->address ?? '—',
                     'date'    => optional($s->date)->format('d.m.Y'),
+                    'time'    => $s->time ? date('H:i', strtotime($s->time)) : null,
                 ];
             })
             ->toArray();
     }
 
-    /**
-     * Drag&Drop reorder (только админ)
-     */
-    #[On('stepOrderChanged')]
-    public function updateOrder($data = [])
-    {
-        // водитель не может менять порядок
-        if ($this->readonly) return;
-logger()->info('ORDER IDS FROM UI', $data['ids'] ?? []);
-        $orderedIds = $data['ids'] ?? [];
+   #[On('stepOrderChanged')]
+public function updateOrder($data = null)
+{
+    if ($this->readonly) return;
 
-        foreach ($orderedIds as $index => $id) {
-            TripStep::where('id', $id)->update([
-                'order' => $index + 1,
-            ]);
-        }
-
-        session()->flash('success', 'Маршрут обновлён!');
-
-        $this->loadSteps();
+    // Если вызвали без данных — выходим тихо:
+    if (!$data || !isset($data['orderedIds'])) {
+        return;
     }
+
+    $ids = $data['orderedIds'];
+
+    foreach (array_values($ids) as $i => $id) {
+        \Log::info("Updating step", ['id' => $id, 'new_order' => $i+1]);
+        TripStep::where('id', $id)
+            ->where('trip_id', $this->tripId)
+            ->update(['order' => $i + 1]);
+    }
+
+    $this->loadSteps();
+    $this->dispatch('order-updated');
+}
 
     public function render()
     {

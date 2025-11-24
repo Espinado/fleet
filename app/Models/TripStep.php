@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 
 class TripStep extends Model
 {
-     protected $fillable = [
+    protected $fillable = [
         'trip_id',
-        'trip_cargo_id',
-        'type',
+        'type',        // loading | unloading
+        'client_id',   // ответственный клиент за точку
         'country_id',
         'city_id',
         'address',
         'date',
+        'time',        // строка, удобнее в формах
         'order',
-        'sequence',
         'notes',
     ];
 
@@ -23,33 +23,34 @@ class TripStep extends Model
         'date' => 'date',
     ];
 
+    /** ========================
+     *  RELATIONS
+     * ======================== */
+
     public function trip()
     {
         return $this->belongsTo(Trip::class);
     }
 
-    public function cargo()
+    public function documents()
     {
-        return $this->belongsTo(TripCargo::class, 'trip_cargo_id');
+        return $this->hasMany(TripDocument::class, 'step_id');
     }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    /**
+     * Грузы, которые связаны с этим шагом (many-to-many через pivot trip_cargo_step)
+     */
+   
 
     public function cargos()
 {
-    return $this->trip->cargos()->where(function ($q) {
-        if ($this->type === 'loading') {
-            $q->where('loading_country_id', $this->country_id)
-              ->where('loading_city_id', $this->city_id)
-              ->where('loading_address', $this->address);
-        } else {
-            $q->where('unloading_country_id', $this->country_id)
-              ->where('unloading_city_id', $this->city_id)
-              ->where('unloading_address', $this->address);
-        }
-    });
+    return $this->belongsToMany(TripCargo::class, 'trip_cargo_step')
+        ->withPivot('role');
 }
 
-public function documents()
-{
-    return $this->hasMany(TripDocument::class, 'step_id');
-}
 }

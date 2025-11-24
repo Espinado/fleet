@@ -2,7 +2,6 @@
 const staticCacheName = "pwa-v" + new Date().getTime();
 
 // Only cache resources that are static and do NOT change between builds.
-// Vite assets НЕ добавляем, их имена хэшируются и часто меняются.
 const filesToCache = [
     '/offline',
     '/images/icons/icon-72x72.png',
@@ -19,18 +18,16 @@ const filesToCache = [
 self.addEventListener("install", event => {
     self.skipWaiting();
     event.waitUntil(
-        caches.open(staticCacheName).then(cache => {
-            return cache.addAll(filesToCache);
-        })
+        caches.open(staticCacheName).then(cache => cache.addAll(filesToCache))
     );
 });
 
 // Clear old caches
 self.addEventListener("activate", event => {
     event.waitUntil(
-        caches.keys().then(names => {
+        caches.keys().then(keys => {
             return Promise.all(
-                names
+                keys
                     .filter(name => name.startsWith("pwa-"))
                     .filter(name => name !== staticCacheName)
                     .map(name => caches.delete(name))
@@ -40,53 +37,36 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
-// Serve from cache, fallback to offline page
+// Serve from cache, fallback to offline
 self.addEventListener("fetch", event => {
 
     const url = new URL(event.request.url);
 
-    // 🚫 1) НЕ перехватываем API-запросы
-    if (url.pathname.startsWith('/api/')) {
-        return; // запрос пойдет напрямую в интернет → Laravel получит POST
-    }
-
-    // 🚫 2) НЕ перехватываем POST-запросы вообще
-    if (event.request.method !== 'GET') {
-        return;
-    }
+    if (url.pathname.startsWith('/api/')) return;
+    if (event.request.method !== 'GET') return;
 
     event.respondWith(
-        caches.match(event.request).then(response => {
-            return response || fetch(event.request).catch(() => {
-                return caches.match('/offline');
-            });
-        })
+        caches.match(event.request).then(res => 
+            res || fetch(event.request).catch(() => caches.match('/offline'))
+        )
     );
 });
 
+// Push notifications
 self.addEventListener("push", event => {
     let data = {};
 
-    try {
-        // Попытаться распарсить JSON
-        data = event.data.json();
-    } catch (e) {
-        // DevTools Test Push шлёт обычную строку
-        data = {
-            title: event.data.text() || "Fleet Manager",
-            body: "",
-            data: {}
-        };
-    }
+    try { data = event.data.json(); }
+    catch { data = { title: event.data.text() || "Fleet Manager", body: "" }; }
 
     event.waitUntil(
         self.registration.showNotification(
-            data.title || "Fleet Manager",
+            data.title,
             {
                 body: data.body || "",
                 icon: "/images/icons/icon-192x192.png",
                 badge: "/images/icons/icon-72x72.png",
-                data: data.data || {},
+                data: data.data || {}
             }
         )
     );
@@ -95,8 +75,5 @@ self.addEventListener("push", event => {
 self.addEventListener("notificationclick", event => {
     event.notification.close();
     const url = event.notification.data.url || "/";
-    
-    event.waitUntil(
-        clients.openWindow(url)
-    );
+    event.waitUntil(clients.openWindow(url));
 });

@@ -73,4 +73,33 @@ class CalculateTax
     {
         return number_format((float)$value, 2, '.', ' ');
     }
+
+    /**
+ * 🔹 Универсальный расчёт цены + НДС для одной позиции
+ * Возвращает:
+ *  - price           — цена без НДС
+ *  - tax_amount      — сумма НДС
+ *  - price_with_tax  — итог с НДС
+ */
+public static function calculate(float $price, float $taxPercent): array
+{
+    // Если НДС 0% — возвращаем без изменений
+    if ($taxPercent <= 0) {
+        return [
+            'price'          => round($price, 2),
+            'tax_amount'     => 0.00,
+            'price_with_tax' => round($price, 2),
+        ];
+    }
+
+    $taxAmount = round($price * ($taxPercent / 100), 2);
+    $priceWithTax = round($price + $taxAmount, 2);
+
+    return [
+        'price'          => round($price, 2),
+        'tax_amount'     => $taxAmount,
+        'price_with_tax' => $priceWithTax,
+    ];
+}
+
 }

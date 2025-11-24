@@ -20,14 +20,21 @@
                 Рейс
             </a>
         @else
-            {{-- Если нет активного рейса – disabled пункт --}}
             <div class="flex flex-col items-center text-xs text-gray-300 opacity-50 cursor-not-allowed">
                 <div class="text-2xl leading-none">🚛</div>
                 Рейс
             </div>
         @endif
 
-        {{-- Profile --}}
-    
+        {{-- LOGOUT (CENTER) --}}
+        <form method="POST" action="{{ route('driver.logout') }}" class="flex flex-col items-center text-xs">
+            @csrf
+            <button type="submit"
+                class="flex flex-col items-center text-xs text-red-500 hover:text-red-600 font-semibold">
+                <div class="text-2xl leading-none">🚪</div>
+                Выйти
+            </button>
+        </form>
+
     </div>
 </div>

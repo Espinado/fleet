@@ -3,100 +3,238 @@
 namespace App\Livewire\Trips;
 
 use Livewire\Component;
-use App\Models\TripStep;
-use App\Models\{Driver, Truck, Trailer, Client, Trip};
+use App\Helpers\CalculateTax;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Models\{
+    Trip,
+    TripCargo,
+    TripCargoItem,
+    TripStep,
+    Driver,
+    Truck,
+    Trailer,
+    Client
+};
 
 class CreateTrip extends Component
 {
-    public $expeditor_id, $expeditorData = [];
-    public $bank_index = 1;
+    /** ============================================================
+     *  EXPEDITOR
+     * ============================================================ */
+    public $expeditor_id = null;
+    public $expeditorData = [];
     public $banks = [];
+    public $bank_index = null;
 
-    public $driver_id, $truck_id, $trailer_id;
-    public $drivers = [], $trucks = [], $trailers = [];
+    public array $payers = [];
+    public array $taxRates = [0, 5, 10, 21];
 
-    public $clients = [], $customers = [];
+    /** ============================================================
+     *  TRANSPORT
+     * ============================================================ */
+    public $driver_id;
+    public $truck_id;
+    public $trailer_id;
 
-    public $status = 'planned', $successMessage;
+    public $drivers = [];
+    public $trucks = [];
+    public $trailers = [];
 
+    /** ============================================================
+     *  STEPS
+     * ============================================================ */
+    public $steps = [];
+    public $stepCities = [];
+
+    /** ============================================================
+     *  CARGOS (multi)
+     * ============================================================ */
     public $cargos = [];
 
-    protected $rules = [
-        'expeditor_id' => 'required|integer',
-        'bank_index'   => 'required|integer',
-        'driver_id'    => 'required|integer',
-        'truck_id'     => 'required|integer',
-        'trailer_id'   => 'nullable|integer',
-        'status'       => 'required|string',
+    /** ============================================================
+     *  TRIP
+     * ============================================================ */
+    public $currency = 'EUR';
+    public $start_date;
+    public $end_date;
+    public $status = 'planned';
+    public $successMessage = null;
 
-        'cargos.*.customer_id'          => 'required|integer',
-        'cargos.*.shipper_id'           => 'required|integer',
-        'cargos.*.consignee_id'         => 'required|integer',
-        'cargos.*.loading_country_id'   => 'required|integer',
-        'cargos.*.loading_city_id'      => 'required|integer',
-        'cargos.*.loading_address'      => 'required|string|min:3',
-        'cargos.*.loading_date'         => 'required|date',
-        'cargos.*.unloading_country_id' => 'required|integer',
-        'cargos.*.unloading_city_id'    => 'required|integer',
-        'cargos.*.unloading_address'    => 'required|string|min:3',
-        'cargos.*.unloading_date'       => 'required|date',
-        'cargos.*.payment_terms'        => 'required|date',
-        'cargos.*.payer_type_id'        => 'required|integer',
-        'cargos.*.tax_percent'          => 'required|numeric|min:0',
 
-        'cargos.*.items.*.description'    => 'required|string|min:2',
-        'cargos.*.items.*.packages'       => 'required|numeric|min:1',
-        'cargos.*.items.*.weight'         => 'required|numeric|min:0',
-        'cargos.*.items.*.price_with_tax' => 'required|numeric|min:0',
-    ];
-
+    /** ============================================================
+     *  MOUNT
+     * ============================================================ */
     public function mount()
     {
+        $this->drivers  = Driver::where('is_active', 1)->get();
+        $this->trucks   = Truck::where('is_active', 1)->get();
+        $this->trailers = Trailer::where('is_active', 1)->get();
+
+        $this->payers = config('payers', []);
+
+        $this->addStep();
         $this->addCargo();
     }
+
+    /** ============================================================
+     *  EXPEDITOR
+     * ============================================================ */
+
+    protected function hydrateExpeditor()
+    {
+        $expeditors = config('companies', []);
+        $id = $this->expeditor_id;
+
+        if (!$id || !isset($expeditors[$id])) {
+            $this->expeditorData = [];
+            $this->banks = [];
+            $this->bank_index = null;
+            return;
+        }
+
+        $exp = $expeditors[$id];
+
+        $this->expeditorData = [
+            'name'      => $exp['name']      ?? null,
+            'reg_nr'    => $exp['reg_nr']    ?? null,
+            'country'   => $exp['country']   ?? null,
+            'city'      => $exp['city']      ?? null,
+            'address'   => $exp['address']   ?? null,
+            'post_code' => $exp['post_code'] ?? null,
+            'email'     => $exp['email']     ?? null,
+            'phone'     => $exp['phone']     ?? null,
+            'bank'      => null,
+            'iban'      => null,
+            'bic'       => null,
+        ];
+
+        $this->banks = $exp['bank'] ?? [];
+        $this->bank_index = $this->banks ? array_key_first($this->banks) : null;
+
+        $this->hydrateBank();
+    }
+
+    protected function hydrateBank()
+    {
+        if (!$this->bank_index || !isset($this->banks[$this->bank_index])) {
+            $this->expeditorData['bank'] = null;
+            $this->expeditorData['iban'] = null;
+            $this->expeditorData['bic']  = null;
+            return;
+        }
+
+        $bank = $this->banks[$this->bank_index];
+
+        $this->expeditorData['bank'] = $bank['name'] ?? null;
+        $this->expeditorData['iban'] = $bank['iban'] ?? null;
+        $this->expeditorData['bic']  = $bank['bic']  ?? null;
+    }
+
+    public function updatedExpeditorId()
+    {
+        $this->hydrateExpeditor();
+    }
+
+    public function updatedBankIndex()
+    {
+        $this->hydrateBank();
+    }
+
+
+    /** ============================================================
+     *  STEPS
+     * ============================================================ */
+
+    public function addStep()
+    {
+        $this->steps[] = [
+            'type'       => 'loading',
+            'country_id' => null,
+            'city_id'    => null,
+            'address'    => null,
+            'date'       => null,
+            'time'       => null,
+            'comment'    => null,
+        ];
+
+        $this->stepCities[] = ['cities' => []];
+    }
+
+    public function removeStep($index)
+    {
+        unset($this->steps[$index], $this->stepCities[$index]);
+        $this->steps = array_values($this->steps);
+        $this->stepCities = array_values($this->stepCities);
+
+        // после удаления индексы сдвигаются → чистим связки
+        foreach ($this->cargos as &$cargo) {
+            $cargo['loading_step_ids'] = array_filter(
+                $cargo['loading_step_ids'] ?? [],
+                fn($i) => isset($this->steps[$i])
+            );
+            $cargo['unloading_step_ids'] = array_filter(
+                $cargo['unloading_step_ids'] ?? [],
+                fn($i) => isset($this->steps[$i])
+            );
+        }
+    }
+
+    public function updatedSteps($value, $key)
+    {
+        $parts = explode('.', $key);
+        $stepIndex = (int)$parts[0];
+        $field = $parts[1] ?? null;
+
+        if ($field === 'country_id') {
+            $this->stepCities[$stepIndex]['cities'] =
+                getCitiesByCountryId((int)$value) ?? [];
+
+            $this->steps[$stepIndex]['city_id'] = null;
+        }
+    }
+
+
+    /** ============================================================
+     *  CARGOS
+     * ============================================================ */
 
     public function addCargo()
     {
         $this->cargos[] = [
-            'shipper_id'           => null,
-            'consignee_id'         => null,
-            'customer_id'          => null,
-            'shipperData'          => [],
-            'consigneeData'        => [],
-            'customerData'         => [],
+            'customer_id'        => null,
+            'shipper_id'         => null,
+            'consignee_id'       => null,
 
-            'loading_country_id'   => null,
-            'loading_city_id'      => null,
-            'loadingCities'        => [],
-            'loading_address'      => '',
-            'loading_date'         => '',
+            // МУЛЬТИВЫБОР
+            'loading_step_ids'   => [],
+            'unloading_step_ids' => [],
 
-            'unloading_country_id' => null,
-            'unloading_city_id'    => null,
-            'unloadingCities'      => [],
-            'unloading_address'    => '',
-            'unloading_date'       => '',
-
-            'price'                => 0,
-            'total_tax_amount'     => 0,
-            'price_with_tax'       => 0,
-            'tax_percent'          => null,
-            'currency'             => 'EUR',
-            'payment_terms'        => '',
-            'payer_type_id'        => '',
+            // Оплата
+            'price'            => '',
+            'tax_percent'      => 21,
+            'total_tax_amount' => 0,
+            'price_with_tax'   => 0,
+            'currency'         => $this->currency,
+            'payment_terms'    => null,
+            'payer_type_id'    => null,
 
             'items' => [
                 [
-                    'description'        => '',
-                    'packages'           => 1,
-                    'cargo_paletes'      => 0,
-                    'cargo_tonnes'       => 0,
-                    'weight'             => 0,
-                    'cargo_netto_weight' => 0,
-                    'volume'             => 0,
-                    'price_with_tax'     => 0,
-                    'instructions'       => '',
-                    'remarks'            => '',
+                    'description'     => '',
+                    'packages'        => null,
+                    'pallets'         => null,
+                    'units'           => null,
+                    'net_weight'      => null,
+                    'gross_weight'    => null,
+                    'tonnes'          => null,
+                    'volume'          => null,
+                    'loading_meters'  => null,
+                    'hazmat'          => '',
+                    'temperature'     => '',
+                    'stackable'       => false,
+                    'instructions'    => '',
+                    'remarks'         => '',
                 ],
             ],
         ];
@@ -108,164 +246,209 @@ class CreateTrip extends Component
         $this->cargos = array_values($this->cargos);
     }
 
-    public function addCargoItem($cargoIndex)
+    public function addItem($cargoIndex)
     {
         $this->cargos[$cargoIndex]['items'][] = [
-            'description'        => '',
-            'packages'           => 1,
-            'cargo_paletes'      => 0,
-            'cargo_tonnes'       => 0,
-            'weight'             => 0,
-            'cargo_netto_weight' => 0,
-            'volume'             => 0,
-            'price_with_tax'     => 0,
-            'instructions'       => '',
-            'remarks'            => '',
+            'description'     => '',
+            'packages'        => null,
+            'pallets'         => null,
+            'units'           => null,
+            'net_weight'      => null,
+            'gross_weight'    => null,
+            'tonnes'          => null,
+            'volume'          => null,
+            'loading_meters'  => null,
+            'hazmat'          => '',
+            'temperature'     => '',
+            'stackable'       => false,
+            'instructions'    => '',
+            'remarks'         => '',
         ];
     }
 
-    public function removeCargoItem($cargoIndex, $itemIndex)
+    public function removeItem($cargoIndex, $itemIndex)
     {
         unset($this->cargos[$cargoIndex]['items'][$itemIndex]);
-        $this->cargos[$cargoIndex]['items'] = array_values($this->cargos[$cargoIndex]['items']);
+        $this->cargos[$cargoIndex]['items'] =
+            array_values($this->cargos[$cargoIndex]['items']);
     }
 
-    /** =======================================================
-     *  SAVE TRIP + CREATE STEPS WITH AUTO SORT
-     * =======================================================*/
 
+    /** ============================================================
+     *  TAX
+     * ============================================================ */
+    public function updated($name)
+    {
+        if (preg_match('/^cargos\.(\d+)\.(price|tax_percent)$/', $name, $m)) {
+            $idx = (int)$m[1];
+            $this->recalcCargoTotals($idx);
+        }
+    }
+
+    public function recalcCargoTotals($idx)
+    {
+        $p  = (float)($this->cargos[$idx]['price'] ?? 0);
+        $t  = (float)($this->cargos[$idx]['tax_percent'] ?? 0);
+
+        $tax = CalculateTax::calculate($p, $t);
+
+        $this->cargos[$idx]['total_tax_amount'] = $tax['tax_amount'];
+        $this->cargos[$idx]['price_with_tax']   = $tax['price_with_tax'];
+    }
+
+
+    /** ============================================================
+     *  SAVE
+     * ============================================================ */
     public function save()
     {
-        $this->validate();
-
-        $exp = config("companies.{$this->expeditor_id}");
-        $bank = $exp['bank'][$this->bank_index] ?? [];
-
-        $trip = Trip::create([
-            'expeditor_id'        => $this->expeditor_id,
-            'expeditor_name'      => $exp['name'] ?? '',
-            'expeditor_reg_nr'    => $exp['reg_nr'] ?? '',
-            'expeditor_country'   => $exp['country'] ?? '',
-            'expeditor_city'      => $exp['city'] ?? '',
-            'expeditor_address'   => $exp['address'] ?? '',
-            'expeditor_post_code' => $exp['post_code'] ?? '',
-            'expeditor_email'     => $exp['email'] ?? '',
-            'expeditor_phone'     => $exp['phone'] ?? '',
-            'expeditor_bank_id'   => $this->bank_index,
-            'expeditor_bank'      => $bank['name'] ?? '',
-            'expeditor_iban'      => $bank['iban'] ?? '',
-            'expeditor_bic'       => $bank['bic'] ?? '',
-            'driver_id'           => $this->driver_id,
-            'truck_id'            => $this->truck_id,
-            'trailer_id'          => $this->trailer_id,
-            'status'              => $this->status,
+        $this->validate([
+            'expeditor_id' => 'required|integer',
+            'driver_id'    => 'required|integer',
+            'truck_id'     => 'required|integer',
+            'currency'     => 'required|string',
         ]);
 
-        /** === SAVE CARGOS === */
-        $steps = [];
+        // Проверка порядка шагов в мультиселекте
+        foreach ($this->cargos as $ci => $c) {
+            foreach ($c['loading_step_ids'] as $lIndex) {
+                foreach ($c['unloading_step_ids'] as $uIndex) {
+                    if ($uIndex <= $lIndex) {
+                        $this->addError(
+                            "cargos.$ci.unloading_step_ids",
+                            'Разгрузки должны быть ПОСЛЕ всех погрузок.'
+                        );
+                        return;
+                    }
+                }
+            }
+        }
 
-        foreach ($this->cargos as $cargo) {
+        DB::beginTransaction();
 
-            $cargoModel = $trip->cargos()->create([
-                'shipper_id'           => $cargo['shipper_id'],
-                'consignee_id'         => $cargo['consignee_id'],
-                'customer_id'          => $cargo['customer_id'],
-                'loading_country_id'   => $cargo['loading_country_id'],
-                'loading_city_id'      => $cargo['loading_city_id'],
-                'loading_address'      => $cargo['loading_address'],
-                'loading_date'         => $cargo['loading_date'],
-                'unloading_country_id' => $cargo['unloading_country_id'],
-                'unloading_city_id'    => $cargo['unloading_city_id'],
-                'unloading_address'    => $cargo['unloading_address'],
-                'unloading_date'       => $cargo['unloading_date'],
-                'cargo_description'    => $this->buildCargoDescription($cargo['items']),
-                'tax_percent'          => $cargo['tax_percent'],
-                'payment_terms'        => $cargo['payment_terms'],
-                'payer_type_id'        => $cargo['payer_type_id'],
+        try {
+            /** --- Trip --- */
+            $trip = Trip::create([
+                'expeditor_id'        => $this->expeditor_id,
+                'expeditor_name'      => $this->expeditorData['name']      ?? null,
+                'expeditor_reg_nr'    => $this->expeditorData['reg_nr']    ?? null,
+                'expeditor_country'   => $this->expeditorData['country']   ?? null,
+                'expeditor_city'      => $this->expeditorData['city']      ?? null,
+                'expeditor_address'   => $this->expeditorData['address']   ?? null,
+                'expeditor_post_code' => $this->expeditorData['post_code'] ?? null,
+                'expeditor_email'     => $this->expeditorData['email']     ?? null,
+                'expeditor_phone'     => $this->expeditorData['phone']     ?? null,
+
+                'expeditor_bank_id' => $this->bank_index,
+                'expeditor_bank'    => $this->expeditorData['bank'] ?? null,
+                'expeditor_iban'    => $this->expeditorData['iban'] ?? null,
+                'expeditor_bic'     => $this->expeditorData['bic']  ?? null,
+
+                'driver_id' => $this->driver_id,
+                'truck_id'  => $this->truck_id,
+                'trailer_id'=> $this->trailer_id,
+
+                'start_date'=> $this->start_date,
+                'end_date'  => $this->end_date,
+
+                'currency'  => $this->currency,
+                'status'    => $this->status,
             ]);
 
-            // Items
-            foreach ($cargo['items'] as $item) {
-                $cargoModel->items()->create([
-                    'description'        => $item['description'],
-                    'packages'           => $item['packages'],
-                    'cargo_paletes'      => $item['cargo_paletes'] ?? 0,
-                    'cargo_tonnes'       => $item['cargo_tonnes'] ?? 0,
-                    'weight'             => $item['weight'] ?? 0,
-                    'cargo_netto_weight' => $item['cargo_netto_weight'] ?? 0,
-                    'volume'             => $item['volume'] ?? 0,
-                    'price_with_tax'     => $item['price_with_tax'],
+            /** --- Steps --- */
+            $stepIdMap = [];
+
+            foreach ($this->steps as $i => $s) {
+                if (!$s['type'] || !$s['country_id']) continue;
+
+                $dbStep = TripStep::create([
+                    'trip_id'    => $trip->id,
+                    'order'      => $i + 1,
+                    'type'       => $s['type'],
+                    'country_id' => $s['country_id'],
+                    'city_id'    => $s['city_id'],
+                    'address'    => $s['address'],
+                    'date'       => $s['date'],
+                    'time'       => $s['time'],
+                    'notes'      => $s['comment'],
                 ]);
+
+                $stepIdMap[$i] = $dbStep->id;
             }
 
-            // Steps to sort later
-            $steps[] = [
-                'cargo'      => $cargoModel->id,
-                'type'       => 'loading',
-                'date'       => $cargo['loading_date'],
-                'country_id' => $cargo['loading_country_id'],
-                'city_id'    => $cargo['loading_city_id'],
-                'address'    => $cargo['loading_address'],
-            ];
+            /** --- Cargos --- */
+            foreach ($this->cargos as $cargoData) {
 
-            $steps[] = [
-                'cargo'      => $cargoModel->id,
-                'type'       => 'unloading',
-                'date'       => $cargo['unloading_date'],
-                'country_id' => $cargo['unloading_country_id'],
-                'city_id'    => $cargo['unloading_city_id'],
-                'address'    => $cargo['unloading_address'],
-            ];
-        }
+                $cargo = TripCargo::create([
+                    'trip_id'          => $trip->id,
+                    'customer_id'      => $cargoData['customer_id'],
+                    'shipper_id'       => $cargoData['shipper_id'],
+                    'consignee_id'     => $cargoData['consignee_id'],
 
-        /** === AUTO SORT STEPS === */
-        usort($steps, function ($a, $b) {
-            $cmp = strtotime($a['date']) <=> strtotime($b['date']);
-            if ($cmp !== 0) return $cmp;
+                    'price'            => $cargoData['price']            ?: 0,
+                    'tax_percent'      => $cargoData['tax_percent'],
+                    'total_tax_amount' => $cargoData['total_tax_amount'],
+                    'price_with_tax'   => $cargoData['price_with_tax'],
 
-            return $a['type'] === 'loading' ? -1 : 1;
-        });
+                    'currency'         => $cargoData['currency'],
+                    'payment_terms'    => $cargoData['payment_terms'],
+                    'payer_type_id'    => $cargoData['payer_type_id'],
+                ]);
 
-        /** === CREATE STEPS === */
-        foreach ($steps as $i => $s) {
-            TripStep::create([
-                'trip_id'       => $trip->id,
-                'trip_cargo_id' => $s['cargo'],
-                'type'          => $s['type'],
-                'country_id'    => $s['country_id'],
-                'city_id'       => $s['city_id'],
-                'address'       => $s['address'],
-                'date'          => $s['date'],
-                'order'         => $i + 1,
+                /** Cargo items */
+                foreach ($cargoData['items'] as $item) {
+                    $cargo->items()->create($item);
+                }
+
+                /** --- PIVOT: steps --- */
+                $pivot = [];
+
+                foreach ($cargoData['loading_step_ids'] as $idx) {
+                    if (isset($stepIdMap[$idx])) {
+                        $pivot[$stepIdMap[$idx]] = ['role' => 'loading'];
+                    }
+                }
+
+                foreach ($cargoData['unloading_step_ids'] as $idx) {
+                    if (isset($stepIdMap[$idx])) {
+                        $pivot[$stepIdMap[$idx]] = ['role' => 'unloading'];
+                    }
+                }
+
+                if ($pivot) {
+                    $cargo->steps()->attach($pivot);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('trips.view', $trip->id);
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+            Log::error('CreateTrip ERROR', [
+                'msg'    => $e->getMessage(),
+                'line'   => $e->getLine(),
+                'file'   => $e->getFile(),
+                'trace'  => $e->getTraceAsString(),
             ]);
+
+            $this->addError('error', 'Ошибка при создании рейса.');
         }
-
-        $this->successMessage = 'Trip created successfully!';
-        return redirect()->route('trips.index');
     }
 
-    private function buildCargoDescription(array $items): string
-    {
-        return collect($items)
-            ->map(fn($it) => trim(($it['packages'] ?? 0) . ' × ' . ($it['description'] ?? '')))
-            ->implode(', ');
-    }
 
+    /** ============================================================
+     *  RENDER
+     * ============================================================ */
     public function render()
     {
         return view('livewire.trips.create-trip', [
-            'companies' => collect(config('companies'))
-                ->filter(fn($c) => is_array($c) && isset($c['name']))
-                ->mapWithKeys(fn($c, $id) => [$id => $c['name']])
-                ->toArray(),
-            'countries'  => collect(config('countries'))->mapWithKeys(fn($c, $id) => [$id => $c['name']])->toArray(),
-            'payerTypes' => collect(config('payers'))->mapWithKeys(fn($p, $id) => [$id => $p['label']])->toArray(),
-            'clients'    => $this->clients ?: Client::orderBy('company_name')->pluck('company_name', 'id')->toArray(),
-            'customers'  => $this->customers ?: Client::orderBy('company_name')->pluck('company_name', 'id')->toArray(),
-            'drivers'    => $this->drivers,
-            'trucks'     => $this->trucks,
-            'trailers'   => $this->trailers,
-            'banks'      => $this->banks,
+            'clients'    => Client::orderBy('company_name')->get(),
+            'countries'  => config('countries', []),
+            'expeditors' => config('companies', []),
+            'payers'     => $this->payers,
+            'taxRates'   => $this->taxRates,
         ])->layout('layouts.app');
     }
 }

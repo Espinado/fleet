@@ -8,20 +8,14 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function subscribeForPush() {
-    if (!("serviceWorker" in navigator && "PushManager" in window)) {
-        console.log("❌ Push not supported");
-        return;
-    }
+    if (!("serviceWorker" in navigator && "PushManager" in window)) return;
 
     const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-        console.log("❌ Notification permission denied");
-        return;
-    }
+    if (permission !== "granted") return;
 
-    const registration = await navigator.serviceWorker.ready;
+    const reg = await navigator.serviceWorker.ready;
 
-    const sub = await registration.pushManager.subscribe({
+    const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
@@ -30,9 +24,7 @@ async function subscribeForPush() {
 
     await fetch("/api/push/subscribe", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
             endpoint: json.endpoint,
@@ -42,5 +34,5 @@ async function subscribeForPush() {
         }),
     });
 
-    console.log("✅ PUSH SUBSCRIBED");
+    console.log("PUSH SUBSCRIBED");
 }

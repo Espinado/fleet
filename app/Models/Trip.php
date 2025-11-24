@@ -14,77 +14,91 @@ class Trip extends Model
         // === Expeditor Snapshot ===
         'expeditor_id', 'expeditor_name', 'expeditor_reg_nr',
         'expeditor_country', 'expeditor_city', 'expeditor_address',
-        'expeditor_post_code', 'expeditor_email', 'expeditor_phone', 'expeditor_bank_id',
-'expeditor_bank',
-'expeditor_iban',
-'expeditor_bic',
+        'expeditor_post_code', 'expeditor_email', 'expeditor_phone',
+        'expeditor_bank_id', 'expeditor_bank', 'expeditor_iban', 'expeditor_bic',
 
-        // === Relations ===
+        // Transport
         'driver_id', 'truck_id', 'trailer_id',
-        'shipper_id', 'consignee_id',
 
-        // === Route ===
-        'origin_country_id', 'origin_city_id', 'origin_address',
-        'destination_country_id', 'destination_city_id', 'destination_address',
+        // Dates
+        'start_date', 'end_date',
 
-        // === Cargo ===
-        'cargo_description', 'cargo_packages', 'cargo_weight', 'cargo_volume',
-        'cargo_marks', 'cargo_instructions', 'cargo_remarks',
+        // Currency
+        'currency',
 
-        // === Payment ===
-        'price', 'currency', 'payment_terms', 'payer_type_id',
-
-        // === Other ===
-        'start_date', 'end_date', 'status',
+        // Status
+        'status',
     ];
 
-   protected $casts = [
-    'start_date' => 'date',
-    'end_date'   => 'date',
-    'payment_terms' => 'date',
-    'status'     => TripStatus::class,
-];
-    // === Relations ===
-    public function driver()    { return $this->belongsTo(Driver::class); }
-    public function truck()     { return $this->belongsTo(Truck::class); }
-    public function trailer()   { return $this->belongsTo(Trailer::class); }
-    public function shipper()   { return $this->belongsTo(Client::class, 'shipper_id'); }
-    public function consignee() { return $this->belongsTo(Client::class, 'consignee_id'); }
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date'   => 'date',
+        'status'     => TripStatus::class,
+    ];
 
-    // === Accessors ===
+    /** ========================
+     *  RELATIONS
+     * ======================== */
+
+    public function driver()
+    {
+        return $this->belongsTo(Driver::class);
+    }
+
+    public function truck()
+    {
+        return $this->belongsTo(Truck::class);
+    }
+
+    public function trailer()
+    {
+        return $this->belongsTo(Trailer::class);
+    }
+
+    public function cargos()
+    {
+        return $this->hasMany(TripCargo::class)->orderBy('id');
+    }
+
+    public function steps()
+    {
+        return $this->hasMany(TripStep::class)->orderBy('order')->orderBy('id');
+    }
+
+    public function history()
+    {
+        return $this->hasMany(TripStatusHistory::class);
+    }
+
+    public function documents()
+    {
+        return $this->hasMany(TripDocument::class);
+    }
+
+    /** ========================
+     *  ACCESSORS
+     * ======================== */
+
     public function getStatusLabelAttribute(): string
     {
-        $status = $this->status instanceof TripStatus
-            ? $this->status
-            : TripStatus::from($this->status);
-
-        return $status->label();
+        return $this->status instanceof TripStatus
+            ? $this->status->label()
+            : TripStatus::from($this->status)->label();
     }
 
-    // === Scope ===
-    public function scopeForClient($query, int $clientId)
-    {
-        return $query->where('shipper_id', $clientId)
-                     ->orWhere('consignee_id', $clientId);
-    }
+    /** ========================
+     *  MAIN CLIENT (from cargos)
+     * ======================== */
 
     public function client()
-{
-    // Возвращает shipper по умолчанию, если нужен «старый» client
-    return $this->belongsTo(Client::class, 'shipper_id');
-}
-
-public function cargos()
-{
-    return $this->hasMany(TripCargo::class);
-}
-
-public function history()
-{
-    return $this->hasMany(TripStatusHistory::class);
-}
-public function steps()
-{
-    return $this->hasMany(\App\Models\TripStep::class)->orderBy('order');
-}
+    {
+        return $this->hasOneThrough(
+            Client::class,
+            TripCargo::class,
+            'trip_id',      // TripCargo.trip_id
+            'id',           // Client.id
+            'id',           // Trip.id
+            'customer_id'   // TripCargo.customer_id
+        );
+    }
 }

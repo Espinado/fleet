@@ -24,13 +24,12 @@ Route::middleware(['driver'])->group(function () {
     Route::get('/driver/trip/{trip}', TripView::class)
         ->name('driver.trip');
 
-    Route::get('/driver/profile', Profile::class)
-        ->name('driver.profile');
+   
 
     // ===== ЗАГРУЗКА ДОКУМЕНТОВ =====
-    Route::get('/driver/trip/{trip}/step/{step}/upload/{type}',
-        UploadDocument::class
-    )->name('driver.documents.upload');
+   Route::get('/driver/trip/{trip}/step/{step}/upload/{type}',
+    \App\Livewire\DriverApp\UploadDocument::class
+)->name('driver.documents.upload');
 
     // ===== ПРОСМОТР ДОКУМЕНТА =====
     Route::get('/driver/document/{document}',

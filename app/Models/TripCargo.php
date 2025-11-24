@@ -11,66 +11,58 @@ class TripCargo extends Model
 
     protected $fillable = [
         'trip_id',
+
+        // Relations
+        'customer_id',
         'shipper_id',
         'consignee_id',
-        'customer_id',
-        'cmr_file',
-        'cmr_created_at',
+
+        // Files (order, cmr, invoice)
+        'order_file',
         'order_created_at',
         'order_nr',
+        'cmr_file',
         'cmr_nr',
-
-        // Loading
-        'loading_country_id',
-        'loading_city_id',
-        'loading_address',
-        'loading_date',
-
-        // Unloading
-        'unloading_country_id',
-        'unloading_city_id',
-        'unloading_address',
-        'unloading_date',
-
-        // Cargo
-        'cargo_description',
-        'cargo_packages',
-        'cargo_paletes',
-        'cargo_tonnes',
-        'cargo_weight',
-        'cargo_netto_weight',
-        'cargo_volume',
-        'cargo_marks',
-        'cargo_instructions',
-        'cargo_remarks',
-        'order_file',
+        'cmr_created_at',
+        'inv_nr',
+        'inv_file',
+        'inv_created_at',
 
         // Payment
         'price',
-        'total_tax_amount',
         'tax_percent',
+        'total_tax_amount',
         'price_with_tax',
-        'tax_percent'  ,
         'currency',
         'payment_terms',
         'payer_type_id',
-        'inv_nr',
-        'inv_file',
-        'inv_created_at'
-
     ];
 
     protected $casts = [
-        'loading_date'   => 'date',
-        'unloading_date' => 'date',
-        'payment_terms'  => 'date',
+        'payment_terms'    => 'date',
+        'order_created_at' => 'datetime',
+        'cmr_created_at'   => 'datetime',
+        'inv_created_at'   => 'datetime',
+        'price'            => 'float',
+        'tax_percent'      => 'float',
+        'total_tax_amount' => 'float',
+        'price_with_tax'   => 'float',
     ];
-    protected $with = ['customer', 'shipper', 'consignee'];
 
-    /** === Связи === */
+    protected $with = ['customer', 'shipper', 'consignee', 'items'];
+
+    /** ========================
+     *  RELATIONS
+     * ======================== */
+
     public function trip()
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Client::class, 'customer_id');
     }
 
     public function shipper()
@@ -87,8 +79,17 @@ class TripCargo extends Model
     {
         return $this->hasMany(TripCargoItem::class, 'trip_cargo_id');
     }
-    public function customer()
+
+    /**
+     * Шаги маршрута, к которым привязан этот груз (many-to-many через pivot trip_cargo_step)
+     */
+   
+
+ public function steps()
 {
-    return $this->belongsTo(Client::class, 'customer_id');
+    return $this->belongsToMany(TripStep::class, 'trip_cargo_step')
+        ->withPivot('role')
+        ->orderBy('trip_steps.order')
+        ->orderBy('trip_steps.id');
 }
 }

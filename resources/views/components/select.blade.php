@@ -1,8 +1,8 @@
 @props([
     'label' => null,
-    'model' => null,        // имя свойства Livewire (например expeditorId)
-    'options' => [],        // ['value' => 'Label']
-    'live' => false,        // булев флаг для wire:model.live
+    'model' => null,
+    'options' => [],
+    'live' => false,
     'placeholder' => 'Select option',
 ])
 
@@ -18,15 +18,16 @@
 
     <select
         id="{{ $inputId }}"
-        name="{{ $model }}"
         @if($isLive)
             wire:model.live="{{ $model }}"
         @else
             wire:model="{{ $model }}"
         @endif
+
         {{ $attributes->class('w-full border rounded px-3 py-2 focus:ring focus:ring-blue-200') }}
     >
         <option value="">{{ $placeholder }}</option>
+
         @foreach($options as $key => $value)
             <option value="{{ $key }}">{{ $value }}</option>
         @endforeach

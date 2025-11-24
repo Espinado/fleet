@@ -4,18 +4,8 @@ use Illuminate\Support\Facades\File;
 
 /**
  * ============================================================================
- * 🌍 LOCATION HELPER (v2.0)
- * Универсальные функции для работы со странами и городами.
- * Работает с конфигами:
- *   - config/countries.php
- *   - config/cities/{iso}.php  (например: config/cities/lv.php)
- * ============================================================================
- *
- * Примеры:
- *  getCountryById(1) → "Latvia"
- *  getCitiesByCountryId(1) → [1 => ['name' => 'Riga'], ...]
- *  getCityNameByCountryId(1, 3) → "Riga"
- *  getCityById(3, 1) → "Riga"   // теперь учитывает страну!
+ * 🌍 LOCATION HELPER (v3.0 — SAFE VERSION)
+ * Все функции теперь безопасно работают с NULL, строками, отсутствующими ключами.
  * ============================================================================
  */
 
@@ -29,6 +19,7 @@ if (!function_exists('getCountryById')) {
         if (!$id) return null;
 
         $country = config("countries.$id");
+
         if (is_array($country)) {
             return $country['name'] ?? '—';
         }
@@ -42,12 +33,15 @@ if (!function_exists('getCountryById')) {
  * 🏴‍☠️ Получить данные страны по ISO
  */
 if (!function_exists('getCountryByIso')) {
-    function getCountryByIso(string $iso): ?array
+    function getCountryByIso(?string $iso): ?array
     {
+        if (!$iso) return null;
+
+        $iso = strtoupper(trim($iso));
         $countries = config('countries');
 
         foreach ($countries as $country) {
-            if (strtoupper($country['iso']) === strtoupper($iso)) {
+            if (strtoupper($country['iso'] ?? '') === $iso) {
                 return $country;
             }
         }
@@ -58,22 +52,29 @@ if (!function_exists('getCountryByIso')) {
 
 
 /**
- * 🏙 Получить список городов по ISO
+ * 🏙 Получить список городов по ISO файла config/cities/{iso}.php
  */
 if (!function_exists('getCitiesByIso')) {
-    function getCitiesByIso(string $iso): array
+    function getCitiesByIso(?string $iso): array
     {
+        if (!$iso) return [];
+
         $iso = strtolower(trim($iso));
         $path = config_path("cities/{$iso}.php");
 
-        if (file_exists($path)) {
-            $cities = include $path;
-            return is_array($cities) ? $cities : [];
+        if (!file_exists($path)) {
+            return [];
         }
 
-        return [];
+        $cities = include $path;
+        return is_array($cities) ? $cities : [];
     }
 }
+
+
+/**
+ * 🏢 Получить компанию по ID
+ */
 if (!function_exists('getCompanyById')) {
     function getCompanyById(?int $id): ?string
     {
@@ -92,30 +93,38 @@ if (!function_exists('getCompanyById')) {
     }
 }
 
+
+/**
+ * 🇺🇳 Получить ISO страны по ID
+ */
 if (!function_exists('getCountryIsoById')) {
     function getCountryIsoById(?int $id): ?string
     {
         if (!$id) return null;
 
         $country = config("countries.$id");
-        if (is_array($country)) {
-            return strtoupper($country['iso'] ?? '—');
+
+        if (is_array($country) && !empty($country['iso'])) {
+            return strtoupper($country['iso']);
         }
 
-        return '—';
+        return null;
     }
 }
 
 
-
 /**
  * 🗺 Получить города по ID страны
+ * SAFE VERSION — НЕ падает при null
  */
 if (!function_exists('getCitiesByCountryId')) {
-    function getCitiesByCountryId(int $countryId): array
+    function getCitiesByCountryId(?int $countryId): array
     {
-        $country = config("countries.$countryId");
+        if ($countryId === null) {
+            return [];
+        }
 
+        $country = config("countries.$countryId");
         if (!$country || empty($country['iso'])) {
             return [];
         }
@@ -127,15 +136,15 @@ if (!function_exists('getCitiesByCountryId')) {
 
 /**
  * 🏡 Получить название города по ID страны и ID города
+ * SAFE VERSION — НЕ падает при null
  */
 if (!function_exists('getCityNameByCountryId')) {
-    function getCityNameByCountryId(int $countryId, int|string $cityId): ?string
+    function getCityNameByCountryId(?int $countryId, int|string|null $cityId): ?string
     {
-        $country = config("countries.$countryId");
+        if (!$countryId || !$cityId) return null;
 
-        if (!$country || empty($country['iso'])) {
-            return null;
-        }
+        $country = config("countries.$countryId");
+        if (!$country || empty($country['iso'])) return null;
 
         $cities = getCitiesByIso($country['iso']);
         return $cities[$cityId]['name'] ?? '—';
@@ -145,15 +154,14 @@ if (!function_exists('getCityNameByCountryId')) {
 
 /**
  * 🔍 Получить название города по ID (универсально)
- *  Если известна страна — ищет строго в её списке.
- *  Если страна не указана — ищет по всем config/cities/*.php.
+ * SAFE VERSION — НЕ падает при null
  */
 if (!function_exists('getCityById')) {
     function getCityById(?int $cityId, ?int $countryId = null): string
     {
         if (!$cityId) return '—';
 
-        // Если известна страна — ищем строго в её списке
+        // Если есть страна — ищем в ней
         if ($countryId) {
             $country = config("countries.$countryId");
             if (!$country || empty($country['iso'])) return '—';
@@ -162,12 +170,12 @@ if (!function_exists('getCityById')) {
             return $cities[$cityId]['name'] ?? '—';
         }
 
-        // Иначе ищем во всех странах (старое поведение)
+        // Иначе ищем во всех городах
         foreach (File::glob(config_path('cities/*.php')) as $path) {
             $cities = include $path;
             if (!is_array($cities)) continue;
 
-            if (isset($cities[$cityId]['name'])) {
+            if (!empty($cities[$cityId]['name'])) {
                 return (string) $cities[$cityId]['name'];
             }
         }

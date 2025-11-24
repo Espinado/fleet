@@ -23,6 +23,7 @@ class TripDocument extends Model
     'uploaded_at' => 'datetime',
      'type' => \App\Enums\TripDocumentType::class,
     'uploaded_at' => 'datetime',
+   
 ];
 
     protected $dates = ['uploaded_at'];

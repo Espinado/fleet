@@ -195,9 +195,8 @@ class EditDriver extends Component
     {
         $companies = config('companies');
         $countries = config('countries');
-        $declaredCities = $this->declared_country_id ? getCitiesByCountryId($this->declared_country_id) : [];
-        $actualCities = $this->actual_country_id ? getCitiesByCountryId($this->actual_country_id) : [];
-
+      $declaredCities = getCitiesByCountryId($this->declared_country_id);
+$actualCities = getCitiesByCountryId($this->actual_country_id);
         return view('livewire.drivers.edit-driver', [
             'companies' => $companies,
             'countries' => $countries,

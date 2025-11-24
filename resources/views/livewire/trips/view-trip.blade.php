@@ -1,233 +1,238 @@
 {{-- resources/views/livewire/trips/view-trip.blade.php --}}
-<div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-10" wire:ignore.self>
+<div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-8" wire:ignore.self>
 
-    {{-- ✅ Notifications --}}
+    {{-- ========================= --}}
+    {{-- 📱 MOBILE PWA TOP BAR    --}}
+    {{-- ========================= --}}
+    <div class="md:hidden sticky top-0 z-30 -mx-4 -mt-4 mb-4 bg-gray-900 text-white px-4 py-3 shadow-lg flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="{{ route('trips.index') }}"
+               class="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 active:bg-white/20">
+                ←
+            </a>
+            <div class="flex flex-col">
+                <span class="text-xs uppercase tracking-wide text-gray-300">Trip</span>
+                <span class="text-base font-semibold">CMR #{{ $trip->id }}</span>
+            </div>
+        </div>
+
+        @php
+            if (is_object($trip->status) && method_exists($trip->status, 'label')) {
+                $mobileStatusLabel = $trip->status->label();
+            } else {
+                $mobileStatusLabel = is_string($trip->status) ? ucfirst($trip->status) : '—';
+            }
+        @endphp
+
+        <span class="text-[10px] px-2 py-1 rounded-full bg-white/10">
+            {{ $mobileStatusLabel }}
+        </span>
+    </div>
+
+    {{-- NOTIFICATIONS --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {{ session('success') }}
         </div>
     @endif
-
     @if (session('error'))
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {{ session('error') }}
         </div>
     @endif
 
-    {{-- 🔧 Маршрут рейса (DRAG & DROP) --}}
-  <livewire:trips.trip-route-editor :tripId="$trip->id" />
-    {{-- 🧭 Основной блок рейса --}}
-    <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-6 space-y-8 transition-colors">
-        <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
-            🚛 CMR Trip #{{ $trip->id }}
-        </h2>
+    @php
+        $steps = $trip->steps()->orderBy('order')->orderBy('id')->get();
+        $loadingSteps   = $steps->where('type', 'loading');
+        $unloadingSteps = $steps->where('type', 'unloading');
 
-        {{-- 1️⃣ Expeditor --}}
-        <section>
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">1️⃣ Expeditor Company</h3>
-            <div class="text-sm leading-relaxed">
-                <p><b>Name:</b> {{ $trip->expeditor_name ?? '—' }}</p>
-                <p><b>Address:</b> {{ $trip->expeditor_address ?? '—' }}</p>
-                <p><b>Country:</b> {{ $trip->expeditor_country ?? '—' }}</p>
-                <p><b>Email:</b> {{ $trip->expeditor_email ?? '—' }}</p>
-                <p><b>Phone:</b> {{ $trip->expeditor_phone ?? '—' }}</p>
+        $startStep = $loadingSteps->first() ?? $steps->first();
+        $endStep   = $unloadingSteps->last() ?? $steps->last();
+
+        $startDate = optional($startStep)->date;
+        $endDate   = optional($endStep)->date;
+
+        $routeLine = $steps
+            ->map(fn($s) => $s->country_id ? (config('countries.' . $s->country_id . '.iso') ?? null) : null)
+            ->filter()
+            ->unique()
+            ->implode(' → ');
+
+        $allItems    = $trip->cargos->flatMap->items;
+        $totalGross  = $allItems->sum(fn($i) => (float)($i->gross_weight ?? 0));
+        $totalNet    = $allItems->sum(fn($i) => (float)($i->net_weight ?? 0));
+        $totalVolume = $allItems->sum(fn($i) => (float)($i->volume ?? 0));
+        $totalPrice  = $trip->cargos->sum('price_with_tax');
+
+        if (is_object($trip->status) && method_exists($trip->status, 'label')) {
+            $statusLabel = $trip->status->label();
+            $statusColor = $trip->status->color();
+        } else {
+            $statusLabel = is_string($trip->status) ? ucfirst($trip->status) : '—';
+            $statusColor = 'bg-gray-100 text-gray-800';
+        }
+    @endphp
+
+
+    {{-- ===================================================================== --}}
+    {{-- 🖥 HEADER (DESKTOP)                                                 --}}
+    {{-- ===================================================================== --}}
+    <div class="hidden md:block bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
+
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+                    🚛 CMR Trip #{{ $trip->id }}
+                    <span class="px-2 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
+                        {{ $statusLabel }}
+                    </span>
+                </h1>
+
+                <p class="text-sm text-gray-500 mt-1">
+                    Start / Stop:
+                    <span class="font-medium text-gray-700">
+                        {{ $startDate?->format('d.m.Y') ?? '—' }} →
+                        {{ $endDate?->format('d.m.Y') ?? '—' }}
+                    </span>
+                </p>
             </div>
-        </section>
 
-        {{-- 2️⃣ Transport --}}
-        <section>
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">2️⃣ Transport Details</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                <p><b>Driver:</b> {{ $trip->driver?->first_name }} {{ $trip->driver?->last_name }}</p>
-                <p><b>Truck:</b> {{ $trip->truck?->plate }} — {{ $trip->truck?->brand }} {{ $trip->truck?->model }}</p>
-                <p><b>Trailer:</b> {{ $trip->trailer?->brand ?? '—' }} {{ $trip->trailer?->plate ?? '—' }}</p>
+            <a href="{{ route('trips.index') }}"
+                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700">
+                ⬅ Back to Trips
+            </a>
+        </div>
+
+        @if($routeLine)
+            <div class="mt-3 text-sm">
+                <span class="font-semibold">Route:</span>
+                <span>{!! $routeLine !!}</span>
             </div>
-        </section>
+        @endif
 
-        {{-- 3️⃣ Cargo --}}
-        <section>
-            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">3️⃣ Cargo Details</h3>
+        {{-- QUICK SUMMARY --}}
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-xs sm:text-sm">
+            <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
+                <div class="text-gray-500">Total cargos</div>
+                <div class="font-semibold">{{ $trip->cargos->count() }}</div>
+            </div>
 
-            @php
-                $grouped = $trip->cargos->groupBy(fn($c) => $c->shipper_id . '-' . $c->consignee_id);
-            @endphp
+            <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
+                <div class="text-gray-500">Gross weight</div>
+                <div class="font-semibold">{{ number_format($totalGross, 0, '.', ' ') }} kg</div>
+            </div>
 
-            @forelse($grouped as $pair => $group)
-                @php
-                    $first = $group->first();
-                    $customer  = $first->customer?->company_name ?? '—';
-                    $shipper   = $first->shipper?->company_name ?? '—';
-                    $consignee = $first->consignee?->company_name ?? '—';
+            <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
+                <div class="text-gray-500">Volume</div>
+                <div class="font-semibold">{{ number_format($totalVolume, 1, '.', ' ') }} m³</div>
+            </div>
 
-                    $payer = match ($first->payer_type_id) {
-                        1 => $customer,
-                        2 => $shipper,
-                        3 => $consignee,
-                        default => '—',
-                    };
-
-                    $sum = fn($g, $itemField, $cargoField) =>
-                        $g->reduce(function($carry, $cargo) use ($itemField, $cargoField) {
-                            $items = $cargo->items ?? collect();
-                            if ($items->isNotEmpty()) {
-                                $itemSum = $items->sum(fn($i) => (float)($i->{$itemField} ?? 0));
-                                if ($itemSum > 0) return $carry + $itemSum;
-                            }
-                            return $carry + (float)($cargo->{$cargoField} ?? 0);
-                        }, 0.0);
-
-                    $totalBrutto  = $sum($group, 'weight', 'cargo_weight');
-                    $totalNetto   = $sum($group, 'cargo_netto_weight', 'cargo_netto_weight');
-                    $totalPrice   = $sum($group, 'price', 'price');
-                    $totalWithTax = $sum($group, 'price_with_tax', 'price_with_tax');
-                    $currency     = $first->currency ?? 'EUR';
-                @endphp
-
-                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-5 mb-6 bg-gray-50 dark:bg-gray-800 shadow-sm">
-
-                    {{-- PARTIES --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm mb-3">
-                        <div class="border rounded p-2 bg-white dark:bg-gray-900">
-                            <p class="font-semibold text-blue-700 dark:text-blue-400">🧾 Customer</p>
-                            <p>{{ $customer }}</p>
-                        </div>
-                        <div class="border rounded p-2 bg-white dark:bg-gray-900">
-                            <p class="font-semibold text-orange-700 dark:text-orange-400">📦 Shipper</p>
-                            <p>{{ $shipper }}</p>
-                        </div>
-                        <div class="border rounded p-2 bg-white dark:bg-gray-900">
-                            <p class="font-semibold text-green-700 dark:text-green-400">🏠 Consignee</p>
-                            <p>{{ $consignee }}</p>
-                        </div>
-                        <div class="border rounded p-2 bg-white dark:bg-gray-900">
-                            <p class="font-semibold text-purple-700 dark:text-purple-400">💰 Payer</p>
-                            <p>{{ $payer }}</p>
-                        </div>
-                    </div>
-
-                    {{-- BUTTONS --}}
-                    <div class="flex flex-wrap justify-end gap-3 mt-3">
-                        {{-- CMR --}}
-                        @if ($first->cmr_file)
-                            <a href="{{ asset('storage/' . $first->cmr_file) }}" target="_blank"
-                               class="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded">
-                                👁 View CMR
-                            </a>
-                        @else
-                            <button wire:click="generateCmr({{ $first->id }})"
-                                class="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded">
-                                📄 Generate CMR
-                            </button>
-                        @endif
-
-                        {{-- ORDER --}}
-                        @if ($first->order_file && Storage::disk('public')->exists($first->order_file))
-                            <a href="{{ asset('storage/' . $first->order_file) }}" target="_blank"
-                               class="px-3 py-1.5 text-xs font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded">
-                                📑 View Order
-                            </a>
-                        @else
-                            <button wire:click="generateOrder({{ $first->id }})"
-                                class="px-3 py-1.5 text-xs font-medium bg-indigo-500 hover:bg-indigo-600 text-white rounded">
-                                📝 Generate Order
-                            </button>
-                        @endif
-
-                        {{-- INVOICE --}}
-                        @if ($first->inv_file && Storage::disk('public')->exists($first->inv_file))
-                            <a href="{{ asset('storage/' . $first->inv_file) }}" target="_blank"
-                               class="px-3 py-1.5 text-xs font-medium bg-amber-600 hover:bg-amber-700 text-white rounded">
-                                🧾 View Invoice
-                            </a>
-                        @else
-                            <button wire:click="generateInvoice({{ $first->id }})"
-                                class="px-3 py-1.5 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded">
-                                🧾 Generate Invoice
-                            </button>
-                        @endif
-                    </div>
-
-                    {{-- TABLE --}}
-                    <div class="mt-5 overflow-x-auto">
-                        <table class="w-full text-sm border">
-                            <thead class="bg-gray-100 dark:bg-gray-700">
-                                <tr>
-                                    <th class="p-2 border">#</th>
-                                    <th class="p-2 border text-left">Description</th>
-                                    <th class="p-2 border text-right">Brutto</th>
-                                    <th class="p-2 border text-right">Netto</th>
-                                    <th class="p-2 border text-right">Price</th>
-                                    <th class="p-2 border text-right">Price w/Tax</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach($group as $i => $cargo)
-                                    @php $items = $cargo->items ?? collect(); @endphp
-                                    @forelse($items as $item)
-                                        <tr>
-                                            <td class="p-2 border">{{ $i + 1 }}</td>
-                                            <td class="p-2 border">{{ $item->description }}</td>
-                                            <td class="p-2 border text-right">{{ number_format($item->weight ?? 0, 2) }}</td>
-                                            <td class="p-2 border text-right">{{ number_format($item->cargo_netto_weight ?? 0, 2) }}</td>
-                                            <td class="p-2 border text-right">{{ number_format($item->price ?? 0, 2) }}</td>
-                                            <td class="p-2 border text-right">{{ number_format($item->price_with_tax ?? 0, 2) }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="6" class="p-2 border text-center italic">No items</td>
-                                        </tr>
-                                    @endforelse
-                                @endforeach
-                            </tbody>
-
-                            <tfoot class="bg-gray-50 dark:bg-gray-800 font-semibold">
-                                <tr>
-                                    <td colspan="2" class="p-2 border text-right">Total:</td>
-                                    <td class="p-2 border text-right">{{ number_format($totalBrutto, 2) }}</td>
-                                    <td class="p-2 border text-right">{{ number_format($totalNetto, 2) }}</td>
-                                    <td class="p-2 border text-right">{{ number_format($totalPrice, 2) }} {{ $currency }}</td>
-                                    <td class="p-2 border text-right">{{ number_format($totalWithTax, 2) }} {{ $currency }}</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-
-                </div>
-            @empty
-                <p class="text-gray-500 italic">No cargos found.</p>
-            @endforelse
-
-        </section>
+            <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
+                <div class="text-gray-500">Total price (w/VAT)</div>
+                <div class="font-semibold">€{{ number_format($totalPrice, 2, '.', ' ') }}</div>
+            </div>
+        </div>
     </div>
 
-    {{-- 📄 Trip Documents --}}
+
+
+
+    {{-- ===================================================================== --}}
+    {{-- 🧭 TRUE ROUTE EDITOR (ONLY THIS ONE!)                               --}}
+    {{-- ===================================================================== --}}
+    <livewire:trips.trip-route-editor :trip="$trip" />
+
+
+
+
+    {{-- ===================================================================== --}}
+    {{-- EXPEDITOR + TRANSPORT                                               --}}
+    {{-- ===================================================================== --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        {{-- EXPEDITOR --}}
+        <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6">
+            <h3 class="text-lg font-semibold mb-2">1️⃣ Expeditor Company</h3>
+
+            <div class="text-sm space-y-1">
+                <p><b>Name:</b> {{ $trip->expeditor_name }}</p>
+                <p><b>Reg.nr:</b> {{ $trip->expeditor_reg_nr }}</p>
+                <p><b>Address:</b> {{ $trip->expeditor_address }}, {{ $trip->expeditor_city }} {{ $trip->expeditor_post_code }}</p>
+                <p><b>Country:</b> {{ $trip->expeditor_country }}</p>
+                <p><b>Email:</b> {{ $trip->expeditor_email }}</p>
+                <p><b>Phone:</b> {{ $trip->expeditor_phone }}</p>
+            </div>
+
+            <div class="mt-3 pt-3 border-t text-sm space-y-1">
+                <p><b>Bank:</b> {{ $trip->expeditor_bank }}</p>
+                <p><b>IBAN:</b> {{ $trip->expeditor_iban }}</p>
+                <p><b>BIC:</b> {{ $trip->expeditor_bic }}</p>
+            </div>
+        </div>
+
+        {{-- TRANSPORT --}}
+        <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-3">
+            <h3 class="text-lg font-semibold mb-2">2️⃣ Transport Details</h3>
+
+            <div class="space-y-3 text-sm">
+
+                <div class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                    <p class="font-semibold mb-1">👨‍✈️ Driver</p>
+                    <p>{{ $trip->driver?->first_name }} {{ $trip->driver?->last_name }}</p>
+                    <p class="text-xs text-gray-500">Phone: {{ $trip->driver?->phone }}</p>
+                </div>
+
+                <div class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                    <p class="font-semibold mb-1">🚚 Truck</p>
+                    <p>{{ $trip->truck?->plate }}</p>
+                    <p class="text-xs text-gray-500">{{ $trip->truck?->brand }} {{ $trip->truck?->model }}</p>
+                </div>
+
+                <div class="border rounded-lg p-3 bg-gray-50 dark:bg-gray-800">
+                    <p class="font-semibold mb-1">🚛 Trailer</p>
+                    <p>{{ $trip->trailer?->plate }}</p>
+                    <p class="text-xs text-gray-500">{{ $trip->trailer?->brand }}</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    {{-- ===================================================================== --}}
+    {{-- CARGO GROUPS (unchanged) --}}
+    {{-- ===================================================================== --}}
+
+    {{-- ... ТВОЙ КОД ДАЛЬШЕ БЕЗ ИЗМЕНЕНИЙ ... --}}
+
+
+    {{-- DOCUMENTS --}}
     <livewire:trips.trip-documents-section :trip="$trip" />
 
-    {{-- 💶 Expenses --}}
+    {{-- EXPENSES --}}
     <livewire:trips.trip-expenses-section :trip="$trip" />
 
-    <div class="pt-6">
+    {{-- BACK --}}
+    <div class="pt-4 hidden md:block">
         <a href="{{ route('trips.index') }}"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg">
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-sm">
             ⬅ Back to Trips
         </a>
     </div>
+
 </div>
 
-{{-- TOAST NOTIFICATIONS --}}
 @push('scripts')
 <script>
-const toast = (text, color='bg-gray-800') => {
-    const t = document.createElement('div');
-    t.textContent = text;
-    t.className = `${color} fixed bottom-20 right-4 text-white text-sm px-4 py-2 rounded shadow z-50`;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-};
-
-Livewire.on('cmrGenerated', data => toast('CMR generated!', 'bg-green-600'));
-Livewire.on('orderGenerated', data => toast('Order generated!', 'bg-indigo-600'));
-Livewire.on('invoiceGenerated', data => toast('Invoice generated!', 'bg-amber-600'));
+    const toast = (t, c='bg-gray-800') => {
+        const el = document.createElement('div');
+        el.textContent = t;
+        el.className = `${c} fixed bottom-20 right-4 text-white text-sm px-4 py-2 rounded shadow z-50`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    };
+    Livewire.on('cmrGenerated', () => toast('CMR generated!','bg-green-600'));
+    Livewire.on('orderGenerated', () => toast('Order generated!','bg-indigo-600'));
+    Livewire.on('invoiceGenerated', () => toast('Invoice generated!','bg-amber-600'));
 </script>
 @endpush
