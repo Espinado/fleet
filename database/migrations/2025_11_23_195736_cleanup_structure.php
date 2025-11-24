@@ -13,19 +13,15 @@ return new class extends Migration {
      * =========================*/
     Schema::table('trips', function (Blueprint $table) {
 
-        // 1) Удаляем внешние ключи, если существуют
-        $fks = [
-            'trips_shipper_id_foreign',
-            'trips_consignee_id_foreign',
-        ];
-
-        foreach ($fks as $fk) {
-            try {
-                $table->dropForeign($fk);
-            } catch (\Exception $e) {}
+        // Удаляем FK безопасным методом
+        if (Schema::hasColumn('trips', 'shipper_id')) {
+            try { $table->dropForeign(['shipper_id']); } catch (\Throwable $e) {}
+        }
+        if (Schema::hasColumn('trips', 'consignee_id')) {
+            try { $table->dropForeign(['consignee_id']); } catch (\Throwable $e) {}
         }
 
-        // 2) Удаляем поля
+        // Удаляем поля
         $drop = [
             'shipper_id',
             'consignee_id',
@@ -49,7 +45,7 @@ return new class extends Migration {
 
         foreach ($drop as $col) {
             if (Schema::hasColumn('trips', $col)) {
-                $table->dropColumn($col);
+                try { $table->dropColumn($col); } catch (\Throwable $e) {}
             }
         }
     });
@@ -60,17 +56,11 @@ return new class extends Migration {
      * =========================*/
     Schema::table('trip_cargos', function (Blueprint $table) {
 
-        // FK на клиентов (вдруг надо)
-        $fks = [
-            'trip_cargos_shipper_id_foreign',
-            'trip_cargos_consignee_id_foreign',
-            'trip_cargos_customer_id_foreign',
-        ];
-
-        foreach ($fks as $fk) {
-            try {
-                $table->dropForeign($fk);
-            } catch (\Exception $e) {}
+        // Безопасное удаление FK
+        foreach (['shipper_id', 'consignee_id', 'customer_id'] as $col) {
+            if (Schema::hasColumn('trip_cargos', $col)) {
+                try { $table->dropForeign([$col]); } catch (\Throwable $e) {}
+            }
         }
 
         $drop = [
@@ -88,7 +78,7 @@ return new class extends Migration {
 
         foreach ($drop as $col) {
             if (Schema::hasColumn('trip_cargos', $col)) {
-                $table->dropColumn($col);
+                try { $table->dropColumn($col); } catch (\Throwable $e) {}
             }
         }
     });
@@ -99,10 +89,11 @@ return new class extends Migration {
      * =========================*/
     Schema::table('trip_steps', function (Blueprint $table) {
         if (Schema::hasColumn('trip_steps', 'sequence')) {
-            $table->dropColumn('sequence');
+            try { $table->dropColumn('sequence'); } catch (\Throwable $e) {}
         }
     });
 }
+
 
 
 
