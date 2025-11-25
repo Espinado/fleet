@@ -99,11 +99,7 @@
     </ul>
 </div>
 
-@push('scripts')
-@if(!$readonly)
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-@endif
-@endpush
+
 
 @push('scripts')
 <script>
