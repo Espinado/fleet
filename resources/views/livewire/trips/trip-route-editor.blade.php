@@ -19,15 +19,50 @@
         </div>
     @endif
 
-    {{-- UL для Sortable --}}
+    {{-- UL for Sortable --}}
     <ul id="sortableSteps-{{ $tripId }}"
         wire:ignore
-        class="space-y-4">
+        class="space-y-4"
+        x-data
+        x-init="
+            if ($el.dataset.sortableAttached === '1') return;
+
+            new Sortable($el, {
+                animation: 240,
+                easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+                handle: '.cursor-move',
+
+                ghostClass: 'route-step-ghost',
+                chosenClass: 'route-step-chosen',
+                dragClass: 'route-step-dragging',
+
+                fallbackOnBody: true,
+                swapThreshold: 0.6,
+
+                onEnd() {
+                    const ids = Array.from($el.querySelectorAll('li[data-step-id]'))
+                        .map(li => Number(li.dataset.stepId));
+
+                    console.log('SORTED →', ids);
+
+                    const root = $el.closest('[wire\\:id]');
+                    if (!root) return;
+
+                    const componentId = root.getAttribute('wire:id');
+                    if (!componentId) return;
+
+                    Livewire.find(componentId)?.call('updateOrder', { orderedIds: ids });
+                },
+            });
+
+            $el.dataset.sortableAttached = '1';
+        "
+    >
 
         @foreach($steps as $step)
-            <li data-id="{{ $step['id'] }}"
+            <li data-step-id="{{ $step['id'] }}"
                 wire:key="step-{{ $step['id'] }}"
-                class="p-4 rounded-xl border shadow-sm transition
+                class="route-step-item p-4 rounded-xl border shadow-sm transition
                 {{ $readonly ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100' }}">
 
                 <div class="flex justify-between items-start">
@@ -53,7 +88,7 @@
                     </div>
 
                     @unless($readonly)
-                        <div class="text-gray-400 text-xl cursor-move select-none">☰</div>
+                        <div class="cursor-move text-gray-400 text-xl select-none">☰</div>
                     @endunless
 
                 </div>
@@ -67,38 +102,8 @@
 @push('scripts')
 @if(!$readonly)
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", initRouteSortable);
-document.addEventListener("livewire:initialized", initRouteSortable);
-document.addEventListener("livewire:navigated", initRouteSortable);
-
-function initRouteSortable() {
-    const list = document.getElementById("sortableSteps-{{ $tripId }}");
-
-    if (!list || list.dataset.sortableAttached === "1") return;
-
-    new Sortable(list, {
-        animation: 150,
-        handle: '.cursor-move',
-
-        onEnd() {
-            const ids = Array.from(list.querySelectorAll('li[data-id]'))
-                .map(li => Number(li.dataset.id));
-
-            console.log("SORTED →", ids);
-
-            // 🚀 ПРЯМОЙ ВЫЗОВ МЕТОДА Livewire
-            $wire.updateOrder({ orderedIds: ids });
-        }
-    });
-
-    list.dataset.sortableAttached = "1";
-}
-</script>
 @endif
 @endpush
-
 
 @push('scripts')
 <script>
@@ -114,15 +119,47 @@ function routeToast(text) {
     document.body.appendChild(box);
 
     setTimeout(() => {
-        box.style.opacity = "0";
-        box.style.transition = "opacity 0.5s";
+        box.style.opacity = '0';
+        box.style.transition = 'opacity 0.5s';
     }, 2500);
 
-    box.addEventListener("transitionend", () => box.remove());
+    box.addEventListener('transitionend', () => box.remove());
 }
 </script>
 
 <style>
+/* Базовая плавность для всех элементов списка */
+#sortableSteps-{{ $tripId }} .route-step-item {
+    transition:
+        transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
+        box-shadow 0.2s ease,
+        background-color 0.2s ease,
+        opacity 0.2s ease;
+}
+
+/* Элемент, который "выбрали" (подняли) */
+.route-step-chosen {
+    background-color: #eff6ff !important;
+    transform: scale(1.03) translateY(-2px);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+    border-radius: 16px;
+    z-index: 50;
+}
+
+/* Элемент, который тянем (active drag) */
+.route-step-dragging {
+    opacity: 0.95;
+}
+
+/* "Призрак" (ghost) на месте исходного элемента */
+.route-step-ghost {
+    opacity: 0.25;
+    background: #dbeafe !important;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.35);
+}
+
+/* Небольшой fade-in для тостов */
 @keyframes fade {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }

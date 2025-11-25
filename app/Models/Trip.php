@@ -60,10 +60,13 @@ class Trip extends Model
         return $this->hasMany(TripCargo::class)->orderBy('id');
     }
 
-    public function steps()
-    {
-        return $this->hasMany(TripStep::class)->orderBy('order')->orderBy('id');
-    }
+   public function steps()
+{
+    return $this->hasMany(TripStep::class)
+        ->orderByRaw('`order` ASC')
+        ->orderBy('id');
+}
+
 
     public function history()
     {

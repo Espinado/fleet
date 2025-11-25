@@ -14,16 +14,22 @@ class ViewTrip extends Component
     public function mount($trip)
     {
         $this->trip = $trip instanceof Trip
-            ? $trip->load([
-                'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee', 'cargos.customer',
-                'cargos.items', // ✅ добавлено
-            ])
-            : Trip::with([
-                'driver', 'truck', 'trailer',
-                'cargos.shipper', 'cargos.consignee', 'cargos.customer',
-                'cargos.items', // ✅ добавлено
-            ])->findOrFail($trip);
+    ? $trip->load([
+        'driver', 'truck', 'trailer',
+        'cargos.shipper',
+        'cargos.consignee',
+        'cargos.customer',
+        'cargos.items',
+        'cargos.steps',   // ⭐ <— ЭТО ИСПРАВЛЕНИЕ
+    ])
+    : Trip::with([
+        'driver', 'truck', 'trailer',
+        'cargos.shipper',
+        'cargos.consignee',
+        'cargos.customer',
+        'cargos.items',
+        'cargos.steps',   // ⭐ <— ЭТО ИСПРАВЛЕНИЕ
+    ])->findOrFail($trip);
     }
 
     public function generateCmr(int $cargoId): void
@@ -70,6 +76,18 @@ class ViewTrip extends Component
 
     public function render()
     {
+
+         $this->trip->load([
+        'driver',
+        'truck',
+        'trailer',
+        'cargos.shipper',
+        'cargos.consignee',
+        'cargos.customer',
+        'cargos.items',
+        'cargos.steps',
+    ]);
+
         return view('livewire.trips.view-trip', [
             'trip' => $this->trip,
         ])->layout('layouts.app')->title('View CMR Trip');

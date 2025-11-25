@@ -10,23 +10,23 @@ use App\Helpers\TripStepSorter;
 
 class TripRouteEditor extends Component
 {
-    public Trip $trip;
     public int $tripId;
 
     public array $steps = [];
     public bool $readonly = false;
 
-    public function mount(Trip $trip)
+    public function mount(int $tripId)
     {
-        $this->trip = $trip->load('steps');
-        $this->tripId = $trip->id;
+        $this->tripId = $tripId;
+
+        $trip = Trip::with('steps')->findOrFail($tripId);
 
         // водитель не может сортировать
         $this->readonly = auth()->user()?->role === 'driver';
 
         // автосортировка только один раз, если все order = null
         if (!$this->readonly && !$this->hasManualOrder()) {
-            $this->autoSort();
+            $this->autoSort($trip);
         }
 
         $this->loadSteps();
@@ -40,9 +40,9 @@ class TripRouteEditor extends Component
             ->exists();
     }
 
-    private function autoSort(): void
+    private function autoSort(Trip $trip): void
     {
-        $sorted = TripStepSorter::sort($this->trip->steps);
+        $sorted = TripStepSorter::sort($trip->steps);
 
         foreach ($sorted as $i => $step) {
             $step->update(['order' => $i + 1]);
@@ -56,7 +56,6 @@ class TripRouteEditor extends Component
             ->orderBy('id')
             ->get()
             ->map(function (TripStep $s) {
-
                 $country = config("countries.{$s->country_id}.name") ?? '—';
 
                 $city = '—';
@@ -78,28 +77,27 @@ class TripRouteEditor extends Component
             ->toArray();
     }
 
-   #[On('stepOrderChanged')]
-public function updateOrder($data = null)
-{
-    if ($this->readonly) return;
+    public function updateOrder($data = null)
+    {
+        if ($this->readonly) return;
 
-    // Если вызвали без данных — выходим тихо:
-    if (!$data || !isset($data['orderedIds'])) {
-        return;
+        if (!$data || !isset($data['orderedIds'])) {
+            return;
+        }
+
+        $ids = $data['orderedIds'];
+
+        foreach (array_values($ids) as $i => $id) {
+            \Log::info("Updating step", ['id' => $id, 'new_order' => $i+1]);
+
+            TripStep::where('id', $id)
+                ->where('trip_id', $this->tripId)
+                ->update(['order' => $i + 1]);
+        }
+
+        $this->loadSteps();
+        $this->dispatch('order-updated');
     }
-
-    $ids = $data['orderedIds'];
-
-    foreach (array_values($ids) as $i => $id) {
-        \Log::info("Updating step", ['id' => $id, 'new_order' => $i+1]);
-        TripStep::where('id', $id)
-            ->where('trip_id', $this->tripId)
-            ->update(['order' => $i + 1]);
-    }
-
-    $this->loadSteps();
-    $this->dispatch('order-updated');
-}
 
     public function render()
     {
