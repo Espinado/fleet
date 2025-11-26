@@ -6,6 +6,10 @@
     <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="shortcut icon" href="/favicon.ico">
+<link rel="manifest" href="/driver/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/driver/icons/icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
    @vite(['resources/driver/css/app.css', 'resources/driver/js/app.js'])
     @livewireStyles

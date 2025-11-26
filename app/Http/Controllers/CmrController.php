@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use App\Helpers\CalculateTax;
+use App\Models\TripStep;
 
 class CmrController extends Controller
 {
@@ -71,132 +72,200 @@ class CmrController extends Controller
     return ucfirst(trim(implode(' ', $words))) . ' EUR, 00 centi';
 }
 
-    public function generateAndSave(TripCargo $cargo)
-    {
-        $trip = $cargo->trip;
-       
-        // 🟢 Находим все грузы для этой пары (shipper → consignee)
-        $cargos = $trip->cargos()
-            ->where('shipper_id', $cargo->shipper_id)
-            ->where('consignee_id', $cargo->consignee_id)
-            ->get();
-             $cmr_Nr = $this->getOrCreateOrderNumber($trip, $cargos);
+  public function generateAndSave(TripCargo $cargo)
+{
+    $trip = $cargo->trip;
 
+    // ==== 1. Грузы для пары shipper -> consignee ====
+    $cargos = $trip->cargos()
+        ->where('shipper_id', $cargo->shipper_id)
+        ->where('consignee_id', $cargo->consignee_id)
+        ->get();
+        $totalPriceWithTax = $cargos->sum('price_with_tax');
 
-        if ($cargos->isEmpty()) {
-            return back()->with('error', 'No cargos found for this pair.');
-        }
-
-        $shipper   = $cargos->first()->shipper;
-        $consignee = $cargos->first()->consignee;
-
-        // 🟢 Собираем все items из всех грузов
-        $allItems = [];
-
-        foreach ($cargos as $c) {
-          foreach ($c->items as $item) {
-  $allItems[] = [
-    'cargo_paletes' => $item->cargo_paletes ?? 0,
-    'packages'      => $item->packages ?? 0,
-    'cargo_tonnes'  => $item->cargo_tonnes ?? 0,
-    'desc'          => $item->description ?? '',
-    'weight'        => $item->weight ?? 0,
-    'volume'        => $item->volume ?? 0,
-    'price_with_tax'=> $item->price_with_tax ?? 0, // 👈 важно
-];
-}
-        }
-
-        if (empty($allItems)) {
-            return back()->with('error', 'No cargo items found for this client pair.');
-        }
-
-        // 🟢 Формируем все данные для PDF
-        $data = [
-            'sender' => [
-                'name'     => $shipper->company_name ?? '—',
-                'address'  => $shipper->fiz_address ?? $shipper->jur_address ?? '—',
-                'city'     => getCityById(
-                    (int)($shipper->fiz_city_id ?? $shipper->jur_city_id),
-                    (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
-                ),
-                'country'  => getCountryById(
-                    (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
-                ),
-                'reg_nr'   => $shipper->reg_nr ?? '—',
-            ],
-
-            'receiver' => [
-                'name'     => $consignee->company_name ?? '—',
-                'address'  => $consignee->fiz_address ?? $consignee->jur_address ?? '—',
-                'city'     => getCityById(
-                    (int)($consignee->fiz_city_id ?? $consignee->jur_city_id),
-                    (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
-                ),
-                'country'  => getCountryById(
-                    (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
-                ),
-                'reg_nr'   => $consignee->reg_nr ?? '—',
-            ],
-
-            'carrier' => [
-                'name'           => $trip->expeditor_name ?? '—',
-                'address'        => $trip->expeditor_address ?? '—',
-                'city'           => $trip->expeditor_city ?? '—',
-                'country'        => $trip->expeditor_country ?? '—',
-                'reg_nr'         => $trip->expeditor_reg_nr ?? '—',
-                'driver'         => trim(($trip->driver->first_name ?? '') . ' ' . ($trip->driver->last_name ?? '')) ?: '—',
-                'truck'          => trim(($trip->truck->brand ?? '') . ' ' . ($trip->truck->model ?? '')) ?: '—',
-                'truck_plate'    => $trip->truck->plate ?? '—',
-                'trailer'        => trim(($trip->trailer->brand ?? '') . ' ' . ($trip->trailer->model ?? '')) ?: '—',
-                'trailer_plate'  => $trip->trailer->plate ?? '—',
-            ],
-
-            'loading_place'     => getCityById((int)$cargo->loading_city_id, (int)$cargo->loading_country_id)
-                                    . ', ' . getCountryById((int)$cargo->loading_country_id),
-            'unloading_place'   => getCityById((int)$cargo->unloading_city_id, (int)$cargo->unloading_country_id)
-                                    . ', ' . getCountryById((int)$cargo->unloading_country_id),
-            'loading_address'   => $cargo->loading_address ?? '',
-            'unloading_address' => $cargo->unloading_address ?? '',
-            'items'             => $allItems,
-            'date'              => Carbon::now()->format('d.m.Y'),
-            'trip_id'           => $trip->id,
-            'cmr_nr'            => $cmr_Nr,
-        ];
-
-        // 🟢 Подготовка путей
-        $tripId    = $trip->id ?? 0;
-        $dir       = "cmr/trip_{$tripId}";
-        $fileName  = "cmr_{$cargo->shipper_id}_{$cargo->consignee_id}.pdf";
-        $storagePath = "public/{$dir}/{$fileName}";
-        $publicUrl = asset("storage/{$dir}/{$fileName}");
-
-        Storage::disk('public')->makeDirectory($dir);
-
-        // 🟢 Генерация PDF
-        $pdf = Pdf::loadView('pdf.cmr-template', $data)
-            ->setPaper('A4')
-             ->setPaper('A4', 'portrait')
-    ->setOption('margin-top', 0)
-    ->setOption('margin-right', 0)
-    ->setOption('margin-bottom', 0)
-    ->setOption('margin-left', 0);
-
-        // 🟢 Сохраняем PDF в storage
-        Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
-
-        // 🟢 Обновляем все грузы этой пары
-        foreach ($cargos as $c) {
-            $c->update([
-                'cmr_file'       => "cmr/trip_{$tripId}/{$fileName}",
-                'cmr_created_at' => now(),
-                'cmr_nr'         => $cmr_Nr,
-            ]);
-        }
-
-        // 🟢 Возвращаем ссылку для открытия
-        return $publicUrl;
+    if ($cargos->isEmpty()) {
+        return back()->with('error', 'No cargos found for this pair.');
     }
+
+    // ==== 2. Order / CMR number ====
+    $cmrNr = $this->getOrCreateOrderNumber($trip, $cargos);
+
+    // ==== 3. Клиенты ====
+    $shipper   = $cargos->first()->shipper;
+    $consignee = $cargos->first()->consignee;
+
+    // =====================================
+    // ==== 4. СБОР ВСЕХ ITEMS С ПОЛЯМИ ====
+    // =====================================
+    $items = [];
+
+    foreach ($cargos as $c) {
+        foreach ($c->items as $item) {
+
+            // Список всех полей cargo-item
+            $fields = [
+                'description'     => $item->description,
+                'packages'        => $item->packages,
+                'pallets'         => $item->pallets,
+                'units'           => $item->units,
+                'net_weight'      => $item->net_weight,
+                'gross_weight'    => $item->gross_weight,
+                'tonnes'          => $item->tonnes,
+                'volume'          => $item->volume,
+                'loading_meters'  => $item->loading_meters,
+                'hazmat'          => $item->hazmat,
+                'temperature'     => $item->temperature,
+                'stackable'       => $item->stackable,
+                'instructions'    => $item->instructions,
+                'remarks'         => $item->remarks,
+                'price'           => $item->price,
+                'tax_percent'     => $item->tax_percent,
+                'tax_amount'      => $item->tax_amount,
+                'price_with_tax'  => $item->price_with_tax,
+            ];
+
+            // Убираем пустые поля
+            $filtered = [];
+            foreach ($fields as $key => $value) {
+                if ($value !== null && $value !== '' && $value !== 0) {
+                    $filtered[$key] = $value;
+                }
+            }
+
+            if (!empty($filtered)) {
+                $items[] = $filtered;
+            }
+        }
+    }
+
+    if (empty($items)) {
+        return back()->with('error', 'No cargo items found for this client pair.');
+    }
+
+
+    // ================================================
+    // ==== 5. МЕСТА ЗАГРУЗКИ / ВЫГРУЗКИ ЧЕРЕЗ ШАГИ ====
+    // ================================================
+
+    $loadingSteps = collect();
+$unloadingSteps = collect();
+
+foreach ($cargos as $c) {
+    foreach ($c->steps as $step) {
+        if ($step->type === 'loading') {
+            $loadingSteps->push($step);
+        } elseif ($step->type === 'unloading') {
+            $unloadingSteps->push($step);
+        }
+    }
+}
+
+$loadingPlaces = $loadingSteps
+    ->unique('id')
+    ->map(function (TripStep $s) {
+        return getCityById($s->city_id, $s->country_id)
+            . ', ' . getCountryById($s->country_id)
+            . ($s->address ? ' — ' . $s->address : '');
+    })
+    ->values()
+    ->toArray();
+
+$unloadingPlaces = $unloadingSteps
+    ->unique('id')
+    ->map(function (TripStep $s) {
+        return getCityById($s->city_id, $s->country_id)
+            . ', ' . getCountryById($s->country_id)
+            . ($s->address ? ' — ' . $s->address : '');
+    })
+    ->values()
+    ->toArray();
+
+
+    // =============================
+    // ==== 6. ДАННЫЕ ДЛЯ PDF ======
+    // =============================
+
+    $data = [
+        'sender' => [
+            'name'    => $shipper->company_name ?? '—',
+            'address' => $shipper->fiz_address ?? $shipper->jur_address ?? '—',
+            'city'    => getCityById(
+                (int)($shipper->fiz_city_id ?? $shipper->jur_city_id),
+                (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
+            ),
+            'country' => getCountryById(
+                (int)($shipper->fiz_country_id ?? $shipper->jur_country_id)
+            ),
+            'reg_nr'  => $shipper->reg_nr ?? '—',
+        ],
+
+        'receiver' => [
+            'name'    => $consignee->company_name ?? '—',
+            'address' => $consignee->fiz_address ?? $consignee->jur_address ?? '—',
+            'city'    => getCityById(
+                (int)($consignee->fiz_city_id ?? $consignee->jur_city_id),
+                (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
+            ),
+            'country' => getCountryById(
+                (int)($consignee->fiz_country_id ?? $consignee->jur_country_id)
+            ),
+            'reg_nr'  => $consignee->reg_nr ?? '—',
+        ],
+
+        'carrier' => [
+            'name'          => $trip->expeditor_name ?? '—',
+            'address'       => $trip->expeditor_address ?? '—',
+            'city'          => $trip->expeditor_city ?? '—',
+            'country'       => $trip->expeditor_country ?? '—',
+            'reg_nr'        => $trip->expeditor_reg_nr ?? '—',
+            'driver'        => trim(($trip->driver->first_name ?? '') . ' ' . ($trip->driver->last_name ?? '')) ?: '—',
+            'truck'         => trim(($trip->truck->brand ?? '') . ' ' . ($trip->truck->model ?? '')) ?: '—',
+            'truck_plate'   => $trip->truck->plate ?? '—',
+            'trailer'       => trim(($trip->trailer->brand ?? '') . ' ' . ($trip->trailer->model ?? '')) ?: '—',
+            'trailer_plate' => $trip->trailer->plate ?? '—',
+        ],
+
+        'loading_places'   => $loadingPlaces,
+        'unloading_places' => $unloadingPlaces,
+
+        'items'   => $items,
+        'date'    => now()->format('d.m.Y'),
+        'trip_id' => $trip->id,
+        'cmr_nr'  => $cmrNr,
+         'total_price_with_tax' => $totalPriceWithTax,
+    ];
+
+
+    // ===========================
+    // ==== 7. СОХРАНЕНИЕ PDF ====
+    // ===========================
+
+    $dir = "cmr/trip_{$trip->id}";
+    $fileName = "cmr_{$cargo->shipper_id}_{$cargo->consignee_id}.pdf";
+
+    Storage::disk('public')->makeDirectory($dir);
+
+    $pdf = Pdf::loadView('pdf.cmr-template', $data)
+        ->setPaper('A4')
+        ->setOption('margin-top', 0)
+        ->setOption('margin-right', 0)
+        ->setOption('margin-bottom', 0)
+        ->setOption('margin-left', 0);
+
+    Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
+
+    // ==== обновляем все грузы ====
+    foreach ($cargos as $c) {
+        $c->update([
+            'cmr_file'       => "cmr/trip_{$trip->id}/{$fileName}",
+            'cmr_created_at' => now(),
+            'cmr_nr'         => $cmrNr,
+        ]);
+    }
+
+    return asset("storage/{$dir}/{$fileName}");
+}
+
 public function generateTransportOrder(TripCargo $cargo)
 {
     $trip = $cargo->trip;
@@ -331,6 +400,10 @@ public function generateInvoice(TripCargo $cargo)
     $paymentTerms = $cargos->firstWhere('payment_terms', '!=', null)?->payment_terms ?? null;
     $dueDate      = $paymentTerms ? Carbon::parse($paymentTerms) : $invoiceDate->copy()->addDays(7);
 
+    // 🟢 ДАТЫ ДЛЯ ИНВОЙСА: первая загрузка и последняя выгрузка
+    $firstLoadingDate  = $cargos->min('loading_date');
+    $lastUnloadingDate = $cargos->max('unloading_date');
+
     // 💶 Суммы
     $totals = \App\Helpers\CalculateTax::forCargos($cargos);
     $subtotal = $totals['subtotal'];
@@ -353,7 +426,6 @@ public function generateInvoice(TripCargo $cargo)
         $payer = $cargo->customer;
         $payerLabel = 'Customer (Pasūtītājs)';
     } else {
-        // 🧩 fallback: если тип не указан или не найден — используем shipper
         $payer = $cargo->shipper;
         $payerLabel = 'Shipper (Nosūtītājs)';
     }
@@ -369,6 +441,10 @@ public function generateInvoice(TripCargo $cargo)
         'order_nr'     => $invoiceNr,
         'invoice_date' => $invoiceDate->format('d.m.Y'),
         'due_date'     => $dueDate->format('d.m.Y'),
+
+        // 🟢 Добавлены новые правильные даты
+        'first_loading_date'  => $firstLoadingDate,
+        'last_unloading_date' => $lastUnloadingDate,
 
         'expeditor' => [
             'name'    => $trip->expeditor_name ?? '—',
@@ -441,6 +517,7 @@ public function generateInvoice(TripCargo $cargo)
 
     return asset("storage/{$dir}/{$fileName}");
 }
+
 
 
 

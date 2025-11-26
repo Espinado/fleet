@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>CMR Consignment Note</title>
+
     <style>
         @font-face {
             font-family: 'DejaVu Sans';
@@ -13,23 +14,19 @@
         html, body {
             font-family: 'DejaVu Sans', sans-serif;
             font-size: 11.5px;
-            line-height: 1.25;
+            line-height: 1.3;
             color: #000;
             margin: 0;
             padding: 0;
         }
 
-        /* ⚙️ DomPDF A4 */
         @page {
             size: A4;
-            margin-top: 16mm;
-            margin-right: 16mm;
-            margin-bottom: 16mm;
-            margin-left: 16mm;
+            margin: 12mm 14mm;
         }
 
         .wrapper {
-            padding: 8mm 8mm 5mm 8mm;
+            padding: 6mm;
             position: relative;
             z-index: 2;
         }
@@ -43,12 +40,12 @@
 
         td, th {
             border: 0.7px solid #000;
-            padding: 3px 5px;
+            padding: 4px 6px;
             vertical-align: top;
         }
 
         th {
-            background: #f8f8f8;
+            background: #f2f2f2;
             text-align: center;
         }
 
@@ -63,7 +60,7 @@
 
         .field-num {
             font-weight: bold;
-            font-size: 10.5px;
+            font-size: 10px;
             margin-bottom: 2px;
         }
 
@@ -72,8 +69,7 @@
 
         .cmr-bg {
             position: fixed;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             font-size: 140px;
             color: rgba(0,0,0,0.05);
@@ -81,8 +77,15 @@
             letter-spacing: 3px;
             z-index: 0;
         }
+
+        ul {
+            margin: 0 0 4px 14px;
+            padding: 0;
+            list-style: disc;
+        }
     </style>
 </head>
+
 <body>
 
 <div class="cmr-bg">CMR</div>
@@ -95,153 +98,241 @@
         INTERNATIONAL CONSIGNMENT NOTE (CMR) Nr. {{ $cmr_nr ?? '—' }}
     </div>
 
-    {{-- === 1–5 === --}}
+    {{-- === BLOCK 1–5 === --}}
     <table>
         <tr>
             <td width="50%">
                 <div class="field-num">1. Sūtītājs / Sender</div>
-                <b>{{ $sender['name'] ?? '—' }}</b><br>
-                {{ $sender['address'] ?? '' }}<br>
-                {{ $sender['city'] ?? '' }}, {{ $sender['country'] ?? '' }}<br>
-                Reg. Nr: {{ $sender['reg_nr'] ?? '—' }}
+                <b>{{ $sender['name'] }}</b><br>
+                {{ $sender['address'] }}<br>
+                {{ $sender['city'] }}, {{ $sender['country'] }}<br>
+                Reg. Nr: {{ $sender['reg_nr'] }}
             </td>
+
             <td>
                 <div class="field-num">2. Saņēmējs / Consignee</div>
-                <b>{{ $receiver['name'] ?? '—' }}</b><br>
-                {{ $receiver['address'] ?? '' }}<br>
-                {{ $receiver['city'] ?? '' }}, {{ $receiver['country'] ?? '' }}<br>
-                Reg. Nr: {{ $receiver['reg_nr'] ?? '—' }}
+                <b>{{ $receiver['name'] }}</b><br>
+                {{ $receiver['address'] }}<br>
+                {{ $receiver['city'] }}, {{ $receiver['country'] }}<br>
+                Reg. Nr: {{ $receiver['reg_nr'] }}
             </td>
         </tr>
+
         <tr>
             <td>
                 <div class="field-num">4. Iekraušanas vieta un datums / Place and date of taking over</div>
-                {{ $loading_address ?? '' }}<br>
-                {{ $loading_place ?? '' }}<br>
-                Date: {{ $date ?? '' }}
+
+                {{-- MULTIPLE LOADING PLACES --}}
+                @foreach($loading_places as $p)
+                    • {{ $p }}<br>
+                @endforeach
+
+                Date: {{ $date }}
             </td>
 
             <td>
                 <div class="field-num">3. Piegādes vieta / Place of delivery</div>
-                {{ $unloading_address ?? '' }}<br>
-                {{ $unloading_place ?? '' }}
+
+                {{-- MULTIPLE UNLOADING PLACES --}}
+                @foreach($unloading_places as $p)
+                    • {{ $p }}<br>
+                @endforeach
             </td>
         </tr>
+
         <tr>
             <td colspan="2">
                 <div class="field-num">5. Pievienotie dokumenti / Documents attached</div>
-                Invoice nr. {{ $cmr_nr ?? '—' }}
+                Invoice nr. {{ $cmr_nr }}
             </td>
         </tr>
     </table>
 
-    {{-- === 6–13 === --}}
+
+    {{-- === BLOCK 6–12 MAIN SUM TABLE === --}}
     <table>
         <tr class="center">
-            <th width="10%">6. Paletes<br>Pallets</th>
-            <th width="8%">7. Vietu skaits<br>Packages</th>
-            <th width="12%">8. Svars, tonnas<br>Weight, tonnes</th>
-            <th width="29%">9. Kravas apraksts<br>Nature of goods</th>
-            <th width="12%">10. Cena (ar PVN)<br>Price (with tax)</th>
-            <th width="9%">11. Bruto svars, kg<br>Gross weight</th>
-            <th width="8%">12. Tilpums, m³<br>Volume</th>
+            <th width="10%">6. Paletes</th>
+            <th width="8%">7. Vietas</th>
+            <th width="12%">8. Tonnas</th>
+            <th width="29%">9. Apraksts</th>
+            <th width="12%">10. Cena ar PVN</th>
+            <th width="9%">11. Bruto kg</th>
+            <th width="8%">12. m³</th>
         </tr>
 
         @php
-            $totalPaletes = 0;
-            $totalPackages = 0;
-            $totalTonnes = 0;
-            $totalGross = 0;
-            $totalVolume = 0;
-            $totalPriceWithTax = 0;
+            $t_pallets = 0;
+            $t_packages = 0;
+            $t_tonnes = 0;
+            $t_gross = 0;
+            $t_volume = 0;
+            $t_price = 0;
         @endphp
 
-        @forelse($items ?? [] as $it)
+        @foreach($items as $it)
             @php
-                $paletes = (float)($it['cargo_paletes'] ?? 0);
-                $packages = (float)($it['packages'] ?? 0);
-                $tonnes = (float)($it['cargo_tonnes'] ?? 0);
-                $gross = (float)($it['gross'] ?? ($it['weight'] ?? 0));
-                $volume = (float)($it['volume'] ?? 0);
-                $priceWithTax = (float)($it['price_with_tax'] ?? 0);
+                $pallets = $it['pallets'] ?? 0;
+                $packages = $it['packages'] ?? 0;
+                $tonnes = $it['tonnes'] ?? 0;
+                $gross = $it['gross_weight'] ?? 0;
+                $volume = $it['volume'] ?? 0;
+                $price = $it['price_with_tax'] ?? 0;
 
-                $totalPaletes += $paletes;
-                $totalPackages += $packages;
-                $totalTonnes += $tonnes;
-                $totalGross += $gross;
-                $totalVolume += $volume;
-                $totalPriceWithTax += $priceWithTax;
+                $t_pallets += $pallets;
+                $t_packages += $packages;
+                $t_tonnes += $tonnes;
+                $t_gross += $gross;
+                $t_volume += $volume;
+                $t_price += $price;
             @endphp
 
             <tr>
-                <td class="center">{{ $paletes ?: '—' }}</td>
+                <td class="center">{{ $pallets ?: '—' }}</td>
                 <td class="center">{{ $packages ?: '—' }}</td>
                 <td class="center">{{ $tonnes ?: '—' }}</td>
-                <td>{{ $it['desc'] ?? '' }}</td>
-                <td class="right">{{ $priceWithTax ? number_format($priceWithTax, 2, '.', ' ') . ' €' : '—' }}</td>
+                <td>{{ $it['description'] ?? '' }}</td>
+                <td class="right">
+                    @if($price)
+                        {{ number_format($price, 2, '.', ' ') }} €
+                    @else — @endif
+                </td>
                 <td class="right">{{ $gross ?: '—' }}</td>
                 <td class="right">{{ $volume ?: '—' }}</td>
             </tr>
-        @empty
-            <tr><td colspan="7" class="center small">No cargo items</td></tr>
-        @endforelse
+        @endforeach
 
         <tr style="font-weight:bold; background:#f4f4f4;">
-            <td class="center">{{ $totalPaletes, 2, '.', ' ' }}</td>
-            <td class="center">{{ $totalPackages, 2, '.', ' ' }}</td>
-            <td class="center">{{ number_format($totalTonnes, 2, '.', '') }}</td>
+            <td class="center">{{ $t_pallets }}</td>
+            <td class="center">{{ $t_packages }}</td>
+            <td class="center">{{ number_format($t_tonnes, 2) }}</td>
             <td class="right">TOTALS:</td>
-            <td class="right">{{ number_format($totalPriceWithTax, 2, '.', ' ') }} €</td>
-            <td class="right">{{ number_format($totalGross, 2, '.', '') }}</td>
-            <td class="right">{{ number_format($totalVolume, 2, '.', '') }}</td>
+          <td class="right">{{ number_format($total_price_with_tax, 2, '.', ' ') }} €</td>
+            <td class="right">{{ number_format($t_gross, 2) }}</td>
+            <td class="right">{{ number_format($t_volume, 2) }}</td>
         </tr>
     </table>
 
-    {{-- === 13–20 === --}}
+
+{{-- === ITEM DETAILS BLOCK (HORIZONTAL TABLE) === --}}
+{{-- === ITEM DETAILS BLOCK: SINGLE TABLE WITH SPLIT AFTER 8 ROWS === --}}
+@if(!empty($items))
+
+    <h4 style="margin:10px 0 4px; font-weight:bold;">Cargo item details</h4>
+
+    @php
+        // Разбиваем на две части: первые 8, остальные — вторая таблица
+        $chunks = array_chunk($items, 8);
+    @endphp
+
+    @foreach($chunks as $chunkIndex => $chunk)
+        <table style="margin-bottom:10px;">
+            <tr class="center">
+                <th>Paletes</th>
+                <th>Vietas</th>
+                <th>Gab.</th>
+                <th>Tonnas</th>
+                <th>Net kg</th>
+                <th>Bruto kg</th>
+                <th>m³</th>
+                <th>LM</th>
+                <th>ADR</th>
+                <th>Temp</th>
+                <th>Stackable</th>
+                <th>Apraksts</th>
+            </tr>
+
+            @foreach($chunk as $it)
+                @php
+                    $pallets = $it['pallets'] ?? '—';
+                    $packages = $it['packages'] ?? '—';
+                    $units = $it['units'] ?? '—';
+                    $tonnes = $it['tonnes'] ?? '—';
+                    $net = $it['net_weight'] ?? '—';
+                    $gross = $it['gross_weight'] ?? '—';
+                    $volume = $it['volume'] ?? '—';
+                    $lm = $it['loading_meters'] ?? '—';
+                    $adr = $it['hazmat'] ?? '—';
+                    $temp = $it['temperature'] ?? '—';
+                    $stack = isset($it['stackable']) ? ($it['stackable'] ? 'Yes' : 'No') : '—';
+                    $desc = $it['description'] ?? '—';
+                @endphp
+
+                <tr>
+                    <td class="center">{{ $pallets }}</td>
+                    <td class="center">{{ $packages }}</td>
+                    <td class="center">{{ $units }}</td>
+                    <td class="center">{{ $tonnes }}</td>
+                    <td class="right">{{ $net }}</td>
+                    <td class="right">{{ $gross }}</td>
+                    <td class="right">{{ $volume }}</td>
+                    <td class="center">{{ $lm }}</td>
+                    <td class="center">{{ $adr }}</td>
+                    <td class="center">{{ $temp }}</td>
+                    <td class="center">{{ $stack }}</td>
+                    <td>{{ $desc }}</td>
+                </tr>
+            @endforeach
+
+        </table>
+    @endforeach
+
+@endif
+
+
+
+
+    {{-- === BLOCK 13–20 === --}}
     <table>
         <tr>
             <td width="50%">
                 <div class="field-num">13. Nosūtītāja norādījumi / Sender's instructions</div>
-                {{ $instructions ?? '—' }}
+                — 
             </td>
             <td>
                 <div class="field-num">14. Samaksa pēc piegādes / Cash on delivery</div>
-                {{ $cash_on_delivery ?? '—' }}
+                —
             </td>
         </tr>
+
         <tr>
             <td>
                 <div class="field-num">15. Apdrošinājuma vērtība / Declared value</div>
-                {{ $declared_value ?? '—' }}
+                —
             </td>
+
             <td>
                 <div class="field-num">16. Pārvadātājs / Carrier</div>
-                <b>{{ $carrier['name'] ?? '—' }}</b><br>
-                {{ $carrier['address'] ?? '' }}, {{ $carrier['city'] ?? '' }}<br>
-                {{ $carrier['country'] ?? '' }}<br>
-                Reg. Nr: {{ $carrier['reg_nr'] ?? '' }}
+                <b>{{ $carrier['name'] }}</b><br>
+                {{ $carrier['address'] }}, {{ $carrier['city'] }}<br>
+                {{ $carrier['country'] }}<br>
+                Reg. Nr: {{ $carrier['reg_nr'] }}
             </td>
         </tr>
     </table>
 
-    {{-- === 21–25 === --}}
+
+    {{-- === FOOTER 21–25 === --}}
     <table>
         <tr>
             <td width="25%">
                 <div class="field-num">21. Sastādīts / Established</div>
-                Date: {{ $date ?? '' }}
+                {{ $date }}
             </td>
+
             <td width="25%">
                 <div class="field-num">22. Iekraušana / Taking over</div>
                 Time: ___________
             </td>
+
             <td width="25%">
-                <div class="field-num">23. Transportlīdzeklis / Vehicle Reg. No</div>
-                {{ $carrier['truck'] ?? '' }} &nbsp;{{ $carrier['truck_plate'] ?? '' }}
+                <div class="field-num">23. Transportlīdzeklis</div>
+                {{ $carrier['truck'] }} &nbsp;{{ $carrier['truck_plate'] }}
             </td>
+
             <td>
                 <div class="field-num">24. Piekabe / Trailer</div>
-                {{ $carrier['trailer'] ?? '' }} &nbsp;{{ $carrier['trailer_plate'] ?? '' }}
+                {{ $carrier['trailer'] }} &nbsp;{{ $carrier['trailer_plate'] }}
             </td>
         </tr>
     </table>
