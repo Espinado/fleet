@@ -53,4 +53,11 @@ class TripStep extends Model
         ->withPivot('role');
 }
 
+public function stepDocuments()
+{
+    return $this->hasMany(TripStepDocument::class, 'trip_step_id');
+}
+
+
+
 }

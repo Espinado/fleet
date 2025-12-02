@@ -87,7 +87,7 @@
                     @endphp
 
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
-                        <td class="px-3 py-2">{{ ucfirst($doc->type) }}</td>
+                       <td class="px-3 py-2">{{ $doc->type->label() }}</td>
                         <td class="px-3 py-2">{{ $doc->name }}</td>
                         <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                             {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}

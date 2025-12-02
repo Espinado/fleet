@@ -44,20 +44,9 @@
     — order: {{ $step->order ?? 'null' }}
 </p>
             @php
-                $isLoading = $step->type === 'loading';
-
-                $cargos = $trip->cargos()->where(function ($q) use ($step, $isLoading) {
-                    if ($isLoading) {
-                        $q->where('loading_country_id', $step->country_id)
-                          ->where('loading_city_id', $step->city_id)
-                          ->where('loading_address', $step->address);
-                    } else {
-                        $q->where('unloading_country_id', $step->country_id)
-                          ->where('unloading_city_id', $step->city_id)
-                          ->where('unloading_address', $step->address);
-                    }
-                })->get();
-            @endphp
+    $isLoading = $step->type === 'loading';
+    $cargos = $step->cargos;
+@endphp
 
             <div class="bg-white shadow rounded-xl p-4 space-y-3">
 
