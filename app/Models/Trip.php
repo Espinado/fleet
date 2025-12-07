@@ -108,7 +108,10 @@ public function cargos()
         );
     }
 
-   
+   public function expenses()
+{
+    return $this->hasMany(\App\Models\TripExpense::class);
+}
 
 
 

@@ -4,12 +4,15 @@
     {{-- ========================= --}}
     {{-- 📱 MOBILE PWA TOP BAR    --}}
     {{-- ========================= --}}
-    <div class="md:hidden sticky top-0 z-30 -mx-4 -mt-4 mb-4 bg-gray-900 text-white px-4 py-3 shadow-lg flex items-center justify-between">
+    <div
+        class="md:hidden sticky top-0 z-30 -mx-4 -mt-4 mb-4 bg-gray-900 text-white px-4 py-3 shadow-lg flex items-center justify-between">
+
         <div class="flex items-center gap-3">
             <a href="{{ route('trips.index') }}"
                class="flex items-center justify-center w-8 h-8 rounded-full bg-white/10 active:bg-white/20">
                 ←
             </a>
+
             <div class="flex flex-col">
                 <span class="text-xs uppercase tracking-wide text-gray-300">Trip</span>
                 <span class="text-base font-semibold">CMR #{{ $trip->id }}</span>
@@ -29,18 +32,26 @@
         </span>
     </div>
 
+
+    {{-- ========================= --}}
     {{-- NOTIFICATIONS --}}
+    {{-- ========================= --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
             {{ session('success') }}
         </div>
     @endif
+
     @if (session('error'))
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {{ session('error') }}
         </div>
     @endif
 
+
+    {{-- ========================= --}}
+    {{-- PHP PREP --}}
+    {{-- ========================= --}}
     @php
         $steps = $trip->steps()->orderBy('order')->orderBy('id')->get();
         $loadingSteps   = $steps->where('type', 'loading');
@@ -118,100 +129,114 @@
             </div>
         </div>
     </div>
-    {{-- ============================ --}}
-    {{-- TRIP ROUTE EDITOR (DRAG & DROP) --}}
-    {{-- ============================ --}}
-    <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6">
-       <livewire:trips.trip-route-editor :tripId="$trip->id" />
+
+
+    {{-- ===================================================================== --}}
+    {{-- 🚚 TRIP ROUTE EDITOR — АККОРДЕОН --}}
+    {{-- ===================================================================== --}}
+    <div x-data="{ openRoute: false }"
+         class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6">
+
+        <button
+            @click="openRoute = !openRoute"
+            class="w-full flex items-center justify-between mb-3 px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold">
+            🛣️ Маршрут рейса (управление, Drag & Drop)
+            <span x-text="openRoute ? '▲' : '▼'" class="text-xs"></span>
+        </button>
+
+        <div x-show="openRoute"
+             x-collapse
+             class="mt-4">
+            <livewire:trips.trip-route-editor :tripId="$trip->id" />
+        </div>
     </div>
 
+{{-- ===================================================================== --}}
+{{-- 📦 CARGO GROUPS --}}
+{{-- ===================================================================== --}}
+<div class="space-y-6">
 
-    {{-- ===================================================================== --}}
-    {{-- 📦 CARGO GROUPS --}}
-    {{-- ===================================================================== --}}
-    <div class="space-y-6">
+@foreach ($trip->cargos->groupBy('customer_id') as $customerId => $customerCargos)
+    @php $customer = $customerCargos->first()->customer; @endphp
 
-        @foreach ($trip->cargos->groupBy('customer_id') as $customerId => $customerCargos)
-            @php $customer = $customerCargos->first()->customer; @endphp
+    {{-- ===================================== --}}
+    {{-- CLIENT ACCORDION --}}
+    {{-- ===================================== --}}
+    <div x-data="{ openClient: false }"
+         class="bg-white dark:bg-gray-900 shadow rounded-xl border border-gray-200 dark:border-gray-700">
 
-            {{-- CUSTOMER HEADER --}}
-            <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                        👥 {{ $customer->company_name }}
-                    </h3>
-                    <p class="text-xs text-gray-500">
-                        {{ getCountryById($customer->jur_country_id) }},
-                        {{ getCityNameByCountryId($customer->jur_country_id, $customer->jur_city_id) }}
-                    </p>
-                </div>
+        {{-- CLIENT HEADER --}}
+        <button @click="openClient = !openClient"
+                class="w-full flex items-center justify-between p-4 text-left">
+            <div>
+                <h3 class="text-lg font-semibold">{{ $customer->company_name }}</h3>
+                <p class="text-xs text-gray-500">
+                    {{ getCountryById($customer->jur_country_id) }},
+                    {{ getCityNameByCountryId($customer->jur_country_id, $customer->jur_city_id) }}
+                </p>
             </div>
+            <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openClient }">▼</div>
+        </button>
 
+        {{-- CLIENT BODY --}}
+        <div x-show="openClient" x-collapse class="p-4 space-y-4">
+
+            {{-- =============================== --}}
             {{-- CARGO LIST --}}
-            <div class="space-y-4 mt-2">
+            {{-- =============================== --}}
+            @foreach ($customerCargos as $cargo)
 
-                @foreach ($customerCargos as $cargo)
+                <div x-data="{ openCargo: false }"
+                     class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-300 dark:border-gray-700">
 
-                    <div x-data="{ open: false }"
-                         class="bg-white dark:bg-gray-900 shadow rounded-xl border border-gray-200 dark:border-gray-700">
+                    {{-- CARGO HEADER --}}
+                    <button @click="openCargo = !openCargo"
+                            class="w-full flex items-center justify-between text-left">
+                        <div>
+                            <p class="font-semibold">📦 Krava #{{ $cargo->id }}</p>
+                            <p class="text-xs text-gray-500">
+                                {{ $cargo->shipper->company_name }} →
+                                {{ $cargo->consignee->company_name }}
+                            </p>
+                            <p class="text-xs text-gray-400 mt-1">
+                                {{ $cargo->items->sum('packages') }} pkgs •
+                                {{ number_format($cargo->items->sum('gross_weight'), 0) }} kg
+                            </p>
+                        </div>
+                        <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openCargo }">▼</div>
+                    </button>
 
-                        {{-- HEADER --}}
-                        <button type="button"
-                                class="w-full flex items-center justify-between p-4 text-left"
-                                @click="open = !open">
+                    {{-- CARGO BODY --}}
+                    <div x-show="openCargo" x-collapse class="mt-3 space-y-4">
 
-                            <div>
-                                <p class="font-semibold text-gray-800 dark:text-gray-100">
-                                    📦 Cargo #{{ $cargo->id }}
-                                </p>
+                        {{-- ========================================= --}}
+                        {{-- ROUTE ACCORDION --}}
+                        {{-- ========================================= --}}
+                        <div x-data="{ openRoute: false }">
 
-                                <p class="text-xs text-gray-500">
-                                    {{ $cargo->shipper->company_name }} →
-                                    {{ $cargo->consignee->company_name }}
-                                </p>
+                            <button @click="openRoute = !openRoute"
+                                    class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
+                                🗺 Maršruta punkti
+                                <span :class="{ 'rotate-180': openRoute }">▼</span>
+                            </button>
 
-                                <p class="text-xs text-gray-400 mt-1">
-                                    {{ $cargo->items->sum('packages') }} pkgs,
-                                    {{ number_format($cargo->items->sum('gross_weight'), 0) }} kg
-                                </p>
-                            </div>
-
-                            <div class="text-gray-400 transition-transform duration-200"
-                                 :class="{ 'rotate-180': open }">▼</div>
-                        </button>
-
-
-                        {{-- BODY --}}
-                        <div class="px-4 pb-4 pt-2 space-y-4"
-                             x-show="open"
-                             x-transition.opacity.duration.200ms>
-
-                            {{-- ========================= --}}
-                            {{-- 🔵 ROUTE POINTS (FIXED) --}}
-                            {{-- ========================= --}}
-                            <div class="space-y-3">
-                                <p class="text-xs font-semibold text-gray-500">Route points</p>
+                            <div x-show="openRoute" x-collapse class="mt-3 space-y-3">
 
                                 @foreach ($steps as $step)
-
                                     @php
                                         $pivot = $step->cargos->firstWhere('id', $cargo->id)?->pivot;
                                     @endphp
 
                                     @if ($pivot)
-                                        <div class="space-y-1">
+                                        <div class="bg-white dark:bg-gray-900 p-3 rounded-lg border shadow-sm space-y-2">
 
                                             {{-- STEP HEADER --}}
                                             <div class="flex items-center gap-2 text-sm">
 
                                                 @if ($pivot->role === 'loading')
-                                                    <span class="px-2 py-0.5 text-xs bg-blue-200 text-blue-800 rounded-full">
-                                                        Load
-                                                    </span>
+                                                    <span class="px-2 py-0.5 text-xs bg-blue-200 text-blue-800 rounded-full">Iekraušana</span>
                                                 @else
-                                                    <span class="px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full">
-                                                        Unload
-                                                    </span>
+                                                    <span class="px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full">Izkraušana</span>
                                                 @endif
 
                                                 <span>
@@ -224,159 +249,191 @@
                                                 </span>
                                             </div>
 
-                                            {{-- 📄 STEP DOCUMENTS --}}
-                                            <div class="ml-10 mt-3">
+                                            {{-- STEP DOCUMENTS --}}
+                                            <div class="ml-6">
                                                 <livewire:trips.trip-step-document-uploader
                                                     :step="$step"
-                                                    :key="'step-docs-'.$step->id"
+                                                    :key="'step-docs-'.$cargo->id.'-'.$step->id"
                                                 />
                                             </div>
 
                                         </div>
                                     @endif
+                                @endforeach
 
+                            </div>
+                        </div>
+
+
+                        {{-- ========================================= --}}
+                        {{-- ITEMS ACCORDION --}}
+                        {{-- ========================================= --}}
+                        <div x-data="{ openItems: false }">
+
+                            <button @click="openItems = !openItems"
+                                    class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
+                                📦 Preču vienības
+                                <span :class="{ 'rotate-180': openItems }">▼</span>
+                            </button>
+
+                            <div x-show="openItems" x-collapse class="mt-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg space-y-2">
+                                @foreach ($cargo->items as $item)
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="font-medium">{{ $item->description }}</p>
+                                            <p class="text-xs text-gray-400">
+                                                {{ $item->packages }} pkgs •
+                                                {{ $item->pallets }} pallets •
+                                                {{ number_format($item->gross_weight, 0) }} kg
+                                            </p>
+                                        </div>
+                                        <div class="font-semibold">
+                                            €{{ number_format($item->price_with_tax, 2) }}
+                                        </div>
+                                    </div>
                                 @endforeach
                             </div>
 
-                            {{-- ========================= --}}
-                            {{-- ITEMS --}}
-                            {{-- ========================= --}}
-                            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                                <p class="text-xs font-semibold text-gray-500 mb-2">Cargo items</p>
-
-                                <div class="space-y-2 text-sm">
-                                    @foreach ($cargo->items as $item)
-                                        <div class="flex items-center justify-between">
-                                            <div>
-                                                <p class="font-medium">{{ $item->description }}</p>
-                                                <p class="text-xs text-gray-400">
-                                                    {{ $item->packages }} pkgs •
-                                                    {{ $item->pallets }} pallets •
-                                                    {{ number_format($item->gross_weight, 0) }} kg
-                                                </p>
-                                            </div>
-                                            <div class="font-semibold">
-                                                €{{ number_format($item->price_with_tax, 2) }}
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
+                        </div>
 
 
-                            {{-- ========================= --}}
-                            {{-- CMR / ORDER / INVOICE --}}
-                            {{-- ========================= --}}
-                            <div class="grid grid-cols-3 gap-2 text-xs">
+                        {{-- ========================================= --}}
+                        {{-- CMR / ORDER / INVOICE ACCORDION --}}
+                        {{-- ========================================= --}}
+                        <div x-data="{ openDocs: false }">
+
+                            <button @click="openDocs = !openDocs"
+                                    class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
+                                📄 Dokumenti
+                                <span :class="{ 'rotate-180': openDocs }">▼</span>
+                            </button>
+
+                            <div x-show="openDocs" x-collapse class="mt-3 grid grid-cols-3 gap-2 text-xs">
 
                                 {{-- CMR --}}
-                                <div x-data="{ loading: false }">
+                                <div x-data="{ loading:false }">
                                     @if ($cargo->cmr_file)
                                         <a href="{{ asset('storage/'.$cargo->cmr_file) }}"
                                            target="_blank"
                                            class="block px-3 py-2 bg-blue-200 text-blue-800 rounded-lg text-center font-semibold">
-                                            👁 View CMR
+                                            👁 CMR
                                         </a>
                                     @else
-                                        <button
-                                            @click="loading = true; $wire.generateCmr({{ $cargo->id }});"
-                                            :disabled="loading"
-                                            class="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold flex items-center justify-center gap-1 disabled:opacity-60">
+                                        <button @click="loading=true;$wire.generateCmr({{ $cargo->id }});"
+                                                :disabled="loading"
+                                                class="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
                                             <span x-show="!loading">📘 Generate</span>
-                                            <span x-show="loading">
-                                                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4" fill="none"></circle>
-                                                    <path class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                                </svg>
-                                            </span>
+                                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif
                                 </div>
 
                                 {{-- ORDER --}}
-                                <div x-data="{ loading: false }">
+                                <div x-data="{ loading:false }">
                                     @if ($cargo->order_file)
                                         <a href="{{ asset('storage/'.$cargo->order_file) }}"
                                            target="_blank"
                                            class="block px-3 py-2 bg-indigo-200 text-indigo-800 rounded-lg text-center font-semibold">
-                                            👁 View Order
+                                            👁 Order
                                         </a>
                                     @else
-                                        <button
-                                            @click="loading = true; $wire.generateOrder({{ $cargo->id }});"
-                                            :disabled="loading"
-                                            class="w-full px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-semibold flex items-center justify-center gap-1 disabled:opacity-60">
+                                        <button @click="loading=true;$wire.generateOrder({{ $cargo->id }});"
+                                                :disabled="loading"
+                                                class="w-full px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
                                             <span x-show="!loading">📄 Generate</span>
-                                            <span x-show="loading">
-                                                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4" fill="none"></circle>
-                                                    <path class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                                </svg>
-                                            </span>
+                                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-indigo-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif
                                 </div>
 
                                 {{-- INVOICE --}}
-                                <div x-data="{ loading: false }">
+                                <div x-data="{ loading:false }">
                                     @if ($cargo->inv_file)
                                         <a href="{{ asset('storage/'.$cargo->inv_file) }}"
                                            target="_blank"
                                            class="block px-3 py-2 bg-amber-200 text-amber-800 rounded-lg text-center font-semibold">
-                                            👁 View Invoice
+                                            👁 Invoice
                                         </a>
                                     @else
-                                        <button
-                                            @click="loading = true; $wire.generateInvoice({{ $cargo->id }});"
-                                            :disabled="loading"
-                                            class="w-full px-3 py-2 bg-amber-100 text-amber-700 rounded-lg font-semibold flex items-center justify-center gap-1 disabled:opacity-60">
+                                        <button @click="loading=true;$wire.generateInvoice({{ $cargo->id }});"
+                                                :disabled="loading"
+                                                class="w-full px-3 py-2 bg-amber-100 text-amber-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
                                             <span x-show="!loading">💶 Generate</span>
-                                            <span x-show="loading">
-                                                <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke-width="4" fill="none"></circle>
-                                                    <path class="opacity-75" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                                </svg>
-                                            </span>
+                                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-amber-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif
                                 </div>
 
                             </div>
-
                         </div>
+
                     </div>
+                </div>
 
-                @endforeach
+            @endforeach
 
-            </div>
-
-        @endforeach
-
+        </div>
     </div>
 
-
-    {{-- ============================ --}}
-    {{-- TRIP-WIDE DOCUMENTS --}}
-    {{-- ============================ --}}
-    <livewire:trips.trip-documents-section :trip="$trip" />
-
-
-    {{-- ============================ --}}
-    {{-- EXPENSES --}}
-    {{-- ============================ --}}
-    <livewire:trips.trip-expenses-section :trip="$trip" />
+@endforeach
 
 </div>
 
 
+
+{{-- ============================ --}}
+{{-- 📄 TRIP-WIDE DOCUMENTS (аккордеон) --}}
+{{-- ============================ --}}
+<div x-data="{ openTripDocs: false }"
+     class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
+
+    <button @click="openTripDocs = !openTripDocs"
+            class="w-full flex items-center justify-between text-left">
+        <h2 class="text-lg font-semibold">📄 Dokumenti par reisu</h2>
+        <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripDocs }">▼</div>
+    </button>
+
+    <div x-show="openTripDocs" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <livewire:trips.trip-documents-section :trip="$trip" />
+    </div>
+</div>
+
+
+
+
+{{-- ============================ --}}
+{{-- 💶 EXPENSES (аккордеон) --}}
+{{-- ============================ --}}
+<div x-data="{ openTripExpenses: false }"
+     class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
+
+    <button @click="openTripExpenses = !openTripExpenses"
+            class="w-full flex items-center justify-between text-left">
+        <h2 class="text-lg font-semibold">💶 Izdevumi par reisu</h2>
+        <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripExpenses }">▼</div>
+    </button>
+
+    <div x-show="openTripExpenses" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <livewire:trips.trip-expenses-section :trip="$trip" />
+    </div>
+</div>
+
+
+
+{{-- =============================================================== --}}
+{{-- TOAST NOTIFICATIONS --}}
+{{-- =============================================================== --}}
 @push('scripts')
 <script>
-    const toast = (t, c='bg-gray-800') => {
+    const toast = (text, color = 'bg-gray-900') => {
         const el = document.createElement('div');
-        el.textContent = t;
-        el.className = `${c} fixed bottom-20 right-4 text-white text-sm px-4 py-2 rounded shadow z-50`;
+        el.textContent = text;
+        el.className =
+            `${color} fixed bottom-20 right-4 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50`;
         document.body.appendChild(el);
-        setTimeout(() => el.remove(), 2500);
+
+        setTimeout(() => el.classList.add('opacity-0', 'transition', 'duration-500'), 2000);
+        setTimeout(() => el.remove(), 2600);
     };
 
     Livewire.on('cmrGenerated', () => toast('CMR generated!', 'bg-green-600'));
@@ -384,5 +441,8 @@
     Livewire.on('invoiceGenerated', () => toast('Invoice generated!', 'bg-amber-600'));
     Livewire.on('stepDocumentDeleted', () => toast('Document deleted', 'bg-red-600'));
     Livewire.on('stepDocumentUploaded', () => toast('Document uploaded', 'bg-green-600'));
+    Livewire.on('tripDocumentUploaded', () => toast('Trip document uploaded', 'bg-green-600'));
+    Livewire.on('tripExpenseAdded', () => toast('Expense saved', 'bg-green-600'));
+    Livewire.on('tripExpenseDeleted', () => toast('Expense deleted', 'bg-red-600'));
 </script>
 @endpush

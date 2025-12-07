@@ -8,7 +8,7 @@ use App\Livewire\DriverApp\Dashboard;
 use App\Livewire\DriverApp\TripDetails;
 use App\Livewire\DriverApp\Profile;
 
-use App\Livewire\DriverApp\StepDocumentUploader;
+use App\Livewire\DriverApp\DriverStepDocumentUploader;
 use App\Livewire\DriverApp\ViewDocument;
 
 // ==========================
@@ -31,10 +31,7 @@ Route::middleware(['driver'])->group(function () {
         ->name('driver.trip');
 
     // Единая загрузка документа
-    Route::get('/driver/trip/{trip}/step/{step}/upload',
-        StepDocumentUploader::class
-    )->name('driver.documents.upload');
-
+   
     // Просмотр документа
     Route::get('/driver/document/{document}', ViewDocument::class)
         ->name('driver.documents.view');

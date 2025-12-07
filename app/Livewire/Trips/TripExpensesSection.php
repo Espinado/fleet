@@ -7,10 +7,12 @@ use Livewire\WithFileUploads;
 use App\Models\TripExpense;
 use App\Enums\TripExpenseCategory;
 use Illuminate\Support\Facades\Storage;
+use Livewire\WithPagination;
 
 class TripExpensesSection extends Component
 {
     use WithFileUploads;
+    use WithPagination;
 
     public $trip;
 
@@ -19,8 +21,11 @@ class TripExpensesSection extends Component
     public $amount;
     public $currency = 'EUR';
     public $expense_date;
+    public $search = '';
+    public $sortField = 'expense_date';
+    public $sortDirection = 'desc';
+    public $perPage = 10;
 
-    // ⭐ исправлено — НЕ $file
     public $expenseFile;
 
     protected $rules = [
@@ -35,7 +40,6 @@ class TripExpensesSection extends Component
     {
         $this->validate();
 
-        // ⭐ Загружаем файл (если есть)
         $path = $this->expenseFile
             ? $this->expenseFile->store("trip_expenses/trip_{$this->trip->id}", 'public')
             : null;
@@ -51,11 +55,70 @@ class TripExpensesSection extends Component
             'created_by'  => auth()->id(),
         ]);
 
-        // ⭐ сбрасываем только нужные поля
         $this->reset(['description', 'amount', 'expense_date', 'expenseFile']);
         $this->category = 'fuel';
 
         session()->flash('success', '💶 Izdevumi veiksmīgi pievienoti.');
+    }
+
+    public function sortBy($field)
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+    }
+
+    public function updatingSearch() { $this->resetPage(); }
+    public function updatingPerPage() { $this->resetPage(); }
+
+    public function getFilteredExpensesProperty()
+{
+    $search = $this->search;
+
+    return $this->trip->expenses()
+        ->when($search, function ($q) use ($search) {
+
+            $labelCases = collect(\App\Enums\TripExpenseCategory::cases())
+                ->map(function($case){
+                    return "WHEN category = '{$case->value}' THEN '" . addslashes($case->label()) . "'";
+                })->implode(' ');
+
+            $q->where(function($sub) use ($search, $labelCases) {
+                $sub->where('description', 'like', "%{$search}%")
+                    ->orWhere('amount', 'like', "%{$search}%")
+                    ->orWhere('category', 'like', "%{$search}%")
+                    ->orWhereRaw(
+                        "(CASE {$labelCases} END) LIKE ?",
+                        ["%{$search}%"]
+                    );
+            });
+        })
+        ->orderBy($this->sortField, $this->sortDirection)
+        ->paginate($this->perPage);
+}
+
+    /** 🔥 Сумма только видимых (отфильтрованных) данных */
+    public function getFilteredTotalProperty()
+    {
+        return $this->filteredExpenses->sum('amount');
+    }
+
+    /** 🔥 Полная сумма всех расходов по рейсу */
+    public function getTotalAllProperty()
+    {
+        return $this->trip->expenses()->sum('amount');
+    }
+
+    /** 🔥 Проверка: применён ли поиск, фильтр, сортировка или лимит */
+    public function getIsFilteredProperty()
+    {
+        return $this->search !== '' ||
+               $this->sortField !== 'expense_date' ||
+               $this->sortDirection !== 'desc' ||
+               $this->perPage != 10;
     }
 
     public function delete($id)
@@ -71,13 +134,7 @@ class TripExpensesSection extends Component
 
     public function render()
     {
-        $expenses = TripExpense::where('trip_id', $this->trip->id)
-            ->orderBy('expense_date', 'desc')
-            ->get();
-
         return view('livewire.trips.trip-expenses-section', [
-            'expenses'   => $expenses,
-            'total'      => $expenses->sum('amount'),
             'categories' => TripExpenseCategory::options(),
         ]);
     }
