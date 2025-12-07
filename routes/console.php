@@ -9,9 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('expiring-docs:notify')->dailyAt('09:00');
-Schedule::command('expiring-docs:notify')->dailyAt('11:00');
-Schedule::command('expiring-docs:notify')->dailyAt('12:00');
-Schedule::command('expiring-docs:notify')->dailyAt('21:15');
-Schedule::command('expiring-docs:notify')->dailyAt('21:30');
-Schedule::command('expiring-docs:notify')->dailyAt('23:10');
-Schedule::command('expiring-docs:notify')->dailyAt('23:20');
+

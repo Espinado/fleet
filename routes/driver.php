@@ -7,36 +7,53 @@ use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
 use App\Livewire\DriverApp\TripDetails;
 use App\Livewire\DriverApp\Profile;
-
 use App\Livewire\DriverApp\DriverStepDocumentUploader;
 use App\Livewire\DriverApp\ViewDocument;
 
-// ==========================
-// ЛОГИН БЕЗ MIDDLEWARE
-// ==========================
-Route::get('/driver/login', Login::class)
-    ->name('driver.login');
 
-// ==========================
-// ВСЁ ДЛЯ АВТОРИЗОВАННЫХ ВОДИТЕЛЕЙ
-// ==========================
+/*
+|--------------------------------------------------------------------------
+| STATIC FILES FOR PWA (must be before any /driver/{...} routes)
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/driver/manifest.webmanifest', function () {
+    return response()->file(public_path('driver/manifest.webmanifest'), [
+        'Content-Type' => 'application/manifest+json'
+    ]);
+});
+
+Route::get('/driver/icons/{filename}', function ($filename) {
+    $path = public_path("driver/icons/{$filename}");
+    if (!file_exists($path)) abort(404);
+    return response()->file($path);
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN (public)
+|--------------------------------------------------------------------------
+*/
+Route::get('/driver/login', Login::class)->name('driver.login');
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATED DRIVER APP
+|--------------------------------------------------------------------------
+*/
 Route::middleware(['driver'])->group(function () {
 
-    // Dashboard
     Route::get('/driver/dashboard', Dashboard::class)
         ->name('driver.dashboard');
 
-    // Trip details
     Route::get('/driver/trip/{trip}', TripDetails::class)
         ->name('driver.trip');
 
-    // Единая загрузка документа
-   
-    // Просмотр документа
     Route::get('/driver/document/{document}', ViewDocument::class)
         ->name('driver.documents.view');
 
-    // Logout
     Route::post('/driver/logout', function () {
         Auth::logout();
         return redirect()->route('driver.login');
