@@ -16,53 +16,115 @@
     @endif
 
     {{-- Форма --}}
-  <form wire:submit.prevent="saveDocument" enctype="multipart/form-data" class="space-y-4" wire:key="upload-form-{{ $trip->id }}">
-    <div class="flex justify-end">
-        <button type="submit"
-                wire:loading.attr="disabled"
-                class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium rounded-xl px-6 py-2 transition">
-            <span wire:loading.remove wire:target="documentFile,saveDocument">Augšupielādēt</span>
-            <span wire:loading wire:target="documentFile,saveDocument" class="animate-pulse">⏳ Augšupielāde...</span>
-        </button>
-    </div>
+    <form wire:submit.prevent="saveDocument"
+          enctype="multipart/form-data"
+          wire:key="upload-form-{{ $trip->id }}"
+          class="space-y-4">
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dokumenta tips</label>
-            <select wire:model="type"
-                    class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
-                <option value="cmr">CMR</option>
-                <option value="order">Transporta pasūtījums</option>
-                <option value="invoice">Rēķins</option>
-                <option value="permit">Atļauja</option>
-                <option value="insurance">Apdrošināšana</option>
-                <option value="other">Cits</option>
-            </select>
-            @error('type') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+        <div class="flex justify-end">
+            <button type="submit"
+                    wire:loading.attr="disabled"
+                    class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium rounded-xl px-6 py-2 transition">
+                <span wire:loading.remove wire:target="documentFile,saveDocument">
+                    Augšupielādēt
+                </span>
+                <span wire:loading wire:target="documentFile,saveDocument" class="animate-pulse">
+                    ⏳ Augšupielāde...
+                </span>
+            </button>
         </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nosaukums</label>
-            <input type="text" wire:model="name"
-                   placeholder="Piemēram: CMR 09.11.2025"
-                   class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
-                          text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
-            @error('name') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
 
-        <div class="flex flex-col gap-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fails</label>
-            <input wire:ignore type="file" wire:model.live="documentFile" accept="image/*,application/pdf"
-                   class="block w-full text-sm text-gray-600 dark:text-gray-200
-                          file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0
-                          file:bg-indigo-50 dark:file:bg-indigo-900/40
-                          file:text-indigo-700 dark:file:text-indigo-300
-                          hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800/50
-                          file:cursor-pointer">
-            @error('documentFile') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+            {{-- Тип документа --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Dokumenta tips
+                </label>
+
+                <select wire:model="type"
+                        class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
+                               text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
+
+                    {{-- TRIP DOCUMENTS --}}
+                    @if(isset($types['trip']))
+                        <optgroup label="📁 Dokumenti par reisu">
+                            @foreach ($types['trip'] as $enum)
+                                <option value="{{ $enum->value }}">{{ $enum->label() }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+
+                    {{-- EXPENSES --}}
+                    @if(isset($types['expenses']))
+                        <optgroup label="💰 Izdevumi">
+                            @foreach ($types['expenses'] as $enum)
+                                <option value="{{ $enum->value }}">{{ $enum->label() }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+
+                    {{-- STEP --}}
+                    @if(isset($types['step']))
+                        <optgroup label="🚛 Iekraušana / Izkraušana">
+                            @foreach ($types['step'] as $enum)
+                                <option value="{{ $enum->value }}">{{ $enum->label() }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+
+                    {{-- OTHER --}}
+                    @if(isset($types['other']))
+                        <optgroup label="📦 Citi">
+                            @foreach ($types['other'] as $enum)
+                                <option value="{{ $enum->value }}">{{ $enum->label() }}</option>
+                            @endforeach
+                        </optgroup>
+                    @endif
+
+                </select>
+
+                @error('type')
+                    <span class="text-red-600 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
+            {{-- Название документа --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nosaukums</label>
+
+                <input type="text"
+                       wire:model="name"
+                       placeholder="Piemēram: CMR 09.11.2025"
+                       class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
+                              text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
+
+                @error('name')
+                    <span class="text-red-600 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
+            {{-- Файл --}}
+            <div class="flex flex-col gap-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fails</label>
+
+                <input type="file"
+                       wire:model.live="documentFile"
+                       accept="image/*,application/pdf"
+                       class="block w-full text-sm text-gray-600 dark:text-gray-200
+                              file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0
+                              file:bg-indigo-50 dark:file:bg-indigo-900/40
+                              file:text-indigo-700 dark:file:text-indigo-300
+                              hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800/50
+                              file:cursor-pointer">
+
+                @error('documentFile')
+                    <span class="text-red-600 text-sm">{{ $message }}</span>
+                @enderror
+            </div>
+
         </div>
-    </div>
-</form>
+    </form>
 
     {{-- Таблица документов --}}
     <div class="overflow-x-auto -mx-2 sm:mx-0">
@@ -79,6 +141,7 @@
 
             <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                 @forelse($documents as $doc)
+
                     @php
                         $url = $doc->file_url;
                         $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
@@ -87,13 +150,15 @@
                     @endphp
 
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
-                       <td class="px-3 py-2">{{ $doc->type->label() }}</td>
+                        <td class="px-3 py-2">{{ $doc->type->label() }}</td>
+
                         <td class="px-3 py-2">{{ $doc->name }}</td>
+
                         <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                             {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
                         </td>
 
-                        {{-- ✅ Превью файла --}}
+                        {{-- Превью --}}
                         <td class="px-3 py-2">
                             @if($url)
                                 @if($isPdf)
@@ -111,7 +176,8 @@
                                                     transition-transform group-hover:scale-105 shadow-sm">
                                     </a>
                                 @else
-                                    <a href="{{ $url }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                    <a href="{{ $url }}" target="_blank"
+                                       class="text-indigo-600 dark:text-indigo-400 hover:underline">
                                         Atvērt
                                     </a>
                                 @endif
@@ -120,7 +186,7 @@
                             @endif
                         </td>
 
-                        {{-- Удаление --}}
+                        {{-- Delete --}}
                         <td class="px-3 py-2 text-right">
                             <button wire:click="delete({{ $doc->id }})"
                                     wire:confirm="Vai tiešām dzēst šo dokumentu?"
@@ -129,9 +195,12 @@
                             </button>
                         </td>
                     </tr>
+
                 @empty
                     <tr>
-                        <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">Nav dokumentu</td>
+                        <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
+                            Nav dokumentu
+                        </td>
                     </tr>
                 @endforelse
             </tbody>

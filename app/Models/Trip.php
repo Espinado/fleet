@@ -55,17 +55,20 @@ class Trip extends Model
         return $this->belongsTo(Trailer::class);
     }
 
-    public function cargos()
-    {
-        return $this->hasMany(TripCargo::class)->orderBy('id');
-    }
+    
 
-   public function steps()
+ public function steps()
 {
     return $this->hasMany(TripStep::class)
-        ->orderByRaw('`order` ASC')
+        ->orderBy('order')
         ->orderBy('id');
 }
+
+public function cargos()
+{
+    return $this->hasMany(TripCargo::class);
+}
+
 
 
     public function history()
@@ -104,4 +107,9 @@ class Trip extends Model
             'customer_id'   // TripCargo.customer_id
         );
     }
+
+   
+
+
+
 }

@@ -118,6 +118,12 @@
             </div>
         </div>
     </div>
+    {{-- ============================ --}}
+    {{-- TRIP ROUTE EDITOR (DRAG & DROP) --}}
+    {{-- ============================ --}}
+    <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6">
+       <livewire:trips.trip-route-editor :tripId="$trip->id" />
+    </div>
 
 
     {{-- ===================================================================== --}}
@@ -181,50 +187,60 @@
                              x-transition.opacity.duration.200ms>
 
                             {{-- ========================= --}}
-                            {{-- 🔵 ROUTE POINTS --}}
+                            {{-- 🔵 ROUTE POINTS (FIXED) --}}
                             {{-- ========================= --}}
                             <div class="space-y-3">
                                 <p class="text-xs font-semibold text-gray-500">Route points</p>
 
-                                @foreach ($cargo->steps as $step)
+                                @foreach ($steps as $step)
 
-                                    <div class="space-y-1">
+                                    @php
+                                        $pivot = $step->cargos->firstWhere('id', $cargo->id)?->pivot;
+                                    @endphp
 
-                                        {{-- STEP HEADER --}}
-                                        <div class="flex items-center gap-2 text-sm">
-                                            @if ($step->pivot->role === 'loading')
-                                                <span class="px-2 py-0.5 text-xs bg-blue-200 text-blue-800 rounded-full">
-                                                    Load
+                                    @if ($pivot)
+                                        <div class="space-y-1">
+
+                                            {{-- STEP HEADER --}}
+                                            <div class="flex items-center gap-2 text-sm">
+
+                                                @if ($pivot->role === 'loading')
+                                                    <span class="px-2 py-0.5 text-xs bg-blue-200 text-blue-800 rounded-full">
+                                                        Load
+                                                    </span>
+                                                @else
+                                                    <span class="px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full">
+                                                        Unload
+                                                    </span>
+                                                @endif
+
+                                                <span>
+                                                    {{ getCountryById($step->country_id) }},
+                                                    {{ getCityNameByCountryId($step->country_id, $step->city_id) }}
                                                 </span>
-                                            @else
-                                                <span class="px-2 py-0.5 text-xs bg-green-200 text-green-800 rounded-full">
-                                                    Unload
+
+                                                <span class="text-xs text-gray-400">
+                                                    {{ $step->date?->format('d.m') }} {{ $step->time }}
                                                 </span>
-                                            @endif
+                                            </div>
 
-                                            <span>
-                                                {{ getCountryById($step->country_id) }},
-                                                {{ getCityNameByCountryId($step->country_id, $step->city_id) }}
-                                            </span>
+                                            {{-- 📄 STEP DOCUMENTS --}}
+                                            <div class="ml-10 mt-3">
+                                                <livewire:trips.trip-step-document-uploader
+                                                    :step="$step"
+                                                    :key="'step-docs-'.$step->id"
+                                                />
+                                            </div>
 
-                                            <span class="text-xs text-gray-400">
-                                                {{ $step->date?->format('d.m') }} {{ $step->time }}
-                                            </span>
                                         </div>
-
-                                        {{-- ========================= --}}
-                                        {{-- 📄 STEP DOCUMENTS (NEW COMPONENT) --}}
-                                        {{-- ========================= --}}
-                                        <div class="ml-10 mt-3">
-                           <livewire:trips.trip-step-document-uploader  :step="$step"  :key="'step-docs-'.$step->id"/>
-                                        </div>
-
-                                    </div>
+                                    @endif
 
                                 @endforeach
                             </div>
 
+                            {{-- ========================= --}}
                             {{-- ITEMS --}}
+                            {{-- ========================= --}}
                             <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                                 <p class="text-xs font-semibold text-gray-500 mb-2">Cargo items</p>
 
@@ -248,7 +264,9 @@
                             </div>
 
 
+                            {{-- ========================= --}}
                             {{-- CMR / ORDER / INVOICE --}}
+                            {{-- ========================= --}}
                             <div class="grid grid-cols-3 gap-2 text-xs">
 
                                 {{-- CMR --}}

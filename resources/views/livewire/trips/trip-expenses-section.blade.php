@@ -15,7 +15,9 @@
     @endif
 
     {{-- Форма --}}
-    <form wire:submit.prevent="saveExpense" class="space-y-4">
+    <form wire:submit.prevent="saveExpense"
+      enctype="multipart/form-data"
+      class="space-y-4">
         {{-- Верхняя панель с кнопкой справа --}}
         <div class="flex justify-end">
             <button type="submit"
@@ -62,8 +64,9 @@
             <div class="flex flex-wrap items-center gap-3 w-full">
                 <div class="flex-1 min-w-[200px]">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fails</label>
-                    <input type="file" wire:model="file" accept="image/*,application/pdf"
-                           class="block w-full text-sm text-gray-600 dark:text-gray-200
+                   <input type="file"
+       wire:model="expenseFile"
+       accept="image/*,application/pdf"  class="block w-full text-sm text-gray-600 dark:text-gray-200
                                   file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0
                                   file:bg-indigo-50 dark:file:bg-indigo-900/40
                                   file:text-indigo-700 dark:file:text-indigo-300

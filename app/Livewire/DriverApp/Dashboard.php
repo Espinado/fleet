@@ -31,7 +31,7 @@ class Dashboard extends Component
     {
        
      
-   return view('driver-app.pages.dashboard')
+   return view('livewire.driver-app.dashboard')
         ->layout('driver-app.layouts.app', [
             'title' => 'Dashboard'
         ]);

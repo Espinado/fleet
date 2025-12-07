@@ -92,6 +92,7 @@ class ViewTrip extends Component
             'cargos.customer',
             'cargos.items',
             'cargos.steps.documents', // ⭐ ВАЖНО
+             'steps.cargos',   // ← ВАЖНО!
         ]);
     }
 

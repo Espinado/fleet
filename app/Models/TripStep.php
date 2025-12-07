@@ -47,16 +47,23 @@ class TripStep extends Model
      */
    
 
-    public function cargos()
+  public function cargos()
 {
     return $this->belongsToMany(TripCargo::class, 'trip_cargo_step')
-        ->withPivot('role');
+        ->withPivot(['role']);
 }
+
+
+
+
+
 
 public function stepDocuments()
 {
     return $this->hasMany(TripStepDocument::class, 'trip_step_id');
 }
+
+
 
 
 

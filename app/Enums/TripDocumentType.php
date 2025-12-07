@@ -4,84 +4,89 @@ namespace App\Enums;
 
 enum TripDocumentType: string
 {
-    /* ------------------------------
-     |  STEP LOADING
-     |------------------------------*/
-    case LoadingBefore = 'loading_before';
-    case LoadingAfter = 'loading_after';
-    case LoadingDocs = 'loading_docs';
-    case LoadingSignature = 'loading_signature';
+    /* ==========================
+     | STEP LOADING
+     ========================== */
+    case LoadingBefore     = 'loading_before';
+    case LoadingAfter      = 'loading_after';
+    case LoadingDocs       = 'loading_docs';
+    case LoadingSignature  = 'loading_signature';
 
-    /* ------------------------------
-     |  STEP UNLOADING
-     |------------------------------*/
-    case UnloadingBefore = 'unloading_before';
-    case UnloadingAfter = 'unloading_after';
-    case UnloadingDocs = 'unloading_docs';
+    /* ==========================
+     | STEP UNLOADING
+     ========================== */
+    case UnloadingBefore    = 'unloading_before';
+    case UnloadingAfter     = 'unloading_after';
+    case UnloadingDocs      = 'unloading_docs';
     case UnloadingSignature = 'unloading_signature';
 
-    /* ------------------------------
-     |  STEP EXPENSES
-     |------------------------------*/
-    case FuelReceipt = 'fuel_receipt';
-    case TollReceipt = 'toll_receipt';
+    /* ==========================
+     | EXPENSES
+     ========================== */
+    case FuelReceipt    = 'fuel_receipt';
+    case TollReceipt    = 'toll_receipt';
     case ParkingReceipt = 'parking_receipt';
-    case OtherExpense = 'other_expense';
+    case OtherExpense   = 'other_expense';
 
-    /* ------------------------------
-     |  TRIP DOCUMENTS (GLOBAL)
-     |------------------------------*/
-    case CMR = 'cmr';
+    /* ==========================
+     | TRIP DOCUMENTS
+     ========================== */
+    case CMR            = 'cmr';
     case TransportOrder = 'order';
-    case Invoice = 'invoice';
-    case Permit = 'permit';
-    case Insurance = 'insurance';
+    case Invoice        = 'invoice';
+    case Permit         = 'permit';
+    case Insurance      = 'insurance';
 
-    /* ------------------------------
-     |  OTHER
-     |------------------------------*/
+    /* ==========================
+     | OTHER
+     ========================== */
     case Additional = 'additional';
 
-
-    /* LABEL */
+    /* =======================================================
+       LABELS FOR UI
+       ======================================================= */
     public function label(): string
     {
         return match ($this) {
 
-            // STEP LOADING
-            self::LoadingBefore => 'Фото ДО погрузки',
-            self::LoadingAfter => 'Фото ПОСЛЕ погрузки',
-            self::LoadingDocs => 'Документы погрузки',
-            self::LoadingSignature => 'Подпись отправителя',
+            // ---- LOADING ----
+            self::LoadingBefore     => 'Foto pirms iekraušanas',
+            self::LoadingAfter      => 'Foto pēc iekraušanas',
+            self::LoadingDocs       => 'Iekraušanas dokumenti',
+            self::LoadingSignature  => 'Nosūtītāja paraksts',
 
-            // STEP UNLOADING
-            self::UnloadingBefore => 'Фото ДО разгрузки',
-            self::UnloadingAfter => 'Фото ПОСЛЕ разгрузки',
-            self::UnloadingDocs => 'Документы разгрузки',
-            self::UnloadingSignature => 'Подпись получателя',
+            // ---- UNLOADING ----
+            self::UnloadingBefore    => 'Foto pirms izkraušanas',
+            self::UnloadingAfter     => 'Foto pēc izkraušanas',
+            self::UnloadingDocs      => 'Izkraušanas dokumenti',
+            self::UnloadingSignature => 'Saņēmēja paraksts',
 
-            // EXPENSES
-            self::FuelReceipt => 'Чек за топливо',
-            self::TollReceipt => 'Платные дороги',
-            self::ParkingReceipt => 'Парковка',
-            self::OtherExpense => 'Прочий расход',
+            // ---- EXPENSES ----
+            self::FuelReceipt    => 'Degvielas čeks',
+            self::TollReceipt    => 'Ceļu nodevas',
+            self::ParkingReceipt => 'Stāvvieta',
+            self::OtherExpense   => 'Cits izdevums',
 
-            // TRIP DOCUMENTS
-            self::CMR => 'CMR',
+            // ---- TRIP DOCS ----
+            self::CMR            => 'CMR',
             self::TransportOrder => 'Transporta pasūtījums',
-            self::Invoice => 'Rēķins',
-            self::Permit => 'Atļauja',
-            self::Insurance => 'Apdrošināšana',
+            self::Invoice        => 'Rēķins',
+            self::Permit         => 'Atļauja',
+            self::Insurance      => 'Apdrošināšana',
 
-            // OTHER
+            // ---- OTHER ----
             self::Additional => 'Cits',
         };
     }
 
+    /* =======================================================
+       GROUPING (for select Optgroups)
+       ======================================================= */
     public function group(): string
     {
         return match ($this) {
-            // Step docs
+
+            // Step documents
             self::LoadingBefore,
             self::LoadingAfter,
             self::LoadingDocs,
@@ -92,14 +97,14 @@ enum TripDocumentType: string
             self::UnloadingSignature
                 => 'step',
 
-            // Expenses
+            // Expense receipts
             self::FuelReceipt,
             self::TollReceipt,
             self::ParkingReceipt,
             self::OtherExpense
                 => 'expenses',
 
-            // Trip documents
+            // Trip-level documents
             self::CMR,
             self::TransportOrder,
             self::Invoice,
@@ -107,7 +112,23 @@ enum TripDocumentType: string
             self::Insurance
                 => 'trip',
 
+            // Other
             self::Additional => 'other',
         };
+    }
+
+    /* =======================================================
+       SAFE PARSER (never throws)
+       ======================================================= */
+    public static function fromValue(string $value): self
+    {
+        foreach (self::cases() as $case) {
+            if ($case->value === $value) {
+                return $case;
+            }
+        }
+
+        // fallback (never breaks UI)
+        return self::Additional;
     }
 }

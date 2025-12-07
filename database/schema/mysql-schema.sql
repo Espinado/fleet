@@ -386,6 +386,25 @@ CREATE TABLE `trip_status_history` (
   CONSTRAINT `trip_status_history_trip_id_foreign` FOREIGN KEY (`trip_id`) REFERENCES `trips` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `trip_step_documents`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `trip_step_documents` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `trip_step_id` bigint unsigned NOT NULL,
+  `trip_id` bigint unsigned DEFAULT NULL,
+  `cargo_id` bigint unsigned DEFAULT NULL,
+  `uploader_user_id` bigint unsigned DEFAULT NULL,
+  `uploader_driver_id` bigint unsigned DEFAULT NULL,
+  `type` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `file_path` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `original_name` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `comment` text COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `trip_steps`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
@@ -543,3 +562,4 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (39,'2025_11_24_231
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (40,'2025_11_24_231319_remove_old_step_columns_from_trip_cargos',11);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (41,'2025_11_24_231346_remove_trip_cargo_id_from_trip_steps',12);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (42,'2025_11_24_232143_add_role_to_trip_cargo_step_table',13);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (43,'2025_12_02_015625_create_trip_step_documents',14);

@@ -26,30 +26,14 @@
         {{-- Type --}}
         <div>
             <label class="block text-sm font-medium">Tips</label>
-            <select wire:model="type"
+          <select wire:model="type"
         class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
 
-    <optgroup label="Dokumenti">
-        @foreach(\App\Enums\StepDocumentType::cases() as $case)
-            @if(in_array($case, [
-                \App\Enums\StepDocumentType::DeliveryNote,
-                \App\Enums\StepDocumentType::WarehouseStamp,
-                \App\Enums\StepDocumentType::PalletList,
-                \App\Enums\StepDocumentType::Invoice,
-            ]))
-                <option value="{{ $case->value }}">
-                    {{ $case->icon() }} {{ $case->label() }}
-                </option>
-            @endif
-        @endforeach
-    </optgroup>
-
-    <optgroup label="Cits">
-        <option value="{{ \App\Enums\StepDocumentType::Other->value }}">
-            {{ \App\Enums\StepDocumentType::Other->icon() }}
-            {{ \App\Enums\StepDocumentType::Other->label() }}
+    @foreach(\App\Enums\StepDocumentType::cases() as $case)
+        <option value="{{ $case->value }}">
+            {{ $case->label() }}
         </option>
-    </optgroup>
+    @endforeach
 
 </select>
 

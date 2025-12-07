@@ -88,9 +88,7 @@ class TripCargo extends Model
  public function steps()
 {
     return $this->belongsToMany(TripStep::class, 'trip_cargo_step')
-        ->withPivot('role')
-       ->orderByRaw('`trip_steps`.`order` ASC')
-         ->orderBy('trip_steps.id');
-        
+        ->withPivot(['role']);
 }
+
 }

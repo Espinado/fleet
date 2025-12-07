@@ -5,38 +5,41 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
-use App\Livewire\DriverApp\TripDetails as TripView;
+use App\Livewire\DriverApp\TripDetails;
 use App\Livewire\DriverApp\Profile;
 
-use App\Livewire\DriverApp\UploadDocument;
+use App\Livewire\DriverApp\StepDocumentUploader;
 use App\Livewire\DriverApp\ViewDocument;
 
-// === ЛОГИН ВОДИТЕЛЯ (без middleware) ===
+// ==========================
+// ЛОГИН БЕЗ MIDDLEWARE
+// ==========================
 Route::get('/driver/login', Login::class)
     ->name('driver.login');
 
-// === ВСЁ ОСТАЛЬНОЕ — ТОЛЬКО ДЛЯ ВОДИТЕЛЕЙ ===
+// ==========================
+// ВСЁ ДЛЯ АВТОРИЗОВАННЫХ ВОДИТЕЛЕЙ
+// ==========================
 Route::middleware(['driver'])->group(function () {
 
+    // Dashboard
     Route::get('/driver/dashboard', Dashboard::class)
         ->name('driver.dashboard');
 
-    Route::get('/driver/trip/{trip}', TripView::class)
+    // Trip details
+    Route::get('/driver/trip/{trip}', TripDetails::class)
         ->name('driver.trip');
 
-   
+    // Единая загрузка документа
+    Route::get('/driver/trip/{trip}/step/{step}/upload',
+        StepDocumentUploader::class
+    )->name('driver.documents.upload');
 
-    // ===== ЗАГРУЗКА ДОКУМЕНТОВ =====
-   Route::get('/driver/trip/{trip}/step/{step}/upload/{type}',
-    \App\Livewire\DriverApp\UploadDocument::class
-)->name('driver.documents.upload');
+    // Просмотр документа
+    Route::get('/driver/document/{document}', ViewDocument::class)
+        ->name('driver.documents.view');
 
-    // ===== ПРОСМОТР ДОКУМЕНТА =====
-    Route::get('/driver/document/{document}',
-        ViewDocument::class
-    )->name('driver.documents.view');
-
-    // ===== LOGOUT =====
+    // Logout
     Route::post('/driver/logout', function () {
         Auth::logout();
         return redirect()->route('driver.login');
