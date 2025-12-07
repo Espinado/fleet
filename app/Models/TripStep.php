@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\TripStepStatus;
 
 class TripStep extends Model
 {
@@ -17,10 +18,18 @@ class TripStep extends Model
         'time',        // строка, удобнее в формах
         'order',
         'notes',
+
+        // 🔥 добавляем:
+        'status',
+        'started_at',
+        'completed_at',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'status' => TripStepStatus::class,
+        'started_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     /** ========================

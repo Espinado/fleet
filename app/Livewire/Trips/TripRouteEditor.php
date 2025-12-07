@@ -3,7 +3,6 @@
 namespace App\Livewire\Trips;
 
 use Livewire\Component;
-use Livewire\Attributes\On;
 use App\Models\Trip;
 use App\Models\TripStep;
 use App\Helpers\TripStepSorter;
@@ -24,7 +23,7 @@ class TripRouteEditor extends Component
         // водитель не может сортировать
         $this->readonly = auth()->user()?->role === 'driver';
 
-        // автосортировка только один раз, если все order = null
+        // автосортировка — только если не readonly
         if (!$this->readonly && !$this->hasManualOrder()) {
             $this->autoSort($trip);
         }
@@ -56,22 +55,21 @@ class TripRouteEditor extends Component
             ->orderBy('id')
             ->get()
             ->map(function (TripStep $s) {
-                $country = config("countries.{$s->country_id}.name") ?? '—';
-
-                $city = '—';
-                if ($s->country_id && $s->city_id) {
-                    $cities = getCitiesByCountryId($s->country_id);
-                    $city = $cities[$s->city_id]['name'] ?? '—';
-                }
 
                 return [
                     'id'      => $s->id,
                     'type'    => $s->type,
-                    'country' => $country,
-                    'city'    => $city,
+                    'country' => config("countries.{$s->country_id}.name") ?? '—',
+                    'city'    => $s->city_id ? (getCitiesByCountryId($s->country_id)[$s->city_id]['name'] ?? '—') : '—',
                     'address' => $s->address ?? '—',
                     'date'    => optional($s->date)->format('d.m.Y'),
                     'time'    => $s->time ? date('H:i', strtotime($s->time)) : null,
+
+                    // ВАЖНО — статус шага
+                    'status'  => $s->status?->value,
+
+                    // Заблокирован ли шаг
+                    'locked'  => in_array($s->status?->value, [4, 5]), // PROCESSING / COMPLETED
                 ];
             })
             ->toArray();
@@ -88,7 +86,6 @@ class TripRouteEditor extends Component
         $ids = $data['orderedIds'];
 
         foreach (array_values($ids) as $i => $id) {
-            \Log::info("Updating step", ['id' => $id, 'new_order' => $i+1]);
 
             TripStep::where('id', $id)
                 ->where('trip_id', $this->tripId)

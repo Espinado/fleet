@@ -1,6 +1,31 @@
 <div class="bg-white p-6 rounded-xl shadow space-y-4"
-     wire:key="route-editor-{{ $tripId }}">
+     wire:key="route-editor-{{ $tripId }}"
+     x-data>
 
+    {{-- =====================================
+         🔔 WARNING POPUP при невозможности
+         перемещения шагов
+    ====================================== --}}
+    <div
+        x-data="{ show: false }"
+        x-on:locked-step-warning.window="
+            show = true;
+            setTimeout(() => show = false, 2000);
+        "
+        x-show="show"
+        x-transition.opacity.scale
+        class="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none"
+    >
+        <div class="bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg 
+                    pointer-events-auto text-sm font-semibold">
+            🔒 Šo soli nevar pārvietot
+        </div>
+    </div>
+
+
+    {{-- =====================================
+         HEADER
+    ====================================== --}}
     <h2 class="text-2xl font-bold flex items-center gap-2">
         🧭 Маршрут рейса
     </h2>
@@ -12,73 +37,131 @@
         </p>
     @endunless
 
-    {{-- SUCCESS TOAST --}}
+
+    {{-- =====================================
+         SUCCESS TOAST (Livewire)
+    ====================================== --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
             {{ session('success') }}
         </div>
     @endif
 
-    {{-- UL for Sortable --}}
+
+    {{-- =====================================
+         SORTABLE LIST
+    ====================================== --}}
     <ul id="sortableSteps-{{ $tripId }}"
         wire:ignore
         class="space-y-4"
-        x-data
-        x-init="
-            if ($el.dataset.sortableAttached === '1') return;
+      x-init="
+    if ($el.dataset.sortableAttached === '1') return;
 
-            new Sortable($el, {
-                animation: 240,
-                easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-                handle: '.cursor-move',
+    // сохраняем исходный порядок в data-атрибуте
+    const initialIds = Array.from($el.querySelectorAll('li[data-step-id]'))
+        .map(li => Number(li.dataset.stepId));
+    $el.dataset.stepOrder = initialIds.join(',');
 
-                ghostClass: 'route-step-ghost',
-                chosenClass: 'route-step-chosen',
-                dragClass: 'route-step-dragging',
+    new Sortable($el, {
+        animation: 240,
+        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+        handle: '.drag-handle',
 
-                fallbackOnBody: true,
-                swapThreshold: 0.6,
+        ghostClass: 'route-step-ghost',
+        chosenClass: 'route-step-chosen',
+        dragClass: 'route-step-dragging',
 
-                onEnd() {
-                    const ids = Array.from($el.querySelectorAll('li[data-step-id]'))
-                        .map(li => Number(li.dataset.stepId));
+        fallbackOnBody: true,
+        swapThreshold: 0.6,
 
-                    console.log('SORTED →', ids);
+        onMove(evt) {
+            const dragged = evt.dragged;
+            const related = evt.related;
+            const to = evt.to;
 
-                    const root = $el.closest('[wire\\:id]');
-                    if (!root) return;
+            // 1) Заблокированный шаг нельзя тянуть
+            if (dragged.classList.contains('locked-step')) {
+                window.dispatchEvent(new CustomEvent('locked-step-warning'));
+                return false;
+            }
 
-                    const componentId = root.getAttribute('wire:id');
-                    if (!componentId) return;
+            // 2) Нельзя тянуть на место заблокированного
+            if (related.classList.contains('locked-step')) {
+                window.dispatchEvent(new CustomEvent('locked-step-warning'));
+                return false;
+            }
 
-                    Livewire.find(componentId)?.call('updateOrder', { orderedIds: ids });
-                },
-            });
+            // 3) Нельзя перепрыгивать через заблокированный шаг
+            const items = Array.from(to.children);
+            const dIndex = items.indexOf(dragged);
+            const rIndex = items.indexOf(related);
+            const dir = dIndex < rIndex ? 1 : -1;
 
-            $el.dataset.sortableAttached = '1';
-        "
+            for (let i = dIndex + dir; dir === 1 ? i <= rIndex : i >= rIndex; i += dir) {
+                if (items[i]?.classList.contains('locked-step')) {
+                    window.dispatchEvent(new CustomEvent('locked-step-warning'));
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        onEnd() {
+            const ids = Array.from($el.querySelectorAll('li[data-step-id]'))
+                .map(li => Number(li.dataset.stepId));
+
+            const prev = $el.dataset.stepOrder || '';
+            const next = ids.join(',');
+
+            // 👉 Порядок не изменился — ничего не делаем, тост не нужен
+            if (prev === next) {
+                return;
+            }
+
+            // сохраняем новый порядок в data-атрибут
+            $el.dataset.stepOrder = next;
+
+            const root = $el.closest('[wire\\:id]');
+            if (!root) return;
+
+            Livewire.find(root.getAttribute('wire:id'))
+                ?.call('updateOrder', { orderedIds: ids });
+        },
+    });
+
+    $el.dataset.sortableAttached = '1';
+"
+
     >
 
+        {{-- =====================================
+             ШАГИ СПИСКА
+        ====================================== --}}
         @foreach($steps as $step)
+
+            @php
+                $isLocked = $step['locked'];
+            @endphp
+
             <li data-step-id="{{ $step['id'] }}"
                 wire:key="step-{{ $step['id'] }}"
-                class="route-step-item p-4 rounded-xl border shadow-sm transition
-                {{ $readonly ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100' }}">
+                class="route-step-item rounded-xl border shadow-sm transition relative
+                    {{ $isLocked ? 'bg-gray-200 opacity-75 locked-step' : ($readonly ? 'bg-gray-100' : 'bg-gray-50 hover:bg-gray-100') }}
+                    p-4">
 
                 <div class="flex justify-between items-start">
 
+                    {{-- LEFT PART --}}
                     <div class="space-y-1">
-                        {{-- TYPE --}}
                         <p class="text-lg font-semibold">
                             {{ $step['type'] === 'loading' ? '📦 Погрузка' : '📤 Разгрузка' }}
                         </p>
 
-                        {{-- LOCATION --}}
                         <p class="text-sm text-gray-700"><b>Страна:</b> {{ $step['country'] }}</p>
                         <p class="text-sm text-gray-700"><b>Город:</b> {{ $step['city'] }}</p>
                         <p class="text-sm"><b>Адрес:</b> {{ $step['address'] }}</p>
 
-                        {{-- DATE & TIME --}}
                         <p class="text-xs text-gray-500">
                             <b>Дата:</b> {{ $step['date'] ?? '—' }}
                             &nbsp;
@@ -87,18 +170,27 @@
                         </p>
                     </div>
 
-                    @unless($readonly)
-                        <div class="cursor-move text-gray-400 text-xl select-none">☰</div>
-                    @endunless
-
+                    {{-- DRAG HANDLE --}}
+                    @if(!$isLocked && !$readonly)
+                        <div class="drag-handle cursor-move text-gray-400 text-xl select-none">☰</div>
+                    @endif
                 </div>
 
+                {{-- LOCKED WARNING INLINE --}}
+                @if($isLocked)
+                    <div class="mt-3 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                        🔒 Šo soli vairs nevar pārvietot — tas jau tiek veikts vai pabeigts
+                    </div>
+                @endif
+
             </li>
+
         @endforeach
 
     </ul>
-</div>
 
+
+</div>
 
 
 @push('scripts')
@@ -124,7 +216,6 @@ function routeToast(text) {
 </script>
 
 <style>
-/* Базовая плавность для всех элементов списка */
 #sortableSteps-{{ $tripId }} .route-step-item {
     transition:
         transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
@@ -133,7 +224,6 @@ function routeToast(text) {
         opacity 0.2s ease;
 }
 
-/* Элемент, который "выбрали" (подняли) */
 .route-step-chosen {
     background-color: #eff6ff !important;
     transform: scale(1.03) translateY(-2px);
@@ -142,12 +232,10 @@ function routeToast(text) {
     z-index: 50;
 }
 
-/* Элемент, который тянем (active drag) */
 .route-step-dragging {
     opacity: 0.95;
 }
 
-/* "Призрак" (ghost) на месте исходного элемента */
 .route-step-ghost {
     opacity: 0.25;
     background: #dbeafe !important;
@@ -155,7 +243,6 @@ function routeToast(text) {
     box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.35);
 }
 
-/* Небольшой fade-in для тостов */
 @keyframes fade {
     from { opacity: 0; transform: translateY(6px); }
     to   { opacity: 1; transform: translateY(0); }
