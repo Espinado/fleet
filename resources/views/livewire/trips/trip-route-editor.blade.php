@@ -3,8 +3,7 @@
      x-data>
 
     {{-- =====================================
-         🔔 WARNING POPUP при невозможности
-         перемещения шагов
+         🔔 WARNING POPUP — нельзя переместить
     ====================================== --}}
     <div
         x-data="{ show: false }"
@@ -22,7 +21,6 @@
         </div>
     </div>
 
-
     {{-- =====================================
          HEADER
     ====================================== --}}
@@ -39,7 +37,7 @@
 
 
     {{-- =====================================
-         SUCCESS TOAST (Livewire)
+         SUCCESS TOAST
     ====================================== --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded">
@@ -54,92 +52,91 @@
     <ul id="sortableSteps-{{ $tripId }}"
         wire:ignore
         class="space-y-4"
-      x-init="
-    if ($el.dataset.sortableAttached === '1') return;
+        x-init="
+        if ($el.dataset.sortableAttached === '1') return;
 
-    // сохраняем исходный порядок в data-атрибуте
-    const initialIds = Array.from($el.querySelectorAll('li[data-step-id]'))
-        .map(li => Number(li.dataset.stepId));
-    $el.dataset.stepOrder = initialIds.join(',');
+        const initialIds = Array.from($el.querySelectorAll('li[data-step-id]'))
+            .map(li => Number(li.dataset.stepId));
+        $el.dataset.stepOrder = initialIds.join(',');
 
-    new Sortable($el, {
-        animation: 240,
-        easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
-        handle: '.drag-handle',
+        new Sortable($el, {
+            animation: 240,
+            easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+            handle: '.drag-handle',
 
-        ghostClass: 'route-step-ghost',
-        chosenClass: 'route-step-chosen',
-        dragClass: 'route-step-dragging',
+            ghostClass: 'route-step-ghost',
+            chosenClass: 'route-step-chosen',
+            dragClass: 'route-step-dragging',
 
-        fallbackOnBody: true,
-        swapThreshold: 0.6,
+            // =====================================
+            // 🔥 ВАЖНО: мобильная поддержка
+            // =====================================
+            forceFallback: true,
+            fallbackTolerance: 3,
+            touchStartThreshold: 5,
+            delayOnTouchOnly: false,
+            fallbackOnBody: true,
+            swapThreshold: 0.6,
 
-        onMove(evt) {
-            const dragged = evt.dragged;
-            const related = evt.related;
-            const to = evt.to;
+            onMove(evt) {
+                const dragged = evt.dragged;
+                const related = evt.related;
+                const to = evt.to;
 
-            // 1) Заблокированный шаг нельзя тянуть
-            if (dragged.classList.contains('locked-step')) {
-                window.dispatchEvent(new CustomEvent('locked-step-warning'));
-                return false;
-            }
-
-            // 2) Нельзя тянуть на место заблокированного
-            if (related.classList.contains('locked-step')) {
-                window.dispatchEvent(new CustomEvent('locked-step-warning'));
-                return false;
-            }
-
-            // 3) Нельзя перепрыгивать через заблокированный шаг
-            const items = Array.from(to.children);
-            const dIndex = items.indexOf(dragged);
-            const rIndex = items.indexOf(related);
-            const dir = dIndex < rIndex ? 1 : -1;
-
-            for (let i = dIndex + dir; dir === 1 ? i <= rIndex : i >= rIndex; i += dir) {
-                if (items[i]?.classList.contains('locked-step')) {
+                if (dragged.classList.contains('locked-step')) {
                     window.dispatchEvent(new CustomEvent('locked-step-warning'));
                     return false;
                 }
-            }
 
-            return true;
-        },
+                if (related.classList.contains('locked-step')) {
+                    window.dispatchEvent(new CustomEvent('locked-step-warning'));
+                    return false;
+                }
 
-        onEnd() {
-            const ids = Array.from($el.querySelectorAll('li[data-step-id]'))
-                .map(li => Number(li.dataset.stepId));
+                const items = Array.from(to.children);
+                const dIndex = items.indexOf(dragged);
+                const rIndex = items.indexOf(related);
+                const dir = dIndex < rIndex ? 1 : -1;
 
-            const prev = $el.dataset.stepOrder || '';
-            const next = ids.join(',');
+                for (let i = dIndex + dir; dir === 1 ? i <= rIndex : i >= rIndex; i += dir) {
+                    if (items[i]?.classList.contains('locked-step')) {
+                        window.dispatchEvent(new CustomEvent('locked-step-warning'));
+                        return false;
+                    }
+                }
 
-            // 👉 Порядок не изменился — ничего не делаем, тост не нужен
-            if (prev === next) {
-                return;
-            }
+                return true;
+            },
 
-            // сохраняем новый порядок в data-атрибут
-            $el.dataset.stepOrder = next;
+            onEnd() {
+                const ids = Array.from($el.querySelectorAll('li[data-step-id]'))
+                    .map(li => Number(li.dataset.stepId));
 
-            const root = $el.closest('[wire\\:id]');
-            if (!root) return;
+                const prev = $el.dataset.stepOrder || '';
+                const next = ids.join(',');
 
-            Livewire.find(root.getAttribute('wire:id'))
-                ?.call('updateOrder', { orderedIds: ids });
-        },
-    });
+                if (prev === next) {
+                    return;
+                }
 
-    $el.dataset.sortableAttached = '1';
-"
+                $el.dataset.stepOrder = next;
 
+                const root = $el.closest('[wire\\:id]');
+                if (!root) return;
+
+                Livewire.find(root.getAttribute('wire:id'))
+                    ?.call('updateOrder', { orderedIds: ids });
+            },
+        });
+
+        $el.dataset.sortableAttached = '1';
+    "
     >
 
         {{-- =====================================
-             ШАГИ СПИСКА
+             STEPS
         ====================================== --}}
         @foreach($steps as $step)
-
             @php
                 $isLocked = $step['locked'];
             @endphp
@@ -152,7 +149,7 @@
 
                 <div class="flex justify-between items-start">
 
-                    {{-- LEFT PART --}}
+                    {{-- LEFT --}}
                     <div class="space-y-1">
                         <p class="text-lg font-semibold">
                             {{ $step['type'] === 'loading' ? '📦 Погрузка' : '📤 Разгрузка' }}
@@ -172,11 +169,12 @@
 
                     {{-- DRAG HANDLE --}}
                     @if(!$isLocked && !$readonly)
-                        <div class="drag-handle cursor-move text-gray-400 text-xl select-none">☰</div>
+                        <div class="drag-handle cursor-move text-gray-400 text-xl select-none">
+                            ☰
+                        </div>
                     @endif
                 </div>
 
-                {{-- LOCKED WARNING INLINE --}}
                 @if($isLocked)
                     <div class="mt-3 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
                         🔒 Šo soli vairs nevar pārvietot — tas jau tiek veikts vai pabeigts
@@ -184,11 +182,9 @@
                 @endif
 
             </li>
-
         @endforeach
 
     </ul>
-
 
 </div>
 
@@ -216,6 +212,10 @@ function routeToast(text) {
 </script>
 
 <style>
+.drag-handle {
+    touch-action: none; /* 👈 важное для мобильного drag */
+}
+
 #sortableSteps-{{ $tripId }} .route-step-item {
     transition:
         transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1),
