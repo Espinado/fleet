@@ -2,7 +2,14 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
-    @laravelPWA
+    {{-- PWA for Admin (НЕ laravelPWA) --}}
+    <link rel="manifest" href="/admin/manifest.webmanifest">
+
+    {{-- Apple PWA meta --}}
+    <link rel="apple-touch-icon" href="/images/icons/fleet-512.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -11,7 +18,7 @@
     {{-- Livewire styles --}}
     @livewireStyles
 
-    {{-- Vite --}}
+    {{-- Vite (только админские ассеты) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -110,30 +117,15 @@
     <script src="/pwa/push.js"></script>
 
     @stack('scripts')
-  <script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener("load", () => {
 
-        const isLocal =
-            location.hostname === "localhost" ||
-            location.hostname === "127.0.0.1" ||
-            location.hostname.endsWith(".test");
-
-        // локалка — не регистрируем SW
-        if (isLocal) {
-            console.log("SW disabled on local");
-            return;
+    {{-- Register Service Worker only for admin --}}
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/admin/serviceworker.js', { scope: '/admin/' })
+                .then(r => console.log("Admin SW loaded"))
+                .catch(e => console.warn("Admin SW error:", e));
         }
-
-        // прод — регистрируем PWA service worker
-        navigator.serviceWorker.register("/serviceworker.js")
-            .then(r => console.log("SW loaded"))
-            .catch(e => console.warn("SW error:", e));
-    });
-}
-</script>
-
-
+    </script>
 
 </body>
 </html>

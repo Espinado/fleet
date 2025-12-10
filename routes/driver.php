@@ -58,4 +58,6 @@ Route::middleware(['driver'])->group(function () {
         Auth::logout();
         return redirect()->route('driver.login');
     })->name('driver.logout');
+
+    Route::view('/driver/offline', 'driver-app.offline');
 });

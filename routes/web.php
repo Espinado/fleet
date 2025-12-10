@@ -80,6 +80,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Auth::logout();
         return redirect('/login');
     })->name('logout');
+
+    Route::view('/offline-admin', 'offline-admin');
 });
 
 
