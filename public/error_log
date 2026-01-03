@@ -1,0 +1,8 @@
+[07-Dec-2025 16:18:39 Europe/Riga] PHP Warning:  require(/home2/argussl/fleet.arguss.lv/vendor/composer/../laravel/framework/src/Illuminate/Collections/functions.php): Failed to open stream: No such file or directory in /home2/argussl/fleet.arguss.lv/vendor/composer/autoload_real.php on line 41
+[07-Dec-2025 16:18:39 Europe/Riga] PHP Fatal error:  Uncaught Error: Failed opening required '/home2/argussl/fleet.arguss.lv/vendor/composer/../laravel/framework/src/Illuminate/Collections/functions.php' (include_path='.:/opt/alt/php84/usr/share/pear:/opt/alt/php84/usr/share/php:/usr/share/pear:/usr/share/php') in /home2/argussl/fleet.arguss.lv/vendor/composer/autoload_real.php:41
+Stack trace:
+#0 /home2/argussl/fleet.arguss.lv/vendor/composer/autoload_real.php(45): {closure:ComposerAutoloaderInitaf2d80c76aec3eb977431e3607260539::getLoader():37}()
+#1 /home2/argussl/fleet.arguss.lv/vendor/autoload.php(22): ComposerAutoloaderInitaf2d80c76aec3eb977431e3607260539::getLoader()
+#2 /home2/argussl/fleet.arguss.lv/public/index.php(16): require('/home2/argussl/...')
+#3 {main}
+  thrown in /home2/argussl/fleet.arguss.lv/vendor/composer/autoload_real.php on line 41
