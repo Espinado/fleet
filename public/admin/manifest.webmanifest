@@ -1,8 +1,9 @@
 {
+  "id": "/dashboard",
   "name": "Fleet Manager",
   "short_name": "FM Admin",
-  "start_url": "/dashboard/",
-  "scope": "/dashboard/",
+  "start_url": "/dashboard",
+  "scope": "/admin/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0d6efd",

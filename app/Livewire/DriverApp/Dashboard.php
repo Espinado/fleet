@@ -3,7 +3,7 @@
 namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Trip;
 
 class Dashboard extends Component
@@ -13,10 +13,21 @@ class Dashboard extends Component
 
     public function mount()
     {
+        $user = auth('driver')->user();
 
-        $user = Auth::user();
+        Log::info('Dashboard mount()', [
+            'driver_guard' => auth('driver')->check(),
+            'driver_id'    => auth('driver')->id(),
+            'user_id'      => $user?->id,
+            'has_driver'   => (bool) $user?->driver,
+            'session_id'   => session()->getId(),
+        ]);
 
-        if (!$user || $user->role !== 'driver' || !$user->driver) {
+        if (!$user || !$user->driver) {
+            Log::warning('Dashboard mount redirect to login', [
+                'reason' => 'no user or no driver relation',
+            ]);
+
             return redirect()->route('driver.login');
         }
 
@@ -29,11 +40,15 @@ class Dashboard extends Component
 
     public function render()
     {
-       
-     
-   return view('livewire.driver-app.dashboard')
-        ->layout('driver-app.layouts.app', [
-            'title' => 'Dashboard'
+        Log::info('Dashboard render()', [
+            'driver_guard' => auth('driver')->check(),
+            'driver_id'    => auth('driver')->id(),
+            'session_id'   => session()->getId(),
         ]);
+
+        return view('livewire.driver-app.dashboard')
+            ->layout('driver-app.layouts.app', [
+                'title' => 'Dashboard'
+            ]);
     }
 }

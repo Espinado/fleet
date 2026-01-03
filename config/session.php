@@ -127,11 +127,7 @@ return [
     |
     */
 
-    'cookie' => env(
-        'SESSION_COOKIE',
-        Str::slug(env('APP_NAME', 'laravel'), '_').'_session'
-    ),
-
+    
     /*
     |--------------------------------------------------------------------------
     | Session Cookie Path
@@ -213,5 +209,7 @@ return [
     */
 
     'partitioned' => env('SESSION_PARTITIONED_COOKIE', false),
+
+    'cookie' => env('SESSION_COOKIE', 'fleet_session'),
 
 ];

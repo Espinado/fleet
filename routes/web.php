@@ -91,4 +91,4 @@ Route::view('/profile', 'profile')
     ->name('profile');
 
 // === Breeze ===
-require __DIR__.'/auth.php';
+// require __DIR__.'/auth.php';

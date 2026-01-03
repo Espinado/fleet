@@ -6,58 +6,78 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
 use App\Livewire\DriverApp\TripDetails;
-use App\Livewire\DriverApp\Profile;
-use App\Livewire\DriverApp\DriverStepDocumentUploader;
 use App\Livewire\DriverApp\ViewDocument;
 
+Route::domain('driver.fleet.test')->group(function () {
 
-/*
-|--------------------------------------------------------------------------
-| STATIC FILES FOR PWA (must be before any /driver/{...} routes)
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/driver/manifest.webmanifest', function () {
-    return response()->file(public_path('driver/manifest.webmanifest'), [
-        'Content-Type' => 'application/manifest+json'
+    Route::get('/ping', function () {
+    \Log::info('PING HIT', [
+        'host' => request()->getHost(),
+        'path' => request()->path(),
+        'session' => session()->getId(),
     ]);
+    return 'pong';
 });
 
-Route::get('/driver/icons/{filename}', function ($filename) {
-    $path = public_path("driver/icons/{$filename}");
-    if (!file_exists($path)) abort(404);
-    return response()->file($path);
+    // =========================
+    // Debug (local only)
+    // =========================
+    Route::get('/_whoami', function () {
+        abort_unless(app()->isLocal() || config('app.debug'), 404);
+
+        return [
+            'web' => auth('web')->check(),
+            'driver' => auth('driver')->check(),
+            'driver_id' => auth('driver')->id(),
+            'session' => session()->getId(),
+            'host' => request()->getHost(),
+        ];
+    });
+
+    // =========================
+    // PWA static (root)
+    // =========================
+    Route::get('/serviceworker.js', function () {
+        return response()->file(public_path('driver/serviceworker.js'), [
+            'Content-Type'  => 'application/javascript',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
+    });
+
+    Route::get('/manifest.webmanifest', function () {
+        return response()->file(public_path('driver/manifest.webmanifest'), [
+            'Content-Type'  => 'application/manifest+json',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+        ]);
+    });
+
+    // --- PUBLIC ---
+    Route::get('/login', Login::class)->name('driver.login');
+    Route::view('/offline', 'driver-app.offline')->name('driver.offline');
+
+    // --- AUTH ---
+
+    Route::get('/dashboard-test', function () {
+    \Log::info('DASHBOARD-TEST HIT', [
+        'host' => request()->getHost(),
+        'session' => session()->getId(),
+        'driver' => auth('driver')->check(),
+        'driver_id' => auth('driver')->id(),
+    ]);
+    return 'dashboard-test';
 });
+   Route::middleware(['auth:driver', 'driver'])->group(function () {
+        Route::get('/dashboard', Dashboard::class)->name('driver.dashboard');
+        Route::get('/trip/{trip}', TripDetails::class)->name('driver.trip');
+        Route::get('/document/{document}', ViewDocument::class)->name('driver.documents.view');
 
+        Route::post('/logout', function () {
+            Auth::guard('driver')->logout();
 
-/*
-|--------------------------------------------------------------------------
-| LOGIN (public)
-|--------------------------------------------------------------------------
-*/
-Route::get('/driver/login', Login::class)->name('driver.login');
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
 
-
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATED DRIVER APP
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['driver'])->group(function () {
-
-    Route::get('/driver/dashboard', Dashboard::class)
-        ->name('driver.dashboard');
-
-    Route::get('/driver/trip/{trip}', TripDetails::class)
-        ->name('driver.trip');
-
-    Route::get('/driver/document/{document}', ViewDocument::class)
-        ->name('driver.documents.view');
-
-    Route::post('/driver/logout', function () {
-        Auth::logout();
-        return redirect()->route('driver.login');
-    })->name('driver.logout');
-
-    Route::view('/driver/offline', 'driver-app.offline');
+            return redirect()->route('driver.login');
+        })->name('driver.logout');
+    });
 });

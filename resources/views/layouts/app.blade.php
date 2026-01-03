@@ -3,12 +3,13 @@
 
 <head>
     {{-- PWA for Admin (НЕ laravelPWA) --}}
-    <link rel="manifest" href="/admin/manifest.webmanifest">
+   <link rel="manifest" href="/admin/manifest.webmanifest">
 
-    {{-- Apple PWA meta --}}
-    <link rel="apple-touch-icon" href="/images/icons/fleet-512.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="/images/icons/icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fleet Admin">
+<meta name="theme-color" content="#0d6efd">
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -119,13 +120,11 @@
     @stack('scripts')
 
     {{-- Register Service Worker only for admin --}}
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/admin/serviceworker.js', { scope: '/admin/' })
-                .then(r => console.log("Admin SW loaded"))
-                .catch(e => console.warn("Admin SW error:", e));
-        }
-    </script>
+   <script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/admin/serviceworker.js", { scope: "/admin/" });
+}
+</script>
 
 </body>
 </html>

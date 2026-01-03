@@ -9,6 +9,7 @@ return Application::configure(basePath: dirname(__DIR__))
         web: [
             __DIR__ . '/../routes/web.php',
             __DIR__ . '/../routes/driver.php',
+            __DIR__ . '/../routes/admin.php',
         ],
         api: __DIR__ . '/../routes/api.php',
         commands: __DIR__ . '/../routes/console.php',
@@ -17,10 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
 
         $middleware->alias([
-            'auth'     => \App\Http\Middleware\Authenticate::class,
-            'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-            'guest'    => \App\Http\Middleware\RedirectAdminsIfAuthenticated::class,
-            'driver'   => \App\Http\Middleware\EnsureDriver::class,
+            'admin.guest' => \App\Http\Middleware\RedirectAdminsIfAuthenticated::class,
+    'driver'      => \App\Http\Middleware\EnsureDriver::class,
+
+    
         ]);
     })
     ->withProviders([

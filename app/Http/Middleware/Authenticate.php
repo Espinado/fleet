@@ -2,16 +2,31 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Support\Facades\Log;
 
 class Authenticate extends Middleware
 {
-    /**
-     * Get the path the user should be redirected to when they are not authenticated.
-     */
-    protected function redirectTo($request): ?string
+    public function handle($request, Closure $next, ...$guards)
     {
-        // если пользователь не аутентифицирован → отправляем на /login
-        return route('login');
+        Log::info('Authenticate middleware BEFORE', [
+            'host' => $request->getHost(),
+            'path' => $request->path(),
+            'guards' => $guards,
+            'web_check' => auth('web')->check(),
+            'driver_check' => auth('driver')->check(),
+            'driver_id' => auth('driver')->id(),
+            'session_id' => session()->getId(),
+        ]);
+
+        return parent::handle($request, $next, ...$guards);
     }
+
+ protected function redirectTo($request): ?string
+{
+    if ($request->expectsJson()) return null;
+
+    return '/login';
+}
 }
