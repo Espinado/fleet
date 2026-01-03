@@ -1,0 +1,87 @@
+*   [33m5c1d556[m[33m ([m[1;35mrefs/stash[m[33m)[m WIP on master: ed6dd56 cron test
+[31m|[m[32m\[m  
+[31m|[m * [33ma699aea[m index on master: ed6dd56 cron test
+[31m|[m[31m/[m  
+[31m|[m * [33me746b7e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m push
+[31m|[m[31m/[m  
+* [33med6dd56[m cron test
+* [33m98263c8[m cron test
+* [33m726da4d[m cron test
+* [33mb662165[m cron job
+* [33m5e3bf29[m cron
+* [33m73d478d[m cron
+* [33m9886675[m cron
+* [33m47291a1[m bug fix
+* [33md520d69[m bug fix
+* [33m1ef1cc4[m bug fix
+* [33m4a7feb5[m cron
+* [33mc906a5c[m cron
+* [33m9490f5a[m cron
+* [33m13421d3[m cron
+* [33mc221e84[m cron
+* [33m9c1173e[m bug fix
+* [33m8f31b87[m bug fix
+* [33m7e72627[m pwa fix
+* [33ma1750e7[m pwa ontinue
+* [33mb9f7f52[m pwa
+* [33mdbaea59[m pwa
+* [33md198d1a[m bank account
+* [33m33419bd[m expeditor swift
+* [33m2997358[m expeditor swift
+* [33mb795a61[m[33m ([m[1;31morigin/feature/trip-documents-and-expenses[m[33m)[m Add trip documents and expenses sections
+* [33m7ab8d77[m last changes
+* [33ma230ee9[m cmr invoice
+* [33m6fc4099[m invoice form
+* [33ma6792b1[m cmr order forms
+* [33m933215e[m cmr new form
+* [33ma750c0a[m cmr refactoring
+* [33mb8d2df6[m pwa crud driver
+* [33ma9a12e3[m drivers table pwa
+* [33m9fcc73d[m drivers table pwa
+* [33m4a57fc9[m drivers table pwa
+* [33m182d0b7[m expiring documents table pwa
+* [33m0ec4053[m pwa
+* [33m1173a6c[m pwa
+* [33m1c2eede[m mobile layout
+* [33m8cc60f3[m mobile layout
+*   [33m0575896[m Resolve merge conflict: keep local migration fix
+[34m|[m[35m\[m  
+[34m|[m * [33m3099158[m cmr changes
+[34m|[m * [33m961ebe8[m cmr changes
+[34m|[m * [33m7f03fc0[m work with cmr
+* [35m|[m [33m9162bd9[m Fix: safe refactor_trips_table_structure migration to prevent FK error
+[35m|[m[35m/[m  
+* [33m217116d[m cmr improvement
+* [33m4bae7ec[m bug fix
+* [33mf47562d[m bug fix
+* [33m6a8e6df[m cmr
+* [33m0c5232b[m cities refactoring
+* [33m47d2b0c[m address refactoring
+* [33m66af7f6[m routes
+* [33m40486c1[m chadule cron
+* [33mac3de00[m chadule cron
+* [33m3d88a58[m chadule cron
+* [33m0a32e1f[m chadule cron
+* [33m3eb5577[m chadule cron
+* [33mbe60017[m chadule cron
+* [33m03005d1[m chadule cron
+* [33m817a1ab[m chadule cron
+* [33m5e9537f[m chadule cron
+* [33m5f633ca[m chadule cron
+* [33m612f03f[m adding owner company
+* [33m37295e0[m driver create form fix
+* [33m257e754[m Varchat length
+* [33meee905a[m Varchat length
+* [33m97055d0[m bgug fix
+* [33m070fb22[m bgug fix
+* [33m2c01635[m Country API, auth
+* [33mcbca3d7[m cron schedule- fix
+* [33mbaf637b[m cron schedule- fix
+* [33m9422210[m cron schedule
+* [33m05cc121[m bug fix
+* [33m48d355b[m trailer crud
+* [33m6c24ec0[m Truck crud
+* [33mf327f54[m image correction
+* [33mb8fa694[m driver seed change
+* [33m1f371d4[m notifications
+* [33mcf237b9[m first commit

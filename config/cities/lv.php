@@ -83,4 +83,5 @@ return [
     80 => ['name' => 'Viesīte'],
     81 => ['name' => 'Viļaka'],
     82 => ['name' => 'Viļāni'],
+    83 => ['name' => 'Kekava']
 ];

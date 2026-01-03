@@ -1,0 +1,5 @@
+[17-Nov-2025 02:45:34 Europe/Riga] PHP Fatal error:  Uncaught Error: Call to undefined method Illuminate\Container\Container::basePath() in /home2/argussl/fleet.arguss.lv/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php:196
+Stack trace:
+#0 Command line code(1): base_path()
+#1 {main}
+  thrown in /home2/argussl/fleet.arguss.lv/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php on line 196

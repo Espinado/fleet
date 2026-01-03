@@ -376,10 +376,10 @@
                                 </label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="date"
-                                           wire:model.defer="steps.{{ $index }}.date"
+                                           wire:model.live="steps.{{ $index }}.date"
                                            class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                     <input type="time"
-                                           wire:model.defer="steps.{{ $index }}.time"
+                                           wire:model.live="steps.{{ $index }}.time"
                                            class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                 </div>
                                 @error("steps.$index.date")
@@ -393,7 +393,7 @@
                                     Порядок (order)
                                 </label>
                                 <input type="number"
-                                       wire:model.defer="steps.{{ $index }}.order"
+                                       wire:model.live="steps.{{ $index }}.order"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"
                                        placeholder="#">
                                 @error("steps.$index.order")
@@ -446,7 +446,7 @@
                                     Адрес
                                 </label>
                                 <input type="text"
-                                       wire:model.defer="steps.{{ $index }}.address"
+                                       wire:model.live="steps.{{ $index }}.address"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                 @error("steps.$index.address")
                                     <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
@@ -461,7 +461,7 @@
                             </label>
                             <textarea
                                 rows="2"
-                                wire:model.defer="steps.{{ $index }}.notes"
+                                wire:model.live="steps.{{ $index }}.notes"
                                 class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"></textarea>
                         </div>
                     </div>
