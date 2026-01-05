@@ -27,10 +27,10 @@ class Login extends Component
             $this->addError('pin', 'Неверный PIN');
             return;
         }
+Auth::guard('driver')->login($driver->user);
+request()->session()->regenerate();
 
-        Auth::login($driver->user);
-
-        return redirect()->route('driver.dashboard');
+return redirect('/driver/dashboard');
     }
 
     public function render()

@@ -7,6 +7,9 @@ use Livewire\WithFileUploads;
 use App\Models\Driver;
 use App\Enums\DriverStatus;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CreateDriver extends Component
 {
@@ -91,50 +94,102 @@ class CreateDriver extends Component
         ];
     }
 
+    private function generatePin(int $minDigits = 4, int $maxDigits = 6): string
+{
+    $digits = random_int($minDigits, $maxDigits);
+    $min = 10 ** ($digits - 1);
+    $max = (10 ** $digits) - 1;
+
+    return (string) random_int($min, $max);
+}
+
+private function generateUniquePin(): string
+{
+    for ($i = 0; $i < 20; $i++) {
+        $pin = $this->generatePin(4, 6);
+
+        if (!Driver::where('login_pin', $pin)->exists()) {
+            return $pin;
+        }
+    }
+
+    // маловероятно, но на всякий
+    throw new \RuntimeException('Cannot generate unique login PIN');
+}
+
+
     // ================= SAVE =================
     public function save()
 {
     $this->validate();
 
+    DB::beginTransaction();
+
     try {
+        // 1) создаём User
+        $user = User::create([
+            'name' => trim($this->first_name . ' ' . $this->last_name),
+            'email' => $this->email,
+            // пароль не нужен для PIN-логина, но в базе пусть будет валидный
+            'password' => Str::random(32),
+        ]);
+
+        // 2) генерим PIN
+        $pin = $this->generateUniquePin();
+
+        // 3) создаём Driver и привязываем user_id + login_pin
         $driver = Driver::create([
             'first_name'          => $this->first_name,
             'last_name'           => $this->last_name,
             'pers_code'           => $this->pers_code,
-            'citizenship_id'         => $this->citizenship_id,
+            'citizenship_id'      => $this->citizenship_id,
+
             'declared_country_id' => $this->declared_country_id,
             'declared_city_id'    => $this->declared_city_id,
             'declared_street'     => $this->declared_street,
             'declared_building'   => $this->declared_building,
             'declared_room'       => $this->declared_room,
             'declared_postcode'   => $this->declared_postcode,
+
             'actual_country_id'   => $this->actual_country_id,
             'actual_city_id'      => $this->actual_city_id,
             'actual_street'       => $this->actual_street,
             'actual_building'     => $this->actual_building,
             'actual_room'         => $this->actual_room,
             'actual_postcode'     => $this->actual_postcode,
+
             'phone'               => $this->phone,
             'email'               => $this->email,
+
             'status'              => $this->status,
             'is_active'           => $this->is_active,
+
             'license_number'      => $this->license_number,
             'license_issued'      => $this->license_issued,
             'license_end'         => $this->license_end,
+
             'code95_issued'       => $this->code95_issued,
             'code95_end'          => $this->code95_end,
+
             'permit_issued'       => $this->permit_issued,
             'permit_expired'      => $this->permit_expired,
+
             'medical_issued'      => $this->medical_issued,
             'medical_expired'     => $this->medical_expired,
+
             'medical_exam_passed' => $this->medical_exam_passed,
             'medical_exam_expired'=> $this->medical_exam_expired,
+
             'declaration_issued'  => $this->declaration_issued,
             'declaration_expired' => $this->declaration_expired,
+
             'company'             => $this->company,
+
+            'login_pin'           => $pin,
+            'user_id'             => $user->id,
         ]);
 
-        // Фото
+        // 4) фото
         if ($this->photo) {
             $driver->photo = $this->photo->store('drivers/photos', 'public');
         }
@@ -144,25 +199,25 @@ class CreateDriver extends Component
         if ($this->medical_certificate_photo) {
             $driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
         }
-
         $driver->save();
 
-        Log::info('✅ Driver successfully saved', [
-            'driver_id' => $driver->id,
-            'name' => "{$driver->first_name} {$driver->last_name}",
-            'company' => $driver->company,
-            'created_by' => auth()->user()->name ?? 'system',
-        ]);
+        DB::commit();
 
-        session()->flash('success', 'Driver successfully created!');
-         return redirect()->route('drivers.index');
-    } catch (Exception $e) {
+        // 🔥 ВАЖНО: показать PIN админу один раз
+        session()->flash('success', "Driver successfully created! PIN: {$pin}");
+
+        return redirect()->route('drivers.index');
+
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
         Log::error('❌ Error while saving driver', [
             'message' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
         ]);
 
         session()->flash('error', 'Error saving driver: ' . $e->getMessage());
+        return null;
     }
 }
 

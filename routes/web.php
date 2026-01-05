@@ -33,8 +33,6 @@ Route::get('/test-push', function () {
     return "✅ Push sent to {$user->email}";
 });
 
-// === ЛОГИН ВОДИТЕЛЯ (публичный) ===
-
 // === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
 
@@ -73,6 +71,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
     Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit');
 
+    // CMR generate
     Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
         ->name('cmr.generate');
 
@@ -83,7 +82,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::view('/offline-admin', 'offline-admin');
 });
-
 
 // === Profile ===
 Route::view('/profile', 'profile')

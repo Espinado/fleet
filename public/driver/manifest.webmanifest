@@ -1,8 +1,8 @@
 {
   "name": "Fleet Driver",
   "short_name": "Driver App",
-  "start_url": "/driver/dashboard/",
-  "scope": "/driver/dashboard/",
+  "start_url": "/driver/dashboard",
+  "scope": "/driver",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0066ff",

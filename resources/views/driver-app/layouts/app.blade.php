@@ -28,12 +28,7 @@
     ])
 
     @livewireStyles
-    <script>
-if ('serviceWorker' in navigator) {
-    if (!location.hostname.includes('localhost')) {
-        navigator.serviceWorker.register('/driver/serviceworker.js');
-    }
-}
+   
 </script>
 </head>
 
@@ -53,7 +48,7 @@ if ('serviceWorker' in navigator) {
         'currentTripId' => $currentTrip?->id
     ])
 
-    @livewireScripts
+    <script src="/vendor/livewire/livewire.js" data-navigate-once></script>
 
     <!-- REGISTER DRIVER SERVICE WORKER -->
     <script>

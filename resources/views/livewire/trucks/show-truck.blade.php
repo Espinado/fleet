@@ -42,6 +42,51 @@
         <p><strong>Expires:</strong> {{ $truck->inspection_expired }}</p>
     </div>
 
+    {{-- License --}}
+<div class="mb-8">
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">License</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">License Number</p>
+            <p class="text-base font-semibold text-gray-800">
+                {{ $truck->license_number ?? '—' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">Issued</p>
+            <p class="text-base font-semibold text-gray-800">
+                {{ $truck->license_issued?->format('Y-m-d') ?? '—' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">Expired</p>
+            <p class="text-base font-semibold text-gray-800">
+                {{ $truck->license_expired?->format('Y-m-d') ?? '—' }}
+            </p>
+
+            @if($truck->license_expired)
+                @if($truck->license_expired->isPast())
+                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                        Expired
+                    </span>
+                @elseif($truck->license_expired->diffInDays(now()) <= 30)
+                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Expires soon
+                    </span>
+                @else
+                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                        Valid
+                    </span>
+                @endif
+            @endif
+        </div>
+    </div>
+</div>
+
+
     {{-- Техпаспорт --}}
     <div class="mb-8">
         <h2 class="text-xl font-semibold mb-2 border-b pb-1">Technical Passport</h2>

@@ -24,6 +24,17 @@
                 <p><strong>Status:</strong> {{ $trailer->status ? '✅ Active' : '❌ Inactive' }}</p>
                 <p><strong>Active:</strong> {{ $trailer->is_active ? '✅ Yes' : '❌ No' }}</p>
                 <p><strong>VIN:</strong> {{ $trailer->vin }}</p>
+                <p>
+    <strong>Type:</strong>
+    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold
+                 bg-white border border-gray-200 shadow-sm">
+        <span class="text-base">{{ $trailer->type_icon ?? '📦' }}</span>
+        <span>{{ $trailer->type_label ?? '—' }}</span>
+        @if($trailer->type_key)
+            <span class="text-xs font-medium text-gray-500">({{ $trailer->type_key }})</span>
+        @endif
+    </span>
+</p>
                  <p><strong>Company:</strong>  {{config('companies')[$trailer->company]['name']}}</p>
             </div>
 

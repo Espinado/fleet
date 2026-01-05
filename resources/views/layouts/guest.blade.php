@@ -21,24 +21,8 @@
         </div>
     </div>
 
-    @livewireScripts
-    <script>
-if ('serviceWorker' in navigator) {
-    window.addEventListener("load", () => {
-        const isLocal =
-            location.hostname === "localhost" ||
-            location.hostname === "127.0.0.1" ||
-            location.hostname.endsWith(".test");
-
-        // локалка → sw-dev.js, прод → sw.js
-        const swFile = isLocal ? "/sw-dev.js" : "/serviceworker.js";
-
-        navigator.serviceWorker.register(swFile)
-            .then(reg => console.log("Service Worker registered:", swFile))
-            .catch(err => console.warn("SW registration failed:", err));
-    });
-}
-</script>
+   <script src="/vendor/livewire/livewire.js" data-navigate-once></script>
+  
 
 </body>
 </html>

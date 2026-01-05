@@ -68,6 +68,26 @@
                 </div>
 
                 <div>
+    <label class="block mb-1 font-medium">Trailer Type *</label>
+
+    <select wire:model="type_id"
+            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500
+                   @error('type_id') border-red-500 @enderror">
+        @foreach(config('trailer-types.types') as $id => $key)
+            <option value="{{ $id }}">
+                {{ config("trailer-types.icons.$key") }} {{ config("trailer-types.labels.$key", $key) }}
+            </option>
+        @endforeach
+    </select>
+
+    @error('type_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+
+    <p class="text-xs text-gray-500 mt-1">
+        Default: {{ config('trailer-types.labels.' . (config('trailer-types.types.1') ?? 'cargo')) }}
+    </p>
+</div>
+
+                <div>
                     <label class="block mb-1 font-medium">VIN</label>
                     <input type="text" wire:model.defer="vin"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('vin') border-red-500 @enderror">

@@ -15,6 +15,7 @@ class Trailer extends Model
         'brand',
         'plate',
         'year',
+        'type_id',
         'inspection_issued',
         'inspection_expired',
         'insurance_number',
@@ -41,4 +42,22 @@ class Trailer extends Model
         'tir_issued' => 'date',
         'tir_expired' => 'date',
     ];
+
+    public function getTypeKeyAttribute(): ?string
+{
+    $id = $this->type_id;
+    return $id ? config("trailer-types.types.$id") : null;
+}
+
+public function getTypeLabelAttribute(): ?string
+{
+    $key = $this->type_key;
+    return $key ? config("trailer-types.labels.$key", $key) : null;
+}
+
+public function getTypeIconAttribute(): ?string
+{
+    $key = $this->type_key;
+    return $key ? config("trailer-types.icons.$key") : null;
+}
 }

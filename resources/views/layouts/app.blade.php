@@ -111,7 +111,7 @@
     </script>
 
     {{-- Livewire scripts --}}
-    @livewireScripts
+   <script src="/vendor/livewire/livewire.js" data-navigate-once></script>
 
     {{-- Push notifications --}}
     <script src="/pwa/push.js"></script>

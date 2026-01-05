@@ -15,6 +15,24 @@
             {{-- Основная информация --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+    <label class="block font-medium">Trailer Type</label>
+
+    <select wire:model="type_id"
+            class="border rounded px-3 py-2 w-full
+                   @error('type_id') border-red-500 @enderror">
+        @foreach(config('trailer-types.types') as $id => $key)
+            <option value="{{ $id }}">
+                {{ config("trailer-types.icons.$key") }}
+                {{ config("trailer-types.labels.$key", ucfirst($key)) }}
+            </option>
+        @endforeach
+    </select>
+
+    @error('type_id')
+        <span class="text-red-600 text-sm">{{ $message }}</span>
+    @enderror
+</div>
+                <div>
                     <label class="block font-medium">Brand</label>
                     <input type="text" wire:model.defer="brand" autofocus class="border rounded px-3 py-2 w-full">
                     @error('brand') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror

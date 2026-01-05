@@ -23,6 +23,11 @@ class Truck extends Model
         'insurance_issued',
         'insurance_expired',
         'insurance_company',
+        'license_number',
+        'license_issued',
+        'license_expired',
+        'mapon_box_id',
+        'mapon_unit_id',
         'vin',
         'status',
         'is_active',
@@ -39,6 +44,9 @@ class Truck extends Model
     'insurance_expired' => 'date',
     'tech_passport_issued' => 'date',
     'tech_passport_expired' => 'date',
+     'license_issued'  => 'date',
+    'license_expired' => 'date',
+    
 ];
 
     public function getDisplayNameAttribute(): string

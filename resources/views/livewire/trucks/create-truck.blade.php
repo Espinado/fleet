@@ -94,6 +94,53 @@
         </section>
 
         {{-- ========================================================= --}}
+{{-- 1️⃣5️⃣ LICENSE (Truck driving license / registration) --}}
+{{-- ========================================================= --}}
+<section class="space-y-4">
+    <h3 class="text-xl font-semibold border-b pb-2">🪪 License</h3>
+
+    <div class="grid sm:grid-cols-3 gap-4">
+        {{-- License number --}}
+        <div class="sm:col-span-1">
+            <label class="block mb-1 font-medium">License Number</label>
+            <input type="text" wire:model.defer="license_number"
+                   placeholder="e.g. LV-123456"
+                   class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('license_number') border-red-500 @enderror">
+            @error('license_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            <p class="text-xs text-gray-500 mt-1">Optional. Registration / license document number.</p>
+        </div>
+
+        {{-- License issued --}}
+        <div>
+            <label class="block mb-1 font-medium">Issued</label>
+            <input type="date" wire:model.live="license_issued"
+                   class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('license_issued') border-red-500 @enderror">
+            @error('license_issued') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        {{-- License expired --}}
+        <div>
+            <label class="block mb-1 font-medium">Expired</label>
+            <input type="date" wire:model.live="license_expired"
+                   class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('license_expired') border-red-500 @enderror">
+            @error('license_expired') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+        </div>
+    </div>
+
+    {{-- small note / validation hint --}}
+    <div class="text-sm text-gray-600 bg-gray-50 border rounded-xl p-3">
+        <div class="flex items-start gap-2">
+            <span class="mt-0.5">💡</span>
+            <div>
+                If you fill in dates, make sure <span class="font-medium">Expired</span> is after <span class="font-medium">Issued</span>.
+                All fields are optional.
+            </div>
+        </div>
+    </div>
+</section>
+
+
+        {{-- ========================================================= --}}
         {{-- 2️⃣ INSPECTION --}}
         {{-- ========================================================= --}}
         <section class="space-y-4">

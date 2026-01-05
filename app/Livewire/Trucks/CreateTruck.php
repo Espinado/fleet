@@ -16,6 +16,9 @@ class CreateTruck extends Component
     public $model;
     public $plate;
     public $year;
+    public $license_number = null;
+    public $license_issued = null;
+     public $license_expired = null;
 
     public $inspection_issued;
     public $inspection_expired;
@@ -56,6 +59,9 @@ class CreateTruck extends Component
             'tech_passport_issued' => 'required|date',
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
             'tech_passport_photo' => 'nullable|image|max:24096', // up to 4MB
+            'license_number' => 'nullable|string|max:50',
+            'license_issued' => 'nullable|date',
+            'license_expired' => 'nullable|date|after_or_equal:license_issued',
         ];
     }
 
@@ -91,6 +97,10 @@ class CreateTruck extends Component
             'tech_passport_issued' => $this->tech_passport_issued,
             'tech_passport_expired' => $this->tech_passport_expired,
             'tech_passport_photo' => $photoPath,
+             'license_number' => $this->license_number,
+           'license_issued' => $this->license_issued,
+          'license_expired' => $this->license_expired,
+            
         ]);
 
         session()->flash('success', 'Truck added successfully!');

@@ -20,6 +20,7 @@ class EditTruck extends Component
     public $tech_passport_photo; // новое фото (temporary)
     public $existing_photo;      // старое фото (из базы)
     public $company;
+    public $license_number, $license_issued, $license_expired;
    
     public function mount(Truck $truck)
 {
@@ -49,6 +50,9 @@ class EditTruck extends Component
     $this->tech_passport_expired = optional($truck->tech_passport_expired)->format('Y-m-d');
 
     $this->existing_photo = $truck->tech_passport_photo;
+    $this->license_number  = $truck->license_number;
+    $this->license_issued  = optional($truck->license_issued)->format('Y-m-d');
+   $this->license_expired = optional($truck->license_expired)->format('Y-m-d');
 }
 
     public function save()
@@ -70,6 +74,9 @@ class EditTruck extends Component
             'tech_passport_issued' => 'required|date',
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
             'tech_passport_photo' => 'nullable|image', // необязательное новое фото
+            'license_number' => 'nullable|string|max:50',
+            'license_issued' => 'nullable|date',
+            'license_expired' => 'nullable|date|after_or_equal:license_issued',
         ]);
         $this->dispatch('scroll-top');
 

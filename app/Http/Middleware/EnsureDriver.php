@@ -9,13 +9,13 @@ class EnsureDriver
 {
     public function handle($request, Closure $next)
     {
-        $user = Auth::user();
+      $user = Auth::guard('driver')->user();
 
-        // Водитель = пользователь, у которого есть driver-модель
-        if (!$user || !$user->driver) {
-            return redirect()->route('driver.login');
-        }
+$user = Auth::guard('driver')->user();
 
+if (!$user || !$user->driver) {
+    return redirect('/driver/login');
+}
         return $next($request);
     }
 }

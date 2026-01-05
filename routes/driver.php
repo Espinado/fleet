@@ -6,20 +6,17 @@ use Illuminate\Support\Facades\Auth;
 use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
 use App\Livewire\DriverApp\TripDetails;
-use App\Livewire\DriverApp\Profile;
-use App\Livewire\DriverApp\DriverStepDocumentUploader;
 use App\Livewire\DriverApp\ViewDocument;
-
 
 /*
 |--------------------------------------------------------------------------
-| STATIC FILES FOR PWA (must be before any /driver/{...} routes)
+| STATIC FILES FOR PWA
 |--------------------------------------------------------------------------
+| Must be before any /driver/{...} routes
 */
-
 Route::get('/driver/manifest.webmanifest', function () {
     return response()->file(public_path('driver/manifest.webmanifest'), [
-        'Content-Type' => 'application/manifest+json'
+        'Content-Type' => 'application/manifest+json',
     ]);
 });
 
@@ -29,21 +26,21 @@ Route::get('/driver/icons/{filename}', function ($filename) {
     return response()->file($path);
 });
 
+/*
+|--------------------------------------------------------------------------
+| LOGIN (public) - only for guests of DRIVER guard
+|--------------------------------------------------------------------------
+*/
+Route::get('/driver/login', Login::class)
+    ->middleware('guest:driver')
+    ->name('driver.login');
 
 /*
 |--------------------------------------------------------------------------
-| LOGIN (public)
+| AUTHENTICATED DRIVER APP (driver guard)
 |--------------------------------------------------------------------------
 */
-Route::get('/driver/login', Login::class)->name('driver.login');
-
-
-/*
-|--------------------------------------------------------------------------
-| AUTHENTICATED DRIVER APP
-|--------------------------------------------------------------------------
-*/
-Route::middleware(['driver'])->group(function () {
+Route::middleware(['auth:driver'])->group(function () {
 
     Route::get('/driver/dashboard', Dashboard::class)
         ->name('driver.dashboard');
@@ -55,8 +52,12 @@ Route::middleware(['driver'])->group(function () {
         ->name('driver.documents.view');
 
     Route::post('/driver/logout', function () {
-        Auth::logout();
-        return redirect()->route('driver.login');
+        Auth::guard('driver')->logout();
+
+        request()->session()->invalidate();
+        request()->session()->regenerateToken();
+
+        return redirect('/driver/login');
     })->name('driver.logout');
 
     Route::view('/driver/offline', 'driver-app.offline');

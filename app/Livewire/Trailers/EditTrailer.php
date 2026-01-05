@@ -21,10 +21,12 @@ class EditTrailer extends Component
     public $vin, $status, $is_active;
     public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired, $company;
     public $tech_passport_photo, $current_photo;
+    public $type_id;
 
    public function mount(Trailer $trailer)
 {
     $this->trailer = $trailer;
+    $this->type_id = $trailer->type_id;
 
     // Основные поля
     $this->brand = $trailer->brand;
@@ -85,6 +87,7 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
             'tech_passport_issued' => 'nullable|date|required_with:tech_passport_expired',
             'tech_passport_expired' => 'nullable|date|after_or_equal:tech_passport_issued',
             'tech_passport_photo' => 'nullable|image|max:22048',
+            'type_id' => 'required|integer|in:' . implode(',', array_keys(config('trailer-types.types'))),
         ];
     }
 
@@ -119,6 +122,7 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
             'tech_passport_issued' => $this->tech_passport_issued,
             'tech_passport_expired' => $this->tech_passport_expired,
             'tech_passport_photo' => $photoPath,
+            'type_id' => $this->type_id,
         ]);
 
         session()->flash('success', 'Trailer updated successfully!');

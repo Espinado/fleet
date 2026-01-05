@@ -100,7 +100,10 @@
                     </span>
                 </p>
             </div>
-
+  <!-- <a href="{{ route('trips.edit', $trip->id) }}"
+       class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white ">
+        ✏️ Edit
+    </a> -->
             <a href="{{ route('trips.index') }}"
                class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700">
                 ⬅ Back to Trips
