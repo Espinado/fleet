@@ -21,5 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Schema::defaultStringLength(191);
+           $this->loadViewsFrom(
+            base_path('vendor/laravel/framework/src/Illuminate/Mail/resources/views'),
+            'mail'
+        );
     }
 }

@@ -1,4 +1,5 @@
 @component('mail::message')
+@php use Illuminate\Support\Str; @endphp
 # ⚠️ Документы, истекающие в ближайшие 30 дней
 
 Здравствуйте!
