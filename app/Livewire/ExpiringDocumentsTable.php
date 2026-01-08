@@ -240,16 +240,21 @@ class ExpiringDocumentsTable extends Component
                     ($daysLeft <= 30 ? 'yellow' : 'white')));
 
                 $items->push((object) [
-                    'type'        => 'Invoice',
-                    'name'        => $payer?->company_name ?? ($payer?->name ?? '—'),
-                    'document'    => 'Payment terms',
-                    'expiry_date' => $expiry,
-                    'days_left'   => $daysLeft,
-                    'company_id'  => $companyId,
-                    'company'     => $this->companyName($companyId),
-                    'status'      => $color,
-                    'is_active'   => true,
-                    'id'          => $c->id,
+                   'type'        => 'Invoice',
+    // 👇 ТОЛЬКО номер инвойса
+    'name'        => !empty($c->inv_nr)
+        ? $c->inv_nr
+        : ('INV-' . $c->id),
+
+    'inv_nr'      => $c->inv_nr,
+    'document'    => 'Payment terms',
+    'expiry_date' => $expiry,
+    'days_left'   => $daysLeft,
+    'company_id'  => $companyId,
+    'company'     => $this->companyName($companyId),
+    'status'      => $color,
+    'is_active'   => true,
+    'id'          => $c->id,
                 ]);
             });
 
