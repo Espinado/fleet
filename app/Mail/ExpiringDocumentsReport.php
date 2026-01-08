@@ -20,14 +20,17 @@ class ExpiringDocumentsReport extends Mailable
         $this->company = $company;
     }
 
-    public function build()
-    {
-        $subject = '⏰ Expiring documents'
-            . (!empty($this->company['name']) ? ' — ' . $this->company['name'] : '');
+  public function build()
+{
+    $subject = '⏰ Expiring documents'
+        . (!empty($this->company['name']) ? ' — ' . $this->company['name'] : '');
 
-        return $this
-            ->subject($subject)
-            ->cc('rvr@arguss.lv')
-            ->view('emails.expiring-docs');
-    }
+    return $this
+        ->subject($subject)
+        ->cc('rvr@arguss.lv')
+        ->markdown('emails.expiring-docs', [
+            'items'   => $this->items,
+            'company' => $this->company,
+        ]);
+}
 }
