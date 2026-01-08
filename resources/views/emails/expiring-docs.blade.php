@@ -64,7 +64,7 @@
             }
         @endphp
         <tr>
-           <td style="padding:5px;">{{ $it->name }}</td>
+           <td style="padding:5px;">{{ $it->type }}</td>
             <td style="padding:5px;">{{ $it->name }}</td>
             <td style="padding:5px;"><strong>{{ $it->document }}</strong></td>
             <td style="padding:5px;">{{ $it->expiry_date->format('d.m.Y') }}</td>
