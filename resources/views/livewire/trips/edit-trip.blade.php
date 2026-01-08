@@ -284,35 +284,8 @@
             </div>
 
             @forelse($steps as $index => $step)
-                @php
-                    $type = $step['type'] ?? 'loading';
-                    $typeLabel = $type === 'loading' ? 'Погрузка' : 'Разгрузка';
-                    $icon = $type === 'loading' ? '⬆' : '⬇';
-
-                    $stepCountry = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                    $stepCity = (!empty($step['country_id']) && !empty($step['city_id']))
-                        ? getCityNameByCountryId($step['country_id'], $step['city_id'])
-                        : null;
-
-                    if ($stepCity && $stepCountry) {
-                        $stepLocation = $stepCity . ', ' . $stepCountry;
-                    } elseif ($stepCity) {
-                        $stepLocation = $stepCity;
-                    } elseif ($stepCountry) {
-                        $stepLocation = $stepCountry;
-                    } else {
-                        $stepLocation = '—';
-                    }
-
-                    $date = $step['date'] ?? null;
-                    $time = $step['time'] ?? null;
-                    $dateTimeShort = $date
-                        ? ($date . ($time ? ' '.$time : ''))
-                        : '—';
-                @endphp
-
                 <div x-data="{ open: true }"
-                     wire:key="step-{{ $step['id'] ?? $index }}"
+                     wire:key="step-{{ $index }}"
                      class="border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden">
 
                     {{-- STEP HEADER --}}
@@ -320,21 +293,14 @@
                             class="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-left
                                    text-gray-700 dark:text-gray-100 bg-gray-100 dark:bg-gray-800"
                             @click="open = !open">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                             <span x-show="open">▾</span>
                             <span x-show="!open">▸</span>
 
-                            <span class="font-semibold">
-                                Шаг #{{ $index + 1 }}
-                            </span>
+                            <span class="font-semibold shrink-0">Шаг #{{ $index + 1 }}</span>
 
-                            <span class="inline-flex flex-wrap items-center gap-1 text-xs text-gray-600 dark:text-gray-300">
-                                <span>{{ $icon }}</span>
-                                <span>{{ $typeLabel }}</span>
-                                <span class="text-gray-400">•</span>
-                                <span>{{ $stepLocation }}</span>
-                                <span class="text-gray-400">•</span>
-                                <span>{{ $dateTimeShort }}</span>
+                            <span class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300 truncate">
+                                {{ $this->stepLabelByIndex($index) }}
                             </span>
                         </div>
 
@@ -353,12 +319,9 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             {{-- Тип шага --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Тип шага
-                                </label>
-                                <select
-                                    wire:model.live="steps.{{ $index }}.type"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Тип шага</label>
+                                <select wire:model.live="steps.{{ $index }}.type"
+                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                     <option value="loading">Погрузка</option>
                                     <option value="unloading">Разгрузка</option>
                                 </select>
@@ -369,9 +332,7 @@
 
                             {{-- Дата / время --}}
                             <div class="space-y-1.5 sm:col-span-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Дата / время
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Дата / время</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="date"
                                            wire:model.live="steps.{{ $index }}.date"
@@ -387,9 +348,7 @@
 
                             {{-- Порядок --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Порядок (order)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Порядок (order)</label>
                                 <input type="number"
                                        wire:model.live="steps.{{ $index }}.order"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"
@@ -404,12 +363,9 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             {{-- Страна --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Страна
-                                </label>
-                                <select
-                                    wire:model.live="steps.{{ $index }}.country_id"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Страна</label>
+                                <select wire:model.live="steps.{{ $index }}.country_id"
+                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                     <option value="">— выбрать —</option>
                                     @foreach($countries as $countryId => $country)
                                         <option value="{{ $countryId }}">{{ $country['name'] }}</option>
@@ -422,12 +378,9 @@
 
                             {{-- Город --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Город
-                                </label>
-                                <select
-                                    wire:model.live="steps.{{ $index }}.city_id"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Город</label>
+                                <select wire:model.live="steps.{{ $index }}.city_id"
+                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
                                     <option value="">— выбрать —</option>
                                     @foreach(($stepCities[$index]['cities'] ?? []) as $cityId => $city)
                                         <option value="{{ $cityId }}">{{ $city['name'] ?? ('#'.$cityId) }}</option>
@@ -440,9 +393,7 @@
 
                             {{-- Адрес --}}
                             <div class="sm:col-span-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Адрес
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Адрес</label>
                                 <input type="text"
                                        wire:model.live="steps.{{ $index }}.address"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
@@ -454,13 +405,10 @@
 
                         {{-- Заметки --}}
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">
-                                Заметки (notes)
-                            </label>
-                            <textarea
-                                rows="2"
-                                wire:model.live="steps.{{ $index }}.notes"
-                                class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"></textarea>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Заметки (notes)</label>
+                            <textarea rows="2"
+                                      wire:model.live="steps.{{ $index }}.notes"
+                                      class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"></textarea>
                         </div>
                     </div>
                 </div>
@@ -497,59 +445,43 @@
                     $consignee = $cargo['consignee_id'] ? $clients->firstWhere('id', $cargo['consignee_id']) : null;
 
                     $summaryParts = [];
+
                     if (!empty($cargo['price_with_tax'])) {
                         $summaryParts[] = number_format($cargo['price_with_tax'], 2, '.', ' ') . ' € с НДС';
                     }
+
+                    // Вместо "город/страна" руками — берём label шага
                     if (!empty($cargo['loading_step_ids'] ?? []) && count($cargo['loading_step_ids']) > 0) {
-                        $firstIndex = $cargo['loading_step_ids'][0];
-                        if (isset($steps[$firstIndex])) {
-                            $step = $steps[$firstIndex];
-                            $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                            $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                ? getCityNameByCountryId($step['country_id'], $step['city_id'])
-                                : null;
-                            $from = $city ?: $country;
-                            if ($from) $summaryParts[] = 'от ' . $from;
-                        }
+                        $summaryParts[] = 'от: ' . $this->stepLabelByIndex((int)$cargo['loading_step_ids'][0]);
                     }
                     if (!empty($cargo['unloading_step_ids'] ?? []) && count($cargo['unloading_step_ids']) > 0) {
-                        $firstIndex = $cargo['unloading_step_ids'][0];
-                        if (isset($steps[$firstIndex])) {
-                            $step = $steps[$firstIndex];
-                            $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                            $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                ? getCityNameByCountryId($step['country_id'], $step['city_id'])
-                                : null;
-                            $to = $city ?: $country;
-                            if ($to) $summaryParts[] = 'до ' . $to;
-                        }
+                        $summaryParts[] = 'до: ' . $this->stepLabelByIndex((int)$cargo['unloading_step_ids'][0]);
                     }
                 @endphp
 
                 <div x-data="{ open: true }"
-                     wire:key="cargo-{{ $cargo['id'] ?? $index }}"
+                     wire:key="cargo-{{ $index }}"
                      class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
 
                     {{-- CARGO HEADER --}}
                     <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
                         <button type="button"
-                                class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100"
+                                class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-100 min-w-0"
                                 @click="open = !open">
                             <span x-show="open">▾</span>
                             <span x-show="!open">▸</span>
-                            <span>Груз #{{ $index + 1 }}</span>
+                            <span class="shrink-0">Груз #{{ $index + 1 }}</span>
 
                             @if($summaryParts)
-                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                <span class="text-xs text-gray-500 dark:text-gray-400 truncate">
                                     — {{ implode(' / ', $summaryParts) }}
                                 </span>
                             @endif
                         </button>
 
-                        <button
-                            type="button"
-                            wire:click="removeCargo({{ $index }})"
-                            class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
+                        <button type="button"
+                                wire:click="removeCargo({{ $index }})"
+                                class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
                             ✕ Удалить
                         </button>
                     </div>
@@ -703,64 +635,44 @@
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-3">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                                {{-- Мультивыбор погрузки --}}
+                                {{-- Loading --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-xs font-medium text-gray-500">
-                                            ⬆ Шаги погрузки (multi-select)
+                                            📦 Шаги погрузки (multi-select)
                                         </label>
                                         <span class="text-[10px] text-gray-400">Можно выбрать несколько</span>
                                     </div>
 
                                     <div class="space-y-2">
-                                        @forelse($steps as $sIndex => $step)
-                                            @php $type = $step['type'] ?? 'loading'; @endphp
-                                            @continue($type !== 'loading')
+                                        @php $hasLoadingSteps = false; @endphp
 
-                                            @php
-                                                $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                                                $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                                    ? getCityNameByCountryId($step['country_id'], $step['city_id'])
-                                                    : null;
-                                                $location = $city ?: $country ?: '—';
-
-                                                $date = $step['date'] ?? null;
-                                                $time = $step['time'] ?? null;
-                                                $dateFormatted = $date
-                                                    ? \Carbon\Carbon::parse($date.' '.($time ?: '00:00'))->format('d.m.Y H:i')
-                                                    : '—';
-                                            @endphp
+                                        @foreach($steps as $sIndex => $stepRow)
+                                            @if(($stepRow['type'] ?? 'loading') !== 'loading') @continue @endif
+                                            @php $hasLoadingSteps = true; @endphp
 
                                             <label class="block">
-                                                <input
-                                                    type="checkbox"
-                                                    class="peer hidden"
-                                                    value="{{ $sIndex }}"
-                                                    wire:model="cargos.{{ $index }}.loading_step_ids"
-                                                >
+                                                <input type="checkbox"
+                                                       class="peer hidden"
+                                                       value="{{ $sIndex }}"
+                                                       wire:model="cargos.{{ $index }}.loading_step_ids">
+
                                                 <div class="rounded-2xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs
                                                             bg-gray-50/80 dark:bg-gray-900/80
                                                             peer-checked:bg-blue-50 peer-checked:border-blue-500
                                                             peer-checked:shadow-sm transition-colors">
-                                                    <div class="flex items-center justify-between gap-2">
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="text-[13px]">⬆</span>
-                                                            <span class="font-semibold text-gray-800 dark:text-gray-100">
-                                                                Шаг #{{ $sIndex + 1 }}
-                                                            </span>
-                                                        </div>
-                                                        <span class="text-[11px] text-gray-500 peer-checked:text-blue-700">
-                                                            {{ $dateFormatted }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="mt-0.5 text-[11px] text-gray-600 dark:text-gray-300">
-                                                        {{ $location }}
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">
+                                                        {{ $this->stepLabelByIndex($sIndex) }}
                                                     </div>
                                                 </div>
                                             </label>
-                                        @empty
-                                            <div class="text-[11px] text-gray-400">Сначала добавьте шаги маршрута.</div>
-                                        @endforelse
+                                        @endforeach
+
+                                        @if(!$hasLoadingSteps)
+                                            <div class="text-[11px] text-gray-400">
+                                                Нет шагов погрузки. Добавьте шаг и выберите тип “Погрузка”.
+                                            </div>
+                                        @endif
                                     </div>
 
                                     @error("cargos.$index.loading_step_ids")
@@ -768,64 +680,44 @@
                                     @enderror
                                 </div>
 
-                                {{-- Мультивыбор разгрузки --}}
+                                {{-- Unloading --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-xs font-medium text-gray-500">
-                                            ⬇ Шаги разгрузки (multi-select)
+                                            📤 Шаги разгрузки (multi-select)
                                         </label>
                                         <span class="text-[10px] text-gray-400">Можно выбрать несколько</span>
                                     </div>
 
                                     <div class="space-y-2">
-                                        @forelse($steps as $sIndex => $step)
-                                            @php $type = $step['type'] ?? 'loading'; @endphp
-                                            @continue($type !== 'unloading')
+                                        @php $hasUnloadingSteps = false; @endphp
 
-                                            @php
-                                                $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                                                $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                                    ? getCityNameByCountryId($step['country_id'], $step['city_id'])
-                                                    : null;
-                                                $location = $city ?: $country ?: '—';
-
-                                                $date = $step['date'] ?? null;
-                                                $time = $step['time'] ?? null;
-                                                $dateFormatted = $date
-                                                    ? \Carbon\Carbon::parse($date.' '.($time ?: '00:00'))->format('d.m.Y H:i')
-                                                    : '—';
-                                            @endphp
+                                        @foreach($steps as $sIndex => $stepRow)
+                                            @if(($stepRow['type'] ?? 'loading') !== 'unloading') @continue @endif
+                                            @php $hasUnloadingSteps = true; @endphp
 
                                             <label class="block">
-                                                <input
-                                                    type="checkbox"
-                                                    class="peer hidden"
-                                                    value="{{ $sIndex }}"
-                                                    wire:model="cargos.{{ $index }}.unloading_step_ids"
-                                                >
+                                                <input type="checkbox"
+                                                       class="peer hidden"
+                                                       value="{{ $sIndex }}"
+                                                       wire:model="cargos.{{ $index }}.unloading_step_ids">
+
                                                 <div class="rounded-2xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs
                                                             bg-gray-50/80 dark:bg-gray-900/80
                                                             peer-checked:bg-blue-50 peer-checked:border-blue-500
                                                             peer-checked:shadow-sm transition-colors">
-                                                    <div class="flex items-center justify-between gap-2">
-                                                        <div class="flex items-center gap-2">
-                                                            <span class="text-[13px]">⬇</span>
-                                                            <span class="font-semibold text-gray-800 dark:text-gray-100">
-                                                                Шаг #{{ $sIndex + 1 }}
-                                                            </span>
-                                                        </div>
-                                                        <span class="text-[11px] text-gray-500 peer-checked:text-blue-700">
-                                                            {{ $dateFormatted }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="mt-0.5 text-[11px] text-gray-600 dark:text-gray-300">
-                                                        {{ $location }}
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">
+                                                        {{ $this->stepLabelByIndex($sIndex) }}
                                                     </div>
                                                 </div>
                                             </label>
-                                        @empty
-                                            <div class="text-[11px] text-gray-400">Сначала добавьте шаги маршрута.</div>
-                                        @endforelse
+                                        @endforeach
+
+                                        @if(!$hasUnloadingSteps)
+                                            <div class="text-[11px] text-gray-400">
+                                                Нет шагов разгрузки. Добавьте шаг и выберите тип “Разгрузка”.
+                                            </div>
+                                        @endif
                                     </div>
 
                                     @error("cargos.$index.unloading_step_ids")
@@ -835,14 +727,11 @@
                             </div>
                         </div>
 
-
                         {{-- Payment section --}}
                         <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Цена (без НДС)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Цена (без НДС)</label>
                                 <input type="text"
                                        wire:model.live="cargos.{{ $index }}.price"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
@@ -852,12 +741,9 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    НДС, %
-                                </label>
-                                <select
-                                    wire:model.live="cargos.{{ $index }}.tax_percent"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">НДС, %</label>
+                                <select wire:model.live="cargos.{{ $index }}.tax_percent"
+                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
                                     @foreach($taxRates as $rate)
                                         <option value="{{ $rate }}">{{ $rate }}</option>
                                     @endforeach
@@ -868,9 +754,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Сумма НДС
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Сумма НДС</label>
                                 <input type="number"
                                        wire:model.defer="cargos.{{ $index }}.total_tax_amount"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs"
@@ -878,9 +762,7 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Итого с НДС
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Итого с НДС</label>
                                 <input type="number"
                                        wire:model.defer="cargos.{{ $index }}.price_with_tax"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs"
@@ -888,21 +770,16 @@
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Оплата до
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Оплата до</label>
                                 <input type="date"
                                        wire:model.defer="cargos.{{ $index }}.payment_terms"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Плательщик (тип)
-                                </label>
-                                <select
-                                    wire:model.live="cargos.{{ $index }}.payer_type_id"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик (тип)</label>
+                                <select wire:model.live="cargos.{{ $index }}.payer_type_id"
+                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
                                     <option value="">— не выбрано —</option>
                                     @foreach($payers as $payerId => $payer)
                                         <option value="{{ $payerId }}">
@@ -912,7 +789,6 @@
                                 </select>
                             </div>
                         </div>
-
 
                         {{-- =========================
                              CARGO ITEMS (EU METRICS)
@@ -939,7 +815,7 @@
                                     @endphp
 
                                     <div x-data="{ open: {{ $itemError ? 'false' : 'true' }} }"
-                                         wire:key="cargo-item-{{ $cargo['id'] ?? $index }}-{{ $item['id'] ?? $itemIndex }}"
+                                         wire:key="cargo-item-{{ $index }}-{{ $itemIndex }}"
                                          class="rounded-2xl px-3 py-3 space-y-3 border transition
                                                 @if($itemError)
                                                     border-red-500 bg-red-50 dark:bg-red-900/20
@@ -1032,11 +908,10 @@
                                                               @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
                                                               dark:bg-gray-800 dark:text-gray-100">
 
-                                                <select
-                                                    wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
-                                                    class="w-full rounded-xl border text-[11px]
-                                                           @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                                           dark:bg-gray-800 dark:text-gray-100">
+                                                <select wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
+                                                        class="w-full rounded-xl border text-[11px]
+                                                               @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                               dark:bg-gray-800 dark:text-gray-100">
                                                     <option value="">ADR</option>
                                                     <option value="2">2</option>
                                                     <option value="3">3</option>
@@ -1092,8 +967,8 @@
                             </div>
                         </div>
 
-                    </div> {{-- /CARGO BODY END --}}
-                </div> {{-- /CARGO CONTAINER END --}}
+                    </div>
+                </div>
             @empty
                 <div class="text-sm text-gray-500">
                     Пока нет ни одного груза. Нажмите «Добавить груз».

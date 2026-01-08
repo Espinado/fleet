@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 class SendExpiringDocsNotifications extends Command
 {
     protected $signature = 'expiring-docs:notify';
-    protected $description = 'Send notification about documents expiring in <= 30 days';
+    protected $description = 'Send notification about documents expiring in <= 30 days (per company)';
 
     public function handle()
     {
@@ -28,22 +28,49 @@ class SendExpiringDocsNotifications extends Command
         }
 
         $today = Carbon::today()->toDateString();
+        $companies = config('companies', []);
 
-        Log::info("[Cron] Found {$items->count()} expiring documents on {$today}.");
-        $this->info("Найдено {$items->count()} документов с истекающим сроком:");
-        foreach ($items->take(5) as $item) {
-            $this->line("{$item->type}: {$item->name} — {$item->document} ({$item->expiry_date->toDateString()})");
+        // Группировка по фирме
+        $grouped = $items->groupBy(fn ($it) => (int)($it->company_id ?? 0));
+
+        $this->info("Найдено {$items->count()} документов. Компаний: {$grouped->count()}");
+        Log::info("[Cron] Found {$items->count()} expiring documents on {$today}. Companies: {$grouped->count()}");
+
+        // Всё без company_id — в лог (по желанию можно сделать отдельное письмо админу)
+        if ($grouped->get(0, collect())->isNotEmpty()) {
+            $cnt = $grouped->get(0)->count();
+            Log::warning("[Cron] Found unassigned items with company_id=0, count={$cnt}");
         }
 
-        try {
-            Mail::to('rvr@arguss.lv')->send(new ExpiringDocumentsReport($items));
-            Log::info('[Cron] Expiring documents email sent successfully.');
-        } catch (\Throwable $e) {
-            Log::error('[Cron] Mail send failed: ' . $e->getMessage());
-            $this->error('Ошибка при отправке письма: ' . $e->getMessage());
+        foreach ($grouped as $companyId => $companyItems) {
+
+            if ((int)$companyId === 0) {
+                // неизвестная фирма — пропускаем
+                continue;
+            }
+
+            $company = $companies[$companyId] ?? null;
+            $email = $company['email'] ?? null;
+            $companyName = $company['name'] ?? "Company #{$companyId}";
+
+            if (!$email) {
+                Log::warning("[Cron] Company {$companyId} ({$companyName}) has no email in config. Skipping.");
+                continue;
+            }
+
+            try {
+                Mail::to($email)->send(new ExpiringDocumentsReport($companyItems, $company));
+
+                Log::info("[Cron] Sent expiring docs email to {$email} for company {$companyId} ({$companyName}), count={$companyItems->count()}");
+                $this->info("✅ {$companyName}: отправлено на {$email} ({$companyItems->count()} шт.)");
+
+            } catch (\Throwable $e) {
+                Log::error("[Cron] Mail send failed for company {$companyId} ({$companyName}): " . $e->getMessage());
+                $this->error("❌ {$companyName}: ошибка отправки на {$email}: " . $e->getMessage());
+            }
         }
 
         Log::info('[Cron] Finished SendExpiringDocsNotifications at ' . now());
-        $this->info("Уведомление обработано.");
+        $this->info("Уведомления обработаны.");
     }
 }

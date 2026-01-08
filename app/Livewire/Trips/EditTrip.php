@@ -122,7 +122,6 @@ class EditTrip extends Component
             ];
         }
 
-        // если по какой-то причине шагов нет — добавим один
         if (count($this->steps) === 0) {
             $this->addStep();
         }
@@ -135,7 +134,6 @@ class EditTrip extends Component
             $unloadingIndexes = [];
 
             foreach ($cargo->steps as $st) {
-                // индекс шага по id
                 $idx = $this->trip->steps->search(fn ($x) => $x->id === $st->id);
                 if ($idx === false) continue;
 
@@ -198,15 +196,66 @@ class EditTrip extends Component
             ];
         }
 
-        // если грузов нет — добавим один
         if (count($this->cargos) === 0) {
             $this->addCargo();
         }
 
-        // пересчёт сумм
         foreach (array_keys($this->cargos) as $i) {
             $this->recalcCargoTotals($i);
         }
+    }
+
+    /** ============================================================
+     *  STEP LABEL HELPERS (UI)
+     * ============================================================ */
+    public function stepMetaByIndex(int $idx): array
+    {
+        $s = $this->steps[$idx] ?? null;
+        if (!$s) {
+            return [
+                'type' => 'loading',
+                'icon' => '📦',
+                'typeLabel' => 'Iekraušana',
+                'location' => '—',
+                'address' => null,
+                'dateTime' => '—',
+                'label' => '—',
+            ];
+        }
+
+        $type = ($s['type'] ?? 'loading') === 'unloading' ? 'unloading' : 'loading';
+
+        $icon = $type === 'loading' ? '📦' : '📤';
+        $typeLabel = $type === 'loading' ? 'Iekraušana' : 'Izkraušana';
+
+        // под твои helpers (они уже используются в blade)
+        $country = !empty($s['country_id']) ? (getCountryById((int)$s['country_id']) ?? null) : null;
+
+        $city = (!empty($s['country_id']) && !empty($s['city_id']))
+            ? (getCityNameByCountryId((int)$s['country_id'], (int)$s['city_id']) ?? null)
+            : null;
+
+        $location = $city ?: $country ?: '—';
+
+        $address = !empty($s['address']) ? trim((string)$s['address']) : null;
+
+        $date = !empty($s['date']) ? \Carbon\Carbon::parse($s['date'])->format('d.m.Y') : '—';
+        $time = !empty($s['time']) ? trim((string)$s['time']) : null;
+        $dateTime = ($date !== '—')
+            ? ($time ? "{$date} {$time}" : $date)
+            : '—';
+
+        $parts = array_values(array_filter([$location, $address]));
+        $line = $parts ? implode(', ', $parts) : '—';
+
+        $label = "{$icon} {$typeLabel} • {$line} • {$dateTime}";
+
+        return compact('type', 'icon', 'typeLabel', 'location', 'address', 'dateTime', 'label');
+    }
+
+    public function stepLabelByIndex(int $idx): string
+    {
+        return $this->stepMetaByIndex($idx)['label'] ?? '—';
     }
 
     /** ============================================================
@@ -266,7 +315,7 @@ class EditTrip extends Component
     public function updatedBankIndex() { $this->hydrateBank(); }
 
     /** ============================================================
-     *  STEPS (копия логики из CreateTrip)
+     *  STEPS
      * ============================================================ */
     public function addStep()
     {
@@ -291,7 +340,6 @@ class EditTrip extends Component
         $this->steps = array_values($this->steps);
         $this->stepCities = array_values($this->stepCities);
 
-        // после удаления индексы сдвигаются → чистим связки у грузов
         foreach ($this->cargos as &$cargo) {
             $cargo['loading_step_ids'] = array_values(array_filter(
                 $cargo['loading_step_ids'] ?? [],
@@ -307,7 +355,6 @@ class EditTrip extends Component
 
     public function updatedSteps($value, $key)
     {
-        // key типа: "0.country_id"
         $parts = explode('.', $key);
         $stepIndex = (int)($parts[0] ?? 0);
         $field = $parts[1] ?? null;
@@ -321,7 +368,7 @@ class EditTrip extends Component
     }
 
     /** ============================================================
-     *  CARGOS (копия логики из CreateTrip)
+     *  CARGOS
      * ============================================================ */
     public function addCargo()
     {
@@ -341,24 +388,22 @@ class EditTrip extends Component
             'payment_terms'    => null,
             'payer_type_id'    => null,
 
-            'items' => [
-                [
-                    'description'     => '',
-                    'packages'        => null,
-                    'pallets'         => null,
-                    'units'           => null,
-                    'net_weight'      => null,
-                    'gross_weight'    => null,
-                    'tonnes'          => null,
-                    'volume'          => null,
-                    'loading_meters'  => null,
-                    'hazmat'          => '',
-                    'temperature'     => '',
-                    'stackable'       => false,
-                    'instructions'    => '',
-                    'remarks'         => '',
-                ],
-            ],
+            'items' => [[
+                'description'     => '',
+                'packages'        => null,
+                'pallets'         => null,
+                'units'           => null,
+                'net_weight'      => null,
+                'gross_weight'    => null,
+                'tonnes'          => null,
+                'volume'          => null,
+                'loading_meters'  => null,
+                'hazmat'          => '',
+                'temperature'     => '',
+                'stackable'       => false,
+                'instructions'    => '',
+                'remarks'         => '',
+            ]],
         ];
     }
 
@@ -417,7 +462,7 @@ class EditTrip extends Component
     }
 
     /** ============================================================
-     *  SAVE (простая стратегия: delete & recreate)
+     *  SAVE
      * ============================================================ */
     public function save()
     {
@@ -430,7 +475,6 @@ class EditTrip extends Component
             'end_date'     => 'required|date',
             'currency'     => 'required|string',
 
-            // шаги маршрута
             'steps.*.type'       => 'required',
             'steps.*.country_id' => 'required|integer',
             'steps.*.city_id'    => 'required|integer',
@@ -439,7 +483,6 @@ class EditTrip extends Component
             'steps.*.time'       => 'nullable',
             'steps.*.order'      => 'required|integer',
 
-            // грузы
             'cargos.*.customer_id'        => 'required|integer',
             'cargos.*.shipper_id'         => 'required|integer',
             'cargos.*.consignee_id'       => 'required|integer',
@@ -468,7 +511,6 @@ class EditTrip extends Component
 
         $validator = Validator::make($data, $rules, $messages);
 
-        // Кастомная проверка: в каждой позиции должна быть хотя бы 1 "единица"
         $validator->after(function ($validator) {
             foreach ($this->cargos as $cargoIndex => $cargo) {
                 foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
@@ -498,15 +540,21 @@ class EditTrip extends Component
             return;
         }
 
-        // unloading после loading (по индексам steps массива)
+        // unloading после loading (по индексам steps массива) + запрет пересечения
         foreach ($this->cargos as $ci => $c) {
-            foreach (($c['loading_step_ids'] ?? []) as $lIndex) {
-                foreach (($c['unloading_step_ids'] ?? []) as $uIndex) {
+            $loading = array_unique($c['loading_step_ids'] ?? []);
+            $unload  = array_unique($c['unloading_step_ids'] ?? []);
+
+            $intersect = array_intersect($loading, $unload);
+            if (!empty($intersect)) {
+                $this->addError("cargos.$ci.unloading_step_ids", 'Один и тот же шаг не может быть и погрузкой, и разгрузкой.');
+                return;
+            }
+
+            foreach ($loading as $lIndex) {
+                foreach ($unload as $uIndex) {
                     if ($uIndex <= $lIndex) {
-                        $this->addError(
-                            "cargos.$ci.unloading_step_ids",
-                            'Разгрузки должны быть ПОСЛЕ всех погрузок.'
-                        );
+                        $this->addError("cargos.$ci.unloading_step_ids", 'Разгрузки должны быть ПОСЛЕ всех погрузок.');
                         return;
                     }
                 }
@@ -516,7 +564,6 @@ class EditTrip extends Component
         DB::beginTransaction();
 
         try {
-            // 1) update trip snapshot
             $this->trip->update([
                 'expeditor_id'        => $this->expeditor_id,
                 'expeditor_name'      => $this->expeditorData['name']      ?? null,
@@ -544,8 +591,7 @@ class EditTrip extends Component
                 'status'   => $this->status,
             ]);
 
-            // 2) снести старое и создать заново
-            $this->trip->load('cargos'); // на всякий случай (актуальная коллекция)
+            $this->trip->load('cargos');
 
             // steps
             $this->trip->steps()->delete();
@@ -557,7 +603,7 @@ class EditTrip extends Component
             }
             $this->trip->cargos()->delete();
 
-            // 3) создать steps
+            // create steps
             $stepIdMap = [];
 
             foreach ($this->steps as $i => $s) {
@@ -576,7 +622,7 @@ class EditTrip extends Component
                 $stepIdMap[$i] = $dbStep->id;
             }
 
-            // 4) создать cargos + items + pivot
+            // create cargos + items + pivot
             foreach ($this->cargos as $cargoData) {
 
                 $cargo = TripCargo::create([
@@ -615,12 +661,14 @@ class EditTrip extends Component
                 }
 
                 $pivot = [];
-                foreach (($cargoData['loading_step_ids'] ?? []) as $idx) {
+
+                foreach (array_unique($cargoData['loading_step_ids'] ?? []) as $idx) {
                     if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'loading'];
                 }
-                foreach (($cargoData['unloading_step_ids'] ?? []) as $idx) {
+                foreach (array_unique($cargoData['unloading_step_ids'] ?? []) as $idx) {
                     if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'unloading'];
                 }
+
                 if ($pivot) $cargo->steps()->attach($pivot);
             }
 

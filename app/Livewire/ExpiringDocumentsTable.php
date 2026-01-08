@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use App\Models\Driver;
 use App\Models\Truck;
 use App\Models\Trailer;
+use App\Models\TripCargo;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -21,18 +22,10 @@ class ExpiringDocumentsTable extends Component
     public $sortField = 'expiry_date';
     public $sortDirection = 'asc';
 
-    // можно хранить состояние в query string
     protected $queryString = ['search', 'perPage', 'sortField', 'sortDirection'];
 
-    public function updatingSearch()
-    {
-        $this->resetPage();
-    }
-
-    public function updatingPerPage()
-    {
-        $this->resetPage();
-    }
+    public function updatingSearch() { $this->resetPage(); }
+    public function updatingPerPage() { $this->resetPage(); }
 
     public function sortBy(string $field)
     {
@@ -51,7 +44,6 @@ class ExpiringDocumentsTable extends Component
 
         try {
             if (is_numeric($value) && strlen((string)$value) <= 10) {
-                // короткий numeric — вероятно timestamp (сек)
                 $dt = Carbon::createFromTimestamp((int)$value);
             } else {
                 $dt = Carbon::parse($value);
@@ -65,196 +57,191 @@ class ExpiringDocumentsTable extends Component
         return $dt->startOfDay();
     }
 
-    // Собираем элементы (Driver, Truck, Trailer) с документами, истекающими <= 30 дней
+    protected function companyName(?int $companyId): string
+    {
+        $companies = config('companies', []);
+        return $companies[$companyId]['name'] ?? '—';
+    }
+
+    /**
+     * Собираем Driver/Truck/Trailer/Invoice (payment_terms) истекающие <= 30 дней
+     * Возвращаем Collection объектов одинакового формата
+     */
     public function collectItems(): Collection
-{
-    $today = Carbon::today();
-    $deadline = $today->copy()->addDays(30);
-    $companies = config('companies');
+    {
+        $today = Carbon::today();
+        $deadline = $today->copy()->addDays(30);
 
-    $driversDocs = collect();
-    Driver::select(
-        'id','first_name','last_name','pers_code','status','is_active','company',
-        'license_end','code95_end','permit_expired','medical_expired','declaration_expired'
-    )->get()->each(function($d) use (&$driversDocs, $today, $deadline, $companies) {
-        $docs = [
-            'License'     => $d->license_end,
-            '95 Code'     => $d->{'95code_end'} ?? null,
-            'Permit'      => $d->permit_expired,
-            'Medical'     => $d->medical_expired,
-            'Declaration' => $d->declaration_expired,
-        ];
+        $items = collect();
 
-        $companyName = $companies[$d->company]['name'] ?? '-';
+        // =======================
+        // DRIVERS
+        // =======================
+        Driver::select(
+            'id','first_name','last_name','pers_code','status','is_active','company',
+            'license_end','code95_end','permit_expired','medical_expired','declaration_expired'
+        )->get()->each(function ($d) use ($today, $deadline, $items) {
 
-        foreach ($docs as $docName => $dateVal) {
-            $expiry = $this->safeParseDate($dateVal);
-            if (!$expiry) continue;
-            if ($expiry->gt($deadline)) continue;
+            $docs = [
+                'License'     => $d->license_end,
+                '95 Code'     => $d->code95_end ?? ($d->{'95code_end'} ?? null),
+                'Permit'      => $d->permit_expired,
+                'Medical'     => $d->medical_expired,
+                'Declaration' => $d->declaration_expired,
+            ];
 
-            $daysLeft = $today->diffInDays($expiry, false);
-            if (abs($daysLeft) > 10000) continue;
+            $companyId = (int)($d->company ?? 0);
 
-            $driversDocs->push((object)[
-                'type' => 'Driver',
-                'name' => "{$d->first_name} {$d->last_name} ({$d->pers_code})",
-                'document' => $docName,
-                'expiry_date' => $expiry,
-                'company' => $companyName,
-                'days_left' => $daysLeft,
-                'status' => $d->status,
-                'is_active' => (bool)$d->is_active,
-                'id' => $d->id,
-            ]);
-        }
-    });
+            foreach ($docs as $docName => $dateVal) {
+                $expiry = $this->safeParseDate($dateVal);
+                if (!$expiry) continue;
+                if ($expiry->gt($deadline)) continue;
 
-    $trucksDocs = collect();
-    Truck::select(
-        'id','brand','model','plate','status','is_active',
-        'inspection_expired','insurance_expired','tech_passport_expired','company'
-    )->get()->each(function($t) use (&$trucksDocs, $today, $deadline, $companies) {
-        $docs = [
-            'Inspection' => $t->inspection_expired,
-            'Insurance'  => $t->insurance_expired,
-            'Tech passport' => $t->tech_passport_expired,
-        ];
+                $daysLeft = $today->diffInDays($expiry, false);
+                if (abs($daysLeft) > 10000) continue;
 
-        $companyName = $companies[$t->company]['name'] ?? '-';
+                $items->push((object)[
+                    'type'        => 'Driver',
+                    'name'        => "{$d->first_name} {$d->last_name} ({$d->pers_code})",
+                    'document'    => $docName,
+                    'expiry_date' => $expiry,
+                    'days_left'   => $daysLeft,
+                    'company_id'  => $companyId,
+                    'company'     => $this->companyName($companyId),
+                    'status'      => $d->status,
+                    'is_active'   => (bool)$d->is_active,
+                    'id'          => $d->id,
+                ]);
+            }
+        });
 
-        foreach ($docs as $docName => $dateVal) {
-            $expiry = $this->safeParseDate($dateVal);
-            if (!$expiry) continue;
-            if ($expiry->gt($deadline)) continue;
-            $daysLeft = $today->diffInDays($expiry, false);
-            if (abs($daysLeft) > 10000) continue;
+        // =======================
+        // TRUCKS
+        // =======================
+        Truck::select(
+            'id','brand','model','plate','status','is_active','company',
+            'inspection_expired','insurance_expired','tech_passport_expired'
+        )->get()->each(function ($t) use ($today, $deadline, $items) {
 
-            $trucksDocs->push((object)[
-                'type' => 'Truck',
-                'name' => "{$t->brand} {$t->model} ({$t->plate})",
-                'document' => $docName,
-                'expiry_date' => $expiry,
-                'days_left' => $daysLeft,
-                'company' => $companyName,
-                'status' => $t->status,
-                'is_active' => (bool)$t->is_active,
-                'id' => $t->id,
-            ]);
-        }
-    });
+            $docs = [
+                'Inspection'    => $t->inspection_expired,
+                'Insurance'     => $t->insurance_expired,
+                'Tech passport' => $t->tech_passport_expired,
+            ];
 
-    $trailersDocs = collect();
-    Trailer::select(
-        'id','brand','plate','status','is_active',
-        'inspection_expired','insurance_expired','tir_expired','tech_passport_expired','company'
-    )->get()->each(function($tr) use (&$trailersDocs, $today, $deadline, $companies) {
-        $docs = [
-            'Inspection' => $tr->inspection_expired,
-            'Insurance'  => $tr->insurance_expired,
-            'TIR'        => $tr->tir_expired,
-            'Tech passport' => $tr->tech_passport_expired,
-        ];
+            $companyId = (int)($t->company ?? 0);
 
-        $companyName = $companies[$tr->company]['name'] ?? '-';
+            foreach ($docs as $docName => $dateVal) {
+                $expiry = $this->safeParseDate($dateVal);
+                if (!$expiry) continue;
+                if ($expiry->gt($deadline)) continue;
 
-        foreach ($docs as $docName => $dateVal) {
-            $expiry = $this->safeParseDate($dateVal);
-            if (!$expiry) continue;
-            if ($expiry->gt($deadline)) continue;
-            $daysLeft = $today->diffInDays($expiry, false);
-            if (abs($daysLeft) > 10000) continue;
+                $daysLeft = $today->diffInDays($expiry, false);
+                if (abs($daysLeft) > 10000) continue;
 
-            $trailersDocs->push((object)[
-                'type' => 'Trailer',
-                'name' => "{$tr->brand} ({$tr->plate})",
-                'document' => $docName,
-                'expiry_date' => $expiry,
-                'days_left' => $daysLeft,
-                'company' => $companyName,
-                'status' => $tr->status,
-                'is_active' => (bool)$tr->is_active,
-                'id' => $tr->id,
-            ]);
-        }
-    });
-    $invoiceDocs = collect();
+                $items->push((object)[
+                    'type'        => 'Truck',
+                    'name'        => "{$t->brand} {$t->model} ({$t->plate})",
+                    'document'    => $docName,
+                    'expiry_date' => $expiry,
+                    'days_left'   => $daysLeft,
+                    'company_id'  => $companyId,
+                    'company'     => $this->companyName($companyId),
+                    'status'      => $t->status,
+                    'is_active'   => (bool)$t->is_active,
+                    'id'          => $t->id,
+                ]);
+            }
+        });
 
-\App\Models\TripCargo::select(
-        'id',
-        'shipper_id',
-        'consignee_id',
-        'customer_id',
-        'payer_type_id',
-        'price_with_tax',
-        'payment_terms',
-        'trip_id',
-        'inv_nr'
-    )
-    ->whereNotNull('payment_terms')
-    ->get()
-    ->each(function($c) use (&$invoiceDocs, $today, $deadline) {
+        // =======================
+        // TRAILERS
+        // =======================
+        Trailer::select(
+            'id','brand','plate','status','is_active','company',
+            'inspection_expired','insurance_expired','tir_expired','tech_passport_expired'
+        )->get()->each(function ($tr) use ($today, $deadline, $items) {
 
-        $expiry = $this->safeParseDate($c->payment_terms);
-        if (!$expiry) return;
+            $docs = [
+                'Inspection'    => $tr->inspection_expired,
+                'Insurance'     => $tr->insurance_expired,
+                'TIR'           => $tr->tir_expired,
+                'Tech passport' => $tr->tech_passport_expired,
+            ];
 
-        // Берём только те, что истекают до 30 дней или просрочены
-        if ($expiry->gt($deadline)) return;
+            $companyId = (int)($tr->company ?? 0);
 
-        $daysLeft = $today->diffInDays($expiry, false);
+            foreach ($docs as $docName => $dateVal) {
+                $expiry = $this->safeParseDate($dateVal);
+                if (!$expiry) continue;
+                if ($expiry->gt($deadline)) continue;
 
-        /**
-         * ---------------------------------------
-         * 🔥 Who is the payer?
-         * ---------------------------------------
-         * 1 = Shipper
-         * 2 = Consignee
-         * 3 = Customer
-         */
-        $payerMap = [
-            1 => $c->shipper,
-            2 => $c->consignee,
-            3 => $c->customer,
-        ];
+                $daysLeft = $today->diffInDays($expiry, false);
+                if (abs($daysLeft) > 10000) continue;
 
-        $payer = $payerMap[$c->payer_type_id] ?? null;
-        $payerName = $payer?->name ?? '—';
+                $items->push((object)[
+                    'type'        => 'Trailer',
+                    'name'        => "{$tr->brand} ({$tr->plate})",
+                    'document'    => $docName,
+                    'expiry_date' => $expiry,
+                    'days_left'   => $daysLeft,
+                    'company_id'  => $companyId,
+                    'company'     => $this->companyName($companyId),
+                    'status'      => $tr->status,
+                    'is_active'   => (bool)$tr->is_active,
+                    'id'          => $tr->id,
+                ]);
+            }
+        });
 
-        /**
-         * ---------------------------------------
-         * 🎨 Цветовая категория (Soft PWA colors)
-         * ---------------------------------------
-         *
-         * < 0  → expired (rose)
-         * ≤10  → red
-         * ≤20  → orange
-         * ≤30  → yellow
-         *  >30 → white
-         */
-        $color =
-            $daysLeft < 0 ? 'rose' :
-            ($daysLeft <= 10 ? 'red' :
-            ($daysLeft <= 20 ? 'orange' :
-            ($daysLeft <= 30 ? 'yellow' : 'white')));
+        // =======================
+        // INVOICES (Payment terms)
+        // company = trips.expeditor_id ✅
+        // =======================
+        TripCargo::query()
+            ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr')
+            ->whereNotNull('payment_terms')
+            ->with(['trip:id,expeditor_id']) // shipper/consignee/customer/items уже грузятся через $with
+            ->get()
+            ->each(function ($c) use ($today, $deadline, $items) {
 
-        $invoiceDocs->push((object) [
-            'type'        => 'Invoice',
-            'name'        => $payer?->company_name ?? '—',
-            'document'    => 'Payment terms',
-            'expiry_date' => $expiry,
-            'days_left'   => $daysLeft,
-            'company'     => $payer?->company_name ?? '—',
-            'status'      => $color,
-            'is_active'   => true,
-            'id'          => $c->id,
-        ]);
-    });
-   return $driversDocs
-    ->concat($trucksDocs)
-    ->concat($trailersDocs)
-    ->concat($invoiceDocs)
-    ->values();
-}
+                $expiry = $this->safeParseDate($c->payment_terms);
+                if (!$expiry) return;
+                if ($expiry->gt($deadline)) return;
 
+                $daysLeft = $today->diffInDays($expiry, false);
+
+                $payerMap = [
+                    1 => $c->shipper,
+                    2 => $c->consignee,
+                    3 => $c->customer,
+                ];
+                $payer = $payerMap[$c->payer_type_id] ?? null;
+
+                $companyId = (int)($c->trip?->expeditor_id ?? 0);
+
+                $color =
+                    $daysLeft < 0 ? 'rose' :
+                    ($daysLeft <= 10 ? 'red' :
+                    ($daysLeft <= 20 ? 'orange' :
+                    ($daysLeft <= 30 ? 'yellow' : 'white')));
+
+                $items->push((object)[
+                    'type'        => 'Invoice',
+                    'name'        => $payer?->company_name ?? ($payer?->name ?? '—'),
+                    'document'    => 'Payment terms',
+                    'expiry_date' => $expiry,
+                    'days_left'   => $daysLeft,
+                    'company_id'  => $companyId,
+                    'company'     => $this->companyName($companyId),
+                    'status'      => $color,
+                    'is_active'   => true,
+                    'id'          => $c->id,
+                ]);
+            });
+
+        return $items->values();
+    }
 
     public function render()
     {
@@ -262,29 +249,31 @@ class ExpiringDocumentsTable extends Component
 
         // Поиск (case-insensitive)
         if (!empty($this->search)) {
-    $needle = mb_strtolower($this->search);
-    $all = $all->filter(fn($it) =>
-        str_contains(mb_strtolower($it->type), $needle) ||
-        str_contains(mb_strtolower($it->name), $needle) ||
-        str_contains(mb_strtolower($it->document), $needle)
-    )->values();
-}
-
+            $needle = mb_strtolower($this->search);
+            $all = $all->filter(fn ($it) =>
+                str_contains(mb_strtolower($it->type), $needle) ||
+                str_contains(mb_strtolower($it->name), $needle) ||
+                str_contains(mb_strtolower($it->document), $needle) ||
+                str_contains(mb_strtolower($it->company ?? ''), $needle)
+            )->values();
+        }
 
         // Сортировка
         $dirDesc = $this->sortDirection === 'desc';
         $all = $all->sortBy(function ($it) {
             $f = $this->sortField;
             if ($f === 'expiry_date') return $it->expiry_date->timestamp;
-            return isset($it->{$f}) ? (is_string($it->{$f}) ? mb_strtolower($it->{$f}) : $it->{$f}) : null;
+
+            return isset($it->{$f})
+                ? (is_string($it->{$f}) ? mb_strtolower($it->{$f}) : $it->{$f})
+                : null;
         }, SORT_REGULAR, $dirDesc)->values();
 
-        // Пагинация: делаем slice вручную и возвращаем LengthAwarePaginator
-        $page = Paginator::resolveCurrentPage(); // берёт ?page=... автоматически
-        $perPage = (int) $this->perPage;
+        // Пагинация вручную
+        $page = Paginator::resolveCurrentPage();
+        $perPage = (int)$this->perPage;
         $slice = $all->slice(($page - 1) * $perPage, $perPage)->values();
 
-        // если текущая страница пуста (например, перешли на 5, а перPage увеличили), то возвращаемся на 1
         if ($slice->isEmpty() && $page > 1) {
             $this->resetPage();
             $page = 1;
