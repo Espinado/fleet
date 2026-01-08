@@ -24,8 +24,15 @@ class ExpiringDocumentsTable extends Component
 
     protected $queryString = ['search', 'perPage', 'sortField', 'sortDirection'];
 
-    public function updatingSearch() { $this->resetPage(); }
-    public function updatingPerPage() { $this->resetPage(); }
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
 
     public function sortBy(string $field)
     {
@@ -35,6 +42,7 @@ class ExpiringDocumentsTable extends Component
             $this->sortField = $field;
             $this->sortDirection = 'asc';
         }
+
         $this->resetPage();
     }
 
@@ -43,8 +51,8 @@ class ExpiringDocumentsTable extends Component
         if (empty($value)) return null;
 
         try {
-            if (is_numeric($value) && strlen((string)$value) <= 10) {
-                $dt = Carbon::createFromTimestamp((int)$value);
+            if (is_numeric($value) && strlen((string) $value) <= 10) {
+                $dt = Carbon::createFromTimestamp((int) $value);
             } else {
                 $dt = Carbon::parse($value);
             }
@@ -78,8 +86,8 @@ class ExpiringDocumentsTable extends Component
         // DRIVERS
         // =======================
         Driver::select(
-            'id','first_name','last_name','pers_code','status','is_active','company',
-            'license_end','code95_end','permit_expired','medical_expired','declaration_expired'
+            'id', 'first_name', 'last_name', 'pers_code', 'status', 'is_active', 'company',
+            'license_end', 'code95_end', 'permit_expired', 'medical_expired', 'declaration_expired'
         )->get()->each(function ($d) use ($today, $deadline, $items) {
 
             $docs = [
@@ -90,7 +98,7 @@ class ExpiringDocumentsTable extends Component
                 'Declaration' => $d->declaration_expired,
             ];
 
-            $companyId = (int)($d->company ?? 0);
+            $companyId = (int) ($d->company ?? 0);
 
             foreach ($docs as $docName => $dateVal) {
                 $expiry = $this->safeParseDate($dateVal);
@@ -100,7 +108,7 @@ class ExpiringDocumentsTable extends Component
                 $daysLeft = $today->diffInDays($expiry, false);
                 if (abs($daysLeft) > 10000) continue;
 
-                $items->push((object)[
+                $items->push((object) [
                     'type'        => 'Driver',
                     'name'        => "{$d->first_name} {$d->last_name} ({$d->pers_code})",
                     'document'    => $docName,
@@ -109,7 +117,7 @@ class ExpiringDocumentsTable extends Component
                     'company_id'  => $companyId,
                     'company'     => $this->companyName($companyId),
                     'status'      => $d->status,
-                    'is_active'   => (bool)$d->is_active,
+                    'is_active'   => (bool) $d->is_active,
                     'id'          => $d->id,
                 ]);
             }
@@ -119,8 +127,8 @@ class ExpiringDocumentsTable extends Component
         // TRUCKS
         // =======================
         Truck::select(
-            'id','brand','model','plate','status','is_active','company',
-            'inspection_expired','insurance_expired','tech_passport_expired'
+            'id', 'brand', 'model', 'plate', 'status', 'is_active', 'company',
+            'inspection_expired', 'insurance_expired', 'tech_passport_expired'
         )->get()->each(function ($t) use ($today, $deadline, $items) {
 
             $docs = [
@@ -129,7 +137,7 @@ class ExpiringDocumentsTable extends Component
                 'Tech passport' => $t->tech_passport_expired,
             ];
 
-            $companyId = (int)($t->company ?? 0);
+            $companyId = (int) ($t->company ?? 0);
 
             foreach ($docs as $docName => $dateVal) {
                 $expiry = $this->safeParseDate($dateVal);
@@ -139,7 +147,7 @@ class ExpiringDocumentsTable extends Component
                 $daysLeft = $today->diffInDays($expiry, false);
                 if (abs($daysLeft) > 10000) continue;
 
-                $items->push((object)[
+                $items->push((object) [
                     'type'        => 'Truck',
                     'name'        => "{$t->brand} {$t->model} ({$t->plate})",
                     'document'    => $docName,
@@ -148,7 +156,7 @@ class ExpiringDocumentsTable extends Component
                     'company_id'  => $companyId,
                     'company'     => $this->companyName($companyId),
                     'status'      => $t->status,
-                    'is_active'   => (bool)$t->is_active,
+                    'is_active'   => (bool) $t->is_active,
                     'id'          => $t->id,
                 ]);
             }
@@ -158,8 +166,8 @@ class ExpiringDocumentsTable extends Component
         // TRAILERS
         // =======================
         Trailer::select(
-            'id','brand','plate','status','is_active','company',
-            'inspection_expired','insurance_expired','tir_expired','tech_passport_expired'
+            'id', 'brand', 'plate', 'status', 'is_active', 'company',
+            'inspection_expired', 'insurance_expired', 'tir_expired', 'tech_passport_expired'
         )->get()->each(function ($tr) use ($today, $deadline, $items) {
 
             $docs = [
@@ -169,7 +177,7 @@ class ExpiringDocumentsTable extends Component
                 'Tech passport' => $tr->tech_passport_expired,
             ];
 
-            $companyId = (int)($tr->company ?? 0);
+            $companyId = (int) ($tr->company ?? 0);
 
             foreach ($docs as $docName => $dateVal) {
                 $expiry = $this->safeParseDate($dateVal);
@@ -179,7 +187,7 @@ class ExpiringDocumentsTable extends Component
                 $daysLeft = $today->diffInDays($expiry, false);
                 if (abs($daysLeft) > 10000) continue;
 
-                $items->push((object)[
+                $items->push((object) [
                     'type'        => 'Trailer',
                     'name'        => "{$tr->brand} ({$tr->plate})",
                     'document'    => $docName,
@@ -188,7 +196,7 @@ class ExpiringDocumentsTable extends Component
                     'company_id'  => $companyId,
                     'company'     => $this->companyName($companyId),
                     'status'      => $tr->status,
-                    'is_active'   => (bool)$tr->is_active,
+                    'is_active'   => (bool) $tr->is_active,
                     'id'          => $tr->id,
                 ]);
             }
@@ -197,58 +205,16 @@ class ExpiringDocumentsTable extends Component
         // =======================
         // INVOICES (Payment terms)
         // company = trips.expeditor_id ✅
+        // Берём только если инвойс реально выписан: inv_nr + inv_file заполнены ✅
         // =======================
-       TripCargo::query()
-    ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr', 'inv_file')
-    ->whereNotNull('payment_terms')
-
-    // ✅ инвойс должен быть выписан
-    ->whereNotNull('inv_nr')
-    ->where('inv_nr', '!=', '')
-    ->whereNotNull('inv_file')
-    ->where('inv_file', '!=', '')
-
-    ->with(['trip:id,expeditor_id']) // shipper/consignee/customer/items уже грузятся через $with
-    ->get()
-    ->each(function ($c) use ($today, $deadline, $items) {
-
-        $expiry = $this->safeParseDate($c->payment_terms);
-        if (!$expiry) return;
-        if ($expiry->gt($deadline)) return;
-
-        $daysLeft = $today->diffInDays($expiry, false);
-
-        $payerMap = [
-            1 => $c->shipper,
-            2 => $c->consignee,
-            3 => $c->customer,
-        ];
-        $payer = $payerMap[$c->payer_type_id] ?? null;
-
-        $companyId = (int)($c->trip?->expeditor_id ?? 0);
-
-        $color =
-            $daysLeft < 0 ? 'rose' :
-            ($daysLeft <= 10 ? 'red' :
-            ($daysLeft <= 20 ? 'orange' :
-            ($daysLeft <= 30 ? 'yellow' : 'white')));
-
-        $items->push((object)[
-            'type'        => 'Invoice',
-            'name'        => $payer?->company_name ?? ($payer?->name ?? '—'),
-            'document'    => 'Payment terms',
-            'expiry_date' => $expiry,
-            'days_left'   => $daysLeft,
-            'company_id'  => $companyId,
-            'company'     => $this->companyName($companyId),
-            'status'      => $color,
-            'is_active'   => true,
-            'id'          => $c->id,
-        ]);
-    });
-            ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr')
+        TripCargo::query()
+            ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr', 'inv_file')
             ->whereNotNull('payment_terms')
-            ->with(['trip:id,expeditor_id']) // shipper/consignee/customer/items уже грузятся через $with
+            ->whereNotNull('inv_nr')
+            ->where('inv_nr', '!=', '')
+            ->whereNotNull('inv_file')
+            ->where('inv_file', '!=', '')
+            ->with(['trip:id,expeditor_id'])
             ->get()
             ->each(function ($c) use ($today, $deadline, $items) {
 
@@ -265,7 +231,7 @@ class ExpiringDocumentsTable extends Component
                 ];
                 $payer = $payerMap[$c->payer_type_id] ?? null;
 
-                $companyId = (int)($c->trip?->expeditor_id ?? 0);
+                $companyId = (int) ($c->trip?->expeditor_id ?? 0);
 
                 $color =
                     $daysLeft < 0 ? 'rose' :
@@ -273,7 +239,7 @@ class ExpiringDocumentsTable extends Component
                     ($daysLeft <= 20 ? 'orange' :
                     ($daysLeft <= 30 ? 'yellow' : 'white')));
 
-                $items->push((object)[
+                $items->push((object) [
                     'type'        => 'Invoice',
                     'name'        => $payer?->company_name ?? ($payer?->name ?? '—'),
                     'document'    => 'Payment terms',
@@ -297,6 +263,7 @@ class ExpiringDocumentsTable extends Component
         // Поиск (case-insensitive)
         if (!empty($this->search)) {
             $needle = mb_strtolower($this->search);
+
             $all = $all->filter(fn ($it) =>
                 str_contains(mb_strtolower($it->type), $needle) ||
                 str_contains(mb_strtolower($it->name), $needle) ||
@@ -318,7 +285,7 @@ class ExpiringDocumentsTable extends Component
 
         // Пагинация вручную
         $page = Paginator::resolveCurrentPage();
-        $perPage = (int)$this->perPage;
+        $perPage = (int) $this->perPage;
         $slice = $all->slice(($page - 1) * $perPage, $perPage)->values();
 
         if ($slice->isEmpty() && $page > 1) {
