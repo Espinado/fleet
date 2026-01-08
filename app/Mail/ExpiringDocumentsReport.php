@@ -28,6 +28,6 @@ class ExpiringDocumentsReport extends Mailable
         return $this
             ->subject($subject)
             ->cc('rvr@arguss.lv')
-            ->view('emails.expiring-documents-report');
+            ->view('emails.expiring-docs');
     }
 }
