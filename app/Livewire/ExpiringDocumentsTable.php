@@ -198,7 +198,54 @@ class ExpiringDocumentsTable extends Component
         // INVOICES (Payment terms)
         // company = trips.expeditor_id ✅
         // =======================
-        TripCargo::query()
+       TripCargo::query()
+    ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr', 'inv_file')
+    ->whereNotNull('payment_terms')
+
+    // ✅ инвойс должен быть выписан
+    ->whereNotNull('inv_nr')
+    ->where('inv_nr', '!=', '')
+    ->whereNotNull('inv_file')
+    ->where('inv_file', '!=', '')
+
+    ->with(['trip:id,expeditor_id']) // shipper/consignee/customer/items уже грузятся через $with
+    ->get()
+    ->each(function ($c) use ($today, $deadline, $items) {
+
+        $expiry = $this->safeParseDate($c->payment_terms);
+        if (!$expiry) return;
+        if ($expiry->gt($deadline)) return;
+
+        $daysLeft = $today->diffInDays($expiry, false);
+
+        $payerMap = [
+            1 => $c->shipper,
+            2 => $c->consignee,
+            3 => $c->customer,
+        ];
+        $payer = $payerMap[$c->payer_type_id] ?? null;
+
+        $companyId = (int)($c->trip?->expeditor_id ?? 0);
+
+        $color =
+            $daysLeft < 0 ? 'rose' :
+            ($daysLeft <= 10 ? 'red' :
+            ($daysLeft <= 20 ? 'orange' :
+            ($daysLeft <= 30 ? 'yellow' : 'white')));
+
+        $items->push((object)[
+            'type'        => 'Invoice',
+            'name'        => $payer?->company_name ?? ($payer?->name ?? '—'),
+            'document'    => 'Payment terms',
+            'expiry_date' => $expiry,
+            'days_left'   => $daysLeft,
+            'company_id'  => $companyId,
+            'company'     => $this->companyName($companyId),
+            'status'      => $color,
+            'is_active'   => true,
+            'id'          => $c->id,
+        ]);
+    });
             ->select('id', 'payer_type_id', 'payment_terms', 'trip_id', 'inv_nr')
             ->whereNotNull('payment_terms')
             ->with(['trip:id,expeditor_id']) // shipper/consignee/customer/items уже грузятся через $with
