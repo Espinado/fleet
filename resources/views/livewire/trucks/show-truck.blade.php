@@ -82,7 +82,7 @@
                         <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
                                     text-xs font-semibold rounded-full
                                     bg-red-100 text-red-700">
-                            🚨 CAN not updated {{ $canDaysAgo }} days
+                            🚨 CAN not updated {{ int($canDaysAgo) }} days
                         </div>
                     @else
                         <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
