@@ -47,81 +47,83 @@ class ShowTruck extends Component
     }
 
     public function loadMaponData(): void
-    {
-        // reset so nothing "sticks"
-        $this->maponError = null;
-        $this->maponCanMileageKm = null;
-        $this->maponUnitName = null;
-        $this->maponLastUpdate = null;
-        $this->maponCanAt = null;
+{
+    // reset so nothing "sticks"
+    $this->maponError = null;
+    $this->maponCanMileageKm = null;
+    $this->maponUnitName = null;
+    $this->maponLastUpdate = null;
+    $this->maponCanAt = null;
 
-        $this->maponCanStale = false;
-        $this->maponCanDaysAgo = null;
+    $this->maponCanStale = false;
+    $this->maponCanDaysAgo = null;
 
-        $unitId = $this->truck->mapon_unit_id ?? null;
+    $unitId = $this->truck->mapon_unit_id ?? null;
 
-        if (!$unitId) {
-            $this->maponError = 'mapon_unit_id не задан для данного трака.';
-            return;
-        }
-
-        $cacheKey = $this->cacheKey($unitId);
-
-        $result = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($unitId) {
-            try {
-                /** @var MaponService $svc */
-                $svc = app(MaponService::class);
-
-                // include=can
-                return $svc->getUnitData($unitId, 'can');
-            } catch (\Throwable $e) {
-                Log::warning("MaponService getUnitData failed unit_id={$unitId}: " . $e->getMessage());
-                return null;
-            }
-        });
-
-        if (!is_array($result)) {
-            $this->maponError = 'Не удалось получить данные из Mapon.';
-            return;
-        }
-
-        // debug only in local
-        if (app()->isLocal()) {
-            Log::info('Mapon unit payload (with CAN)', [
-                'unit_id' => $unitId,
-                'can' => $result['can'] ?? null,
-                'last_update' => $result['last_update'] ?? null,
-            ]);
-        }
-
-        $this->maponUnitName = $result['label']
-            ?? $result['number']
-            ?? ($result['vehicle_title'] ?? null)
-            ?? '—';
-
-        $this->maponLastUpdate = $result['last_update'] ?? null;
-
-        // ✅ CAN odometer path for your payload: can.odom.value (km)
-        $canValue = data_get($result, 'can.odom.value');
-        $canAt    = data_get($result, 'can.odom.gmt');
-
-        if ($canValue === null || $canValue === '') {
-            $this->maponError = 'Mapon не вернул CAN odometer (can.odom.value).';
-            return;
-        }
-
-        $this->maponCanMileageKm = round((float) $canValue, 1);
-        $this->maponCanAt = $canAt ?: null;
-
-        // ✅ stale logic via config/mapon.php => can_stale_days
-        if ($this->maponCanAt) {
-            $days = Carbon::parse($this->maponCanAt)->diffInDays(now());
-             $this->maponCanDaysAgo = (int) $days;
-
-            $threshold = (int) config('mapon.can_stale_days', 2);
-            $this->maponCanStale = $days >= $threshold;
-        }
+    if (!$unitId) {
+        $this->maponError = 'mapon_unit_id не задан для данного трака.';
+        return;
     }
+
+    $cacheKey = $this->cacheKey($unitId);
+
+    $result = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($unitId) {
+        try {
+            /** @var MaponService $svc */
+            $svc = app(MaponService::class);
+
+            // include=can
+            return $svc->getUnitData($unitId, 'can');
+        } catch (\Throwable $e) {
+            Log::warning("MaponService getUnitData failed unit_id={$unitId}: " . $e->getMessage());
+            return null;
+        }
+    });
+
+    if (!is_array($result)) {
+        $this->maponError = 'Не удалось получить данные из Mapon.';
+        return;
+    }
+
+    // debug only in local
+    if (app()->isLocal()) {
+        Log::info('Mapon unit payload (with CAN)', [
+            'unit_id' => $unitId,
+            'can' => $result['can'] ?? null,
+            'last_update' => $result['last_update'] ?? null,
+        ]);
+    }
+
+    $this->maponUnitName = $result['label']
+        ?? $result['number']
+        ?? ($result['vehicle_title'] ?? null)
+        ?? '—';
+
+    $this->maponLastUpdate = $result['last_update'] ?? null;
+
+    // ✅ CAN odometer path for your payload: can.odom.value (km)
+    $canValue = data_get($result, 'can.odom.value');
+    $canAt    = data_get($result, 'can.odom.gmt');
+
+    if ($canValue === null || $canValue === '') {
+        $this->maponError = 'Mapon не вернул CAN odometer (can.odom.value).';
+        return;
+    }
+
+    $this->maponCanMileageKm = round((float) $canValue, 1);
+    $this->maponCanAt = !empty($canAt) ? (string) $canAt : null;
+
+    // ✅ stale logic via config/mapon.php => can_stale_days
+    if ($this->maponCanAt) {
+        $now = now();
+
+        $this->maponCanDaysAgo = Carbon::parse($this->maponCanAt)->diffInDays($now);
+
+        $threshold = (int) config('mapon.can_stale_days', 2);
+        $this->maponCanStale = $this->maponCanDaysAgo >= $threshold;
+    }
+}
+
 
     protected function cacheKey(int|string $unitId): string
     {
