@@ -7,29 +7,56 @@ use App\Models\Truck;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Services\Services\MaponService;
+use Carbon\Carbon;
 
 class ShowTruck extends Component
 {
     public Truck $truck;
 
-    public ?float $maponMileageKm = null; // км
-    public ?string $maponUnitName = null; // label/number
+    // Mapon UI fields (CAN only)
+    public ?float $maponCanMileageKm = null;     // CAN odometer (km)
+    public ?string $maponUnitName = null;
     public ?string $maponError = null;
 
-    protected $listeners = ['deleteConfirmed' => 'deleteTruck'];
+    // Stale status (configured)
+    public bool $maponCanStale = false;
+    public ?int $maponCanDaysAgo = null;
 
-    public function mount(Truck $truck)
+    // Meta
+    public ?string $maponLastUpdate = null;      // unit.last_update
+    public ?string $maponCanAt = null;           // can.odom.gmt
+
+    public function mount(Truck $truck): void
     {
         $this->truck = $truck;
         $this->loadMaponData();
     }
 
+    /**
+     * Button handler: clear cache and load fresh data
+     */
+    public function refreshMaponData(): void
+    {
+        $unitId = $this->truck->mapon_unit_id ?? null;
+
+        if ($unitId) {
+            Cache::forget($this->cacheKey($unitId));
+        }
+
+        $this->loadMaponData();
+    }
+
     public function loadMaponData(): void
     {
-        // сброс чтобы не “залипало”
+        // reset so nothing "sticks"
         $this->maponError = null;
-        $this->maponMileageKm = null;
+        $this->maponCanMileageKm = null;
         $this->maponUnitName = null;
+        $this->maponLastUpdate = null;
+        $this->maponCanAt = null;
+
+        $this->maponCanStale = false;
+        $this->maponCanDaysAgo = null;
 
         $unitId = $this->truck->mapon_unit_id ?? null;
 
@@ -38,13 +65,15 @@ class ShowTruck extends Component
             return;
         }
 
-        $cacheKey = "mapon:unit:{$unitId}:data";
+        $cacheKey = $this->cacheKey($unitId);
 
         $result = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($unitId) {
             try {
                 /** @var MaponService $svc */
                 $svc = app(MaponService::class);
-                return $svc->getUnitData($unitId);
+
+                // include=can
+                return $svc->getUnitData($unitId, 'can');
             } catch (\Throwable $e) {
                 Log::warning("MaponService getUnitData failed unit_id={$unitId}: " . $e->getMessage());
                 return null;
@@ -56,47 +85,64 @@ class ShowTruck extends Component
             return;
         }
 
-        // Mapon отдаёт label/number (у тебя в логе есть "label":"DAF", "number":"JG-7571")
+        // debug only in local
+        if (app()->isLocal()) {
+            Log::info('Mapon unit payload (with CAN)', [
+                'unit_id' => $unitId,
+                'can' => $result['can'] ?? null,
+                'last_update' => $result['last_update'] ?? null,
+            ]);
+        }
+
         $this->maponUnitName = $result['label']
             ?? $result['number']
             ?? ($result['vehicle_title'] ?? null)
             ?? '—';
 
-        // mileage приходит огромным числом — это метры → переводим в км
-        if (isset($result['mileage'])) {
-            $meters = (float) $result['mileage'];
-            $this->maponMileageKm = $meters > 0 ? round($meters / 1000, 0) : 0.0;
-        } else {
-            $this->maponError = 'Mapon не вернул поле mileage для этого unit.';
+        $this->maponLastUpdate = $result['last_update'] ?? null;
+
+        // ✅ CAN odometer path for your payload: can.odom.value (km)
+        $canValue = data_get($result, 'can.odom.value');
+        $canAt    = data_get($result, 'can.odom.gmt');
+
+        if ($canValue === null || $canValue === '') {
+            $this->maponError = 'Mapon не вернул CAN odometer (can.odom.value).';
+            return;
+        }
+
+        $this->maponCanMileageKm = round((float) $canValue, 1);
+        $this->maponCanAt = $canAt ?: null;
+
+        // ✅ stale logic via config/mapon.php => can_stale_days
+        if ($this->maponCanAt) {
+            $days = Carbon::parse($this->maponCanAt)->diffInDays(now());
+            $this->maponCanDaysAgo = $days;
+
+            $threshold = (int) config('mapon.can_stale_days', 2);
+            $this->maponCanStale = $days >= $threshold;
         }
     }
 
-    public function deleteTruck($id)
+    protected function cacheKey(int|string $unitId): string
     {
-        $truck = Truck::find($id);
-
-        if ($truck) {
-            $truck->delete();
-            session()->flash('message', 'Truck deleted successfully!');
-        }
-
-        return redirect()->route('trucks.list');
+        return "mapon:unit:{$unitId}:data:can";
     }
 
     public function destroy()
     {
         if ($this->truck) {
             $this->truck->delete();
-            $this->reset();
             session()->flash('success', 'Truck deleted successfully.');
             return redirect()->route('trucks.index');
         }
 
         session()->flash('error', 'Truck not found.');
+        return redirect()->route('trucks.index');
     }
 
     public function render()
     {
-        return view('livewire.trucks.show-truck')->layout('layouts.app');
+        return view('livewire.trucks.show-truck')
+            ->layout('layouts.app');
     }
 }

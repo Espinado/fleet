@@ -34,21 +34,25 @@
             <p><strong>Valid:</strong> {{ $truck->insurance_issued }} → {{ $truck->insurance_expired }}</p>
         </div>
     </div>
-    {{-- MAPON --}}
+   {{-- MAPON --}}
 <div class="mb-8">
     <div class="flex items-center justify-between border-b pb-1 mb-3">
         <h2 class="text-xl font-semibold">Mapon</h2>
 
         <button
             type="button"
-            wire:click="loadMaponData"
-            class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            wire:click="refreshMaponData"
+            wire:loading.attr="disabled"
+            class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-gray-100 hover:bg-gray-200
+                   text-gray-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
         >
-            🔄 Refresh
+            <span wire:loading.remove wire:target="refreshMaponData">🔄 Refresh</span>
+            <span wire:loading wire:target="refreshMaponData">⏳ Refreshing...</span>
         </button>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {{-- Unit ID --}}
         <div class="bg-gray-50 border rounded-xl p-4">
             <p class="text-sm text-gray-500 mb-1">Unit ID</p>
             <p class="text-base font-semibold text-gray-800">
@@ -56,18 +60,58 @@
             </p>
         </div>
 
+        {{-- CAN Odometer --}}
         <div class="bg-gray-50 border rounded-xl p-4">
-            <p class="text-sm text-gray-500 mb-1">Odometer</p>
+            <p class="text-sm text-gray-500 mb-1">Odometer (CAN)</p>
 
             @if($maponError)
                 <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
             @else
                 <p class="text-base font-semibold text-gray-800">
-                    {{ $maponMileageKm !== null ? number_format($maponMileageKm, 0, '.', ' ') . ' km' : '—' }}
+                    {{ $maponCanMileageKm !== null ? number_format($maponCanMileageKm, 0, '.', ' ') . ' km' : '—' }}
                 </p>
+
+                @php
+                    $canAt = $maponCanAt ? \Carbon\Carbon::parse($maponCanAt) : null;
+                    $canDaysAgo = $canAt ? $canAt->diffInDays(now()) : null;
+                @endphp
+
+                {{-- Alarm if CAN is stale --}}
+                @if($canAt)
+                    @if($canDaysAgo !== null && $canDaysAgo >= 2)
+                        <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                                    text-xs font-semibold rounded-full
+                                    bg-red-100 text-red-700">
+                            🚨 CAN not updated {{ $canDaysAgo }} days
+                        </div>
+                    @else
+                        <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                                    text-xs font-semibold rounded-full
+                                    bg-green-100 text-green-700">
+                            ✅ Updated {{ $canAt->diffForHumans() }}
+                        </div>
+                    @endif
+
+                    <p class="text-xs text-gray-400 mt-2">
+                        CAN at: {{ $maponCanAt }}
+                    </p>
+                @else
+                    <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                                text-xs font-semibold rounded-full
+                                bg-yellow-100 text-yellow-800">
+                        ⚠️ No CAN timestamp
+                    </div>
+                @endif
+
+                @if($maponLastUpdate)
+                    <p class="text-xs text-gray-400 mt-1">
+                        Last update: {{ $maponLastUpdate }}
+                    </p>
+                @endif
             @endif
         </div>
 
+        {{-- Unit name --}}
         <div class="bg-gray-50 border rounded-xl p-4">
             <p class="text-sm text-gray-500 mb-1">Unit name</p>
             <p class="text-base font-semibold text-gray-800">
@@ -76,7 +120,7 @@
         </div>
     </div>
 
-    <div wire:loading wire:target="loadMaponData" class="mt-3 text-sm text-gray-500 animate-pulse">
+    <div wire:loading wire:target="refreshMaponData" class="mt-3 text-sm text-gray-500 animate-pulse">
         Loading Mapon data...
     </div>
 </div>

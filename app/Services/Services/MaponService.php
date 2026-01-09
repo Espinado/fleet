@@ -11,32 +11,41 @@ class MaponService
 
     public function __construct()
     {
-        // ✅ config/mapon.php -> ['base_url' => ..., 'key' => ...]
         $this->baseUrl = config('mapon.base_url', 'https://mapon.com/api/v1');
         $this->apiKey  = (string) config('mapon.key', '');
     }
 
-   public function getUnitData(int|string $unitId): ?array
-{
-    if (empty($this->apiKey)) return null;
+    public function getUnitData(int|string $unitId, array|string|null $include = null): ?array
+    {
+        if (empty($this->apiKey)) return null;
 
-    $url = rtrim($this->baseUrl, '/') . '/unit/list.json';
+        $url = rtrim($this->baseUrl, '/') . '/unit/list.json';
 
-    $response = Http::timeout(15)->get($url, [
-        'key'     => $this->apiKey,
-        'unit_id' => $unitId,
-    ]);
+        $query = [
+            'key'     => $this->apiKey,
+            'unit_id' => $unitId,
+        ];
 
-    if (!$response->ok()) return null;
+        // Mapon принимает include=can (строкой) — как в твоём рабочем URL
+        if (is_string($include) && $include !== '') {
+            $query['include'] = $include;
+        }
 
-    $json = $response->json();
+        // На всякий: если вдруг захочешь include[]=can&include[]=something
+        if (is_array($include) && !empty($include)) {
+            $query['include'] = $include; // Laravel сам превратит в include[0]=...
+        }
 
-    return $json['data']['units'][0] ?? null;
-}
+        $response = Http::timeout(15)->get($url, $query);
 
+        if (!$response->ok()) return null;
 
+        $json = $response->json();
 
-    public function getMileage(int|string $unitId): ?float
+        return $json['data']['units'][0] ?? null;
+    }
+
+    public function getMileageRaw(int|string $unitId): ?float
     {
         $data = $this->getUnitData($unitId);
         if (!$data) return null;
