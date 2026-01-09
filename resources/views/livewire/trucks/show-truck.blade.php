@@ -34,6 +34,53 @@
             <p><strong>Valid:</strong> {{ $truck->insurance_issued }} → {{ $truck->insurance_expired }}</p>
         </div>
     </div>
+    {{-- MAPON --}}
+<div class="mb-8">
+    <div class="flex items-center justify-between border-b pb-1 mb-3">
+        <h2 class="text-xl font-semibold">Mapon</h2>
+
+        <button
+            type="button"
+            wire:click="loadMaponData"
+            class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+        >
+            🔄 Refresh
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">Unit ID</p>
+            <p class="text-base font-semibold text-gray-800">
+                {{ $truck->mapon_unit_id ?? '—' }}
+            </p>
+        </div>
+
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">Odometer</p>
+
+            @if($maponError)
+                <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
+            @else
+                <p class="text-base font-semibold text-gray-800">
+                    {{ $maponMileageKm !== null ? number_format($maponMileageKm, 0, '.', ' ') . ' km' : '—' }}
+                </p>
+            @endif
+        </div>
+
+        <div class="bg-gray-50 border rounded-xl p-4">
+            <p class="text-sm text-gray-500 mb-1">Unit name</p>
+            <p class="text-base font-semibold text-gray-800">
+                {{ $maponUnitName ?? '—' }}
+            </p>
+        </div>
+    </div>
+
+    <div wire:loading wire:target="loadMaponData" class="mt-3 text-sm text-gray-500 animate-pulse">
+        Loading Mapon data...
+    </div>
+</div>
+
 
     {{-- Техосмотр --}}
     <div class="mb-8">
