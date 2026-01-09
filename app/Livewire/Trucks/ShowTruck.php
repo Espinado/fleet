@@ -116,7 +116,7 @@ class ShowTruck extends Component
         // ✅ stale logic via config/mapon.php => can_stale_days
         if ($this->maponCanAt) {
             $days = Carbon::parse($this->maponCanAt)->diffInDays(now());
-            $this->maponCanDaysAgo = $days;
+             $this->maponCanDaysAgo = (int) $days;
 
             $threshold = (int) config('mapon.can_stale_days', 2);
             $this->maponCanStale = $days >= $threshold;
