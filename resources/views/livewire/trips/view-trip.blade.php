@@ -325,7 +325,7 @@
                                         <button @click="loading=true;$wire.generateCmr({{ $cargo->id }});"
                                                 :disabled="loading"
                                                 class="w-full px-3 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
-                                            <span x-show="!loading">📘 Generate</span>
+                                            <span x-show="!loading">📘 Generate CMR</span>
                                             <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif
@@ -343,7 +343,7 @@
                                         <button @click="loading=true;$wire.generateOrder({{ $cargo->id }});"
                                                 :disabled="loading"
                                                 class="w-full px-3 py-2 bg-indigo-100 text-indigo-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
-                                            <span x-show="!loading">📄 Generate</span>
+                                            <span x-show="!loading">📄 Generate Order</span>
                                             <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-indigo-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif
@@ -361,7 +361,7 @@
                                         <button @click="loading=true;$wire.generateInvoice({{ $cargo->id }});"
                                                 :disabled="loading"
                                                 class="w-full px-3 py-2 bg-amber-100 text-amber-700 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60">
-                                            <span x-show="!loading">💶 Generate</span>
+                                            <span x-show="!loading">💶 Generate Invoice</span>
                                             <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-amber-700 border-t-transparent rounded-full"></span>
                                         </button>
                                     @endif

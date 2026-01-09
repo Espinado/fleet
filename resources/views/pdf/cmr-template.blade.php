@@ -3,351 +3,417 @@
 <html lang="lv">
 <head>
     <meta charset="UTF-8">
-    <title>CMR Consignment Note</title>
+    <title>CMR</title>
 
-    <style>
-        @font-face {
-            font-family: 'DejaVu Sans';
-            src: url('{{ public_path('fonts/DejaVuSans.ttf') }}') format('truetype');
-        }
+   <style>
+    /* =========================================================
+       ✅ CMR STYLE (DomPDF-safe)
+       - 1 page
+       - guaranteed margins via padding (not @page)
+       - fixed A4 width in mm to prevent right overflow
+       - all widths in mm or safe %, with box-sizing
+    ========================================================= */
 
-        html, body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 11.5px;
-            line-height: 1.3;
-            color: #000;
-            margin: 0;
-            padding: 0;
-        }
+    @font-face {
+        font-family: 'DejaVu Sans';
+        src: url('{{ public_path('fonts/DejaVuSans.ttf') }}') format('truetype');
+    }
 
-        @page {
-            size: A4;
-            margin: 12mm 14mm;
-        }
+    /* DomPDF: лучше держать margin=0 и делать поля через padding */
+    @page { size: A4; margin: 0; }
 
-        .wrapper {
-            padding: 6mm;
-            position: relative;
-            z-index: 2;
-        }
+    * { box-sizing: border-box; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 6px;
-            page-break-inside: avoid;
-        }
+    html, body {
+        font-family: 'DejaVu Sans', sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #000;
+        font-size: 9.0px;
+        line-height: 1.03;
+    }
 
-        td, th {
-            border: 0.7px solid #000;
-            padding: 4px 6px;
-            vertical-align: top;
-        }
+    /* =========================================================
+       ✅ PAGE GEOMETRY
+       A4 = 210mm x 297mm
+       padding = 12mm => inner width = 186mm
+    ========================================================= */
+    .sheet{
+        width: 210mm;            /* фикс под A4 */
+    
+        padding: 12mm;           /* реальные поля */
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;        /* чтоб ничего не вылезало наружу */
+    }
 
-        th {
-            background: #f2f2f2;
-            text-align: center;
-        }
+    .outer{
+        width: 186mm;            /* 210 - 12 - 12 */
+        border: 1.2px solid #000;
+        position: relative;
+        z-index: 2;
+        background: transparent;
+    }
 
-        .title {
-            font-weight: bold;
-            text-align: center;
-            font-size: 13px;
-            border: 1px solid #000;
-            padding: 6px;
-            margin-bottom: 8px;
-        }
+    /* =========================================================
+       WATERMARK
+    ========================================================= */
+  .wm-oval{
+    position: absolute;
+    left: 50%;
+    top: 56%;
+    transform: translate(-50%, -50%);
+    width: 155mm;
+    height: 92mm;
+    border: 2.2mm solid rgba(0,0,0,0.12);
+    border-radius: 9999px;
+    z-index: 0;
+    pointer-events: none;
+}
+.wm-text{
+    position: absolute;
+    left: 50%;
+    top: 56%;
+    transform: translate(-50%, -50%);
+    font-size: 96px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(0,0,0,0.10);
+    z-index: 0;
+    pointer-events: none;
+}
 
-        .field-num {
-            font-weight: bold;
-            font-size: 10px;
-            margin-bottom: 2px;
-        }
+    /* =========================================================
+       TABLE BASICS
+    ========================================================= */
+    table{ width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-        .center { text-align: center; }
-        .right { text-align: right; }
+    td, th{
+        border: 0.75px solid #000;
+        vertical-align: top;
+        padding: 1.0mm 1.3mm;        /* компактнее, чтобы влезало по высоте */
+        word-break: break-word;
+        overflow: hidden;
+    }
 
-        .cmr-bg {
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 140px;
-            color: rgba(0,0,0,0.05);
-            font-weight: bold;
-            letter-spacing: 3px;
-            z-index: 0;
-        }
+    .no-pad{ padding: 0 !important; }
+    .center{ text-align: center; }
+    .right { text-align: right;  }
 
-        ul {
-            margin: 0 0 4px 14px;
-            padding: 0;
-            list-style: disc;
-        }
-    </style>
+    /* =========================================================
+       TEXT HELPERS
+    ========================================================= */
+    .num{
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+        width: 7mm;
+    }
+
+    .lbl{ font-size: 8px; }
+    .sub{ display:block; font-size: 7px; margin-top: 0.5mm; }
+
+    .cmrnr{
+        width: 186mm;              /* чтобы совпадало с outer */
+        font-weight: 700;
+        font-size: 12px;
+        text-align: right;
+        margin: 0 0 0.8mm 0;
+        position: relative;
+        z-index: 2;
+    }
+
+    .title{
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+        letter-spacing: .2px;
+    }
+    .tiny{ font-size: 7.2px; margin-top: 2.0mm; }
+
+    .pad-s{ padding: 0.8mm 1.0mm !important; }
+    .mini { font-size: 7px; }
+
+    /* =========================================================
+       LINES INSIDE FIELDS
+    ========================================================= */
+    .lines{ margin-top: 1.0mm; }
+    .line{
+        border-bottom: 0.6px solid #000;
+        height: 3.2mm;
+    }
+    .line:last-child{ border-bottom: none; }
+
+    /* =========================================================
+       ✅ FIXED HEIGHTS (1 PAGE)
+       Подогнано так, чтобы 21–26 не уходили на вторую страницу
+    ========================================================= */
+    .h1  { height: 18mm; }
+    .h2  { height: 18mm; }
+    .h3  { height: 12mm; }
+    .h4  { height: 12mm; }
+    .h5  { height: 8mm;  }
+
+    .htitle { height: 24mm; }
+    .h16 { height: 16mm; }
+    .h17 { height: 16mm; }
+    .h18 { height: 20mm; }
+
+    /* 6–11 уменьшено */
+    .h611_head { height: 9mm; }
+    .h611_body { height: 28mm; }
+    .h611_adr  { height: 8mm; }
+
+    .h13_19 { height: 34mm; }
+    .h14    { height: 8mm;  }
+    .h15_20 { height: 8mm;  }
+    .h21_24 { height: 22mm; }
+    .h25_26 { height: 12mm; }
+
+    /* =========================================================
+       OPTIONAL: если вдруг всё ещё чуть "жмёт" вниз,
+       можешь уменьшить только эти 2 значения:
+       .h611_body -> 26mm
+       .h13_19    -> 32mm
+    ========================================================= */
+</style>
+
+
 </head>
-
 <body>
+@php $cmr_nr = $cmr_nr ?? ''; @endphp
 
-<div class="cmr-bg">CMR</div>
 
-<div class="wrapper">
 
-    <div class="title">
-        TARPTAUTINIS KROVINIŲ TRANSPORTAVIMO VAŽTARAŠTIS /
-        STARPTAUTISKĀ KRAVAS PIEGĀDES PAVADZĪME /
-        INTERNATIONAL CONSIGNMENT NOTE (CMR) Nr. {{ $cmr_nr ?? '—' }}
-    </div>
+<div class="sheet">
+    <div class="wm-oval"></div>
+<div class="wm-text">CMR</div>
+    <div class="cmrnr">CMR Nr. {{ $cmr_nr }}</div>
 
-    {{-- === BLOCK 1–5 === --}}
-    <table>
+    <table class="outer">
+        {{-- TOP --}}
         <tr>
-            <td width="50%">
-                <div class="field-num">1. Sūtītājs / Sender</div>
-                <b>{{ $sender['name'] }}</b><br>
-                {{ $sender['address'] }}<br>
-                {{ $sender['city'] }}, {{ $sender['country'] }}<br>
-                Reg. Nr: {{ $sender['reg_nr'] }}
+            {{-- LEFT 1–5 (≈110/190 = 57.8947%) --}}
+            <td class="no-pad" style="width:57.8947%;">
+                <table>
+                    <tr>
+                        <td class="h1">
+                            <div><span class="num">1</span><span class="lbl">Nosūtītājs (nosaukums, adrese, valsts)
+                                <span class="sub">Absender (Name, Anschrift, Land)</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h2">
+                            <div><span class="num">2</span><span class="lbl">Saņēmējs (nosaukums, adrese, valsts)
+                                <span class="sub">Empfänger (Name, Anschrift, Land)</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h3">
+                            <div><span class="num">3</span><span class="lbl">Kravas izkraušanas vieta
+                                <span class="sub">Auslieferungsort des Gutes</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h4">
+                            <div><span class="num">4</span><span class="lbl">Kravas iekraušanas vieta un datums
+                                <span class="sub">Ort und Tag der Übernahme des Gutes</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h5">
+                            <div><span class="num">5</span><span class="lbl">Pievienotie dokumenti
+                                <span class="sub">Beigefügte dokumente</span></span></div>
+                            <div class="lines"><div class="line"></div></div>
+                        </td>
+                    </tr>
+                </table>
             </td>
 
-            <td>
-                <div class="field-num">2. Saņēmējs / Consignee</div>
-                <b>{{ $receiver['name'] }}</b><br>
-                {{ $receiver['address'] }}<br>
-                {{ $receiver['city'] }}, {{ $receiver['country'] }}<br>
-                Reg. Nr: {{ $receiver['reg_nr'] }}
+            {{-- RIGHT Title + 16–18 (≈80/190 = 42.1053%) --}}
+            <td class="no-pad" style="width:42.1053%;">
+                <table>
+                    <tr>
+                        <td class="htitle">
+                            <div class="title">
+                                STARPTAUTISKĀ PREČU-TRANSPORTA PAVADZĪME<br>
+                                INTERNATIONAL CONSIGNMENT NOTE
+                            </div>
+                            <div class="tiny">Šis pārvadājums ir veicams saskaņā ar CMR konvenciju.</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h16">
+                            <div><span class="num">16</span><span class="lbl">Pārvadātājs/ekspeditors (nosaukums, adrese, valsts)
+                                <span class="sub">Frachtführer (Name, Anschrift, Land)</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h17">
+                            <div><span class="num">17</span><span class="lbl">Turpmākais pārvadātājs (nosaukums, adrese, valsts)
+                                <span class="sub">Nachfolgende Frachtführer (Name, Anschrift, Land)</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="h18">
+                            <div><span class="num">18</span><span class="lbl">Pārvadātāja aizrādījumi un piezīmes
+                                <span class="sub">Vorbehalte und Bemerkungen des Frachtführer</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
 
+        {{-- 6–11 --}}
         <tr>
-            <td>
-                <div class="field-num">4. Iekraušanas vieta un datums / Place and date of taking over</div>
+            <td colspan="2" class="no-pad">
+                <table>
+                    <tr class="center">
+                        <td class="h611_head pad-s" style="width:14.7368%;"><span class="num">6</span><div class="lbl">Zīmes un numuri<span class="sub">Kennzeichen und Nummer</span></div></td>
+                        <td class="h611_head pad-s" style="width:9.4737%;"><span class="num">7</span><div class="lbl">Vietu skaits<span class="sub">Anzahl der Packstücke</span></div></td>
+                        <td class="h611_head pad-s" style="width:12.6316%;"><span class="num">8</span><div class="lbl">Iepakojuma veids<span class="sub">Art der Verpackung</span></div></td>
+                        <td class="h611_head pad-s" style="width:38.9474%;"><span class="num">9</span><div class="lbl">Kravas nosaukums<span class="sub">Bezeichnung des Gutes</span></div></td>
+                        <td class="h611_head pad-s" style="width:12.1053%;"><span class="num">10</span><div class="lbl">Statist Nr.<span class="sub">&nbsp;</span></div></td>
+                        <td class="h611_head pad-s" style="width:12.1053%;"><span class="num">11</span><div class="lbl">Bruto svars, kg.<span class="sub">&nbsp;</span></div></td>
+                    </tr>
 
-                {{-- MULTIPLE LOADING PLACES --}}
-                @foreach($loading_places as $p)
-                    • {{ $p }}<br>
-                @endforeach
+                    <tr>
+                        <td colspan="6" class="h611_body no-pad">
+                            <div style="padding: 1.0mm 1.6mm;">
+                                @for($i=0;$i<10;$i++) <div class="line"></div> @endfor
+                            </div>
+                        </td>
+                    </tr>
 
-                Date: {{ $date }}
-            </td>
-
-            <td>
-                <div class="field-num">3. Piegādes vieta / Place of delivery</div>
-
-                {{-- MULTIPLE UNLOADING PLACES --}}
-                @foreach($unloading_places as $p)
-                    • {{ $p }}<br>
-                @endforeach
+                    <tr>
+                        <td colspan="4" class="h611_adr pad-s mini">
+                            Klase / Klasse &nbsp;&nbsp; Cipars / Ziffer &nbsp;&nbsp; Burts / Buchstabe &nbsp;&nbsp; ADR (ADR)
+                        </td>
+                        <td colspan="2" class="h611_adr pad-s"></td>
+                    </tr>
+                </table>
             </td>
         </tr>
 
+        {{-- 13 + 19 --}}
         <tr>
-            <td colspan="2">
-                <div class="field-num">5. Pievienotie dokumenti / Documents attached</div>
-                Invoice nr. {{ $cmr_nr }}
+            <td class="no-pad" style="width:75.7895%;"> {{-- 144/190 --}}
+                <table>
+                    <tr>
+                        <td class="h13_19">
+                            <div><span class="num">13</span><span class="lbl">Nosūtītāja norādījumi (muitas u.c. formalitātes)
+                                <span class="sub">Absenders (Zoll und sonstige amtliche Behandlung)</span></span></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                            <div class="mini" style="margin-top:2mm;">
+                                Norādīta kravas vērtība
+                                <span style="float:right;">Angabe des Wertes des Gutes</span>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+
+            <td class="no-pad" style="width:24.2105%;"> {{-- 46/190 --}}
+                <table>
+                    <tr>
+                        <td class="h13_19 no-pad">
+                            <table>
+                                <tr>
+                                    <td style="width:22%;" class="pad-s"><span class="num">19</span></td>
+                                    <td style="width:39%;" class="pad-s lbl center">Sūtītājs</td>
+                                    <td style="width:39%;" class="pad-s lbl center">Valūta</td>
+                                </tr>
+                                <tr><td colspan="3" class="pad-s mini">Likme / Fracht</td></tr>
+                                <tr><td colspan="3" class="pad-s mini">Starppība / Zwischensumme</td></tr>
+                                <tr><td colspan="3" class="pad-s mini">Papildu iekasējumi</td></tr>
+                                <tr><td colspan="3" class="pad-s mini">Citi / Sonstiges</td></tr>
+                                <tr><td colspan="3" class="pad-s mini">Kopā</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
+
+        {{-- 14 --}}
+        <tr>
+            <td colspan="2" class="h14"><span class="num">14</span></td>
+        </tr>
+
+        {{-- 15 + 20 --}}
+        <tr>
+            <td class="h15_20"><span class="num">15</span> <span class="lbl">Apmaksas noteikumi</span></td>
+            <td class="h15_20"><span class="num">20</span> <span class="lbl">Īpaši saskaņoti noteikumi</span></td>
+        </tr>
+
+        {{-- 21–24 --}}
+        <tr>
+            <td colspan="2" class="no-pad">
+                <table>
+                    <tr>
+                        <td style="width:57.8947%;" class="h21_24">
+                            <div class="lbl">
+                                <span class="num">21</span> Sastādīts
+                                <span style="margin-left:10mm;">Vieta</span>
+                                <span style="margin-left:18mm;">Datums</span>
+                            </div>
+                            <div style="margin-top:3mm;" class="lbl">
+                                <span class="num">22</span> Ierašanās iekraušanai
+                                <span class="sub">Ankunft für einladung</span>
+                                <div style="margin-top:2mm;" class="lbl">Aizbraukšana <span class="sub">Abfahrt</span></div>
+                                <div style="margin-top:2mm;" class="lbl">Nosūtītāja paraksts un zīmogs
+                                    <span class="sub">Unterschrift und Stempel des Absender</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td style="width:28.9474%;" class="h21_24">
+                            <div class="lbl"><span class="num">23</span> Ceļazīmes Nr. ____________________</div>
+                            <div style="margin-top:8mm;" class="lbl">Vadītāja uzvārdi __________________</div>
+                        </td>
+
+                        <td style="width:13.1579%;" class="h21_24 no-pad">
+                            <table>
+                                <tr><td class="pad-s"><div class="lbl"><span class="num">24</span> Krava saņemta</div><div class="mini right">am</div></td></tr>
+                                <tr><td class="pad-s mini">Ierašanās izkraušanai</td></tr>
+                                <tr><td class="pad-s mini">Ankunft für Ausladung</td></tr>
+                                <tr><td class="pad-s mini">Aizbraukšana</td></tr>
+                                <tr><td class="pad-s mini">Abfahrt</td></tr>
+                                <tr><td class="pad-s mini right">Saņēmu</td></tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
+        {{-- 25–26 --}}
+        <tr>
+            <td colspan="2" class="no-pad">
+                <table>
+                    <tr>
+                        <td style="width:57.8947%;" class="h25_26">
+                            <div class="lbl"><span class="num">25</span> Reģistrācijas Nr. / Amtl. Kennzeichen</div>
+                            <div class="lines"><div class="line"></div><div class="line"></div></div>
+                        </td>
+                        <td style="width:42.1053%;" class="h25_26">
+                            <div class="lbl"><span class="num">26</span> Marka / Typ &nbsp;&nbsp;&nbsp; Puspiekabe / Auflieger</div>
+                            <div class="lines"><div class="line"></div><div class="line"></div></div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+
     </table>
-
-
-    {{-- === BLOCK 6–12 MAIN SUM TABLE === --}}
-    <table>
-        <tr class="center">
-            <th width="10%">6. Paletes</th>
-            <th width="8%">7. Vietas</th>
-            <th width="12%">8. Tonnas</th>
-            <th width="29%">9. Apraksts</th>
-            <th width="12%">10. Cena ar PVN</th>
-            <th width="9%">11. Bruto kg</th>
-            <th width="8%">12. m³</th>
-        </tr>
-
-        @php
-            $t_pallets = 0;
-            $t_packages = 0;
-            $t_tonnes = 0;
-            $t_gross = 0;
-            $t_volume = 0;
-            $t_price = 0;
-        @endphp
-
-        @foreach($items as $it)
-            @php
-                $pallets = $it['pallets'] ?? 0;
-                $packages = $it['packages'] ?? 0;
-                $tonnes = $it['tonnes'] ?? 0;
-                $gross = $it['gross_weight'] ?? 0;
-                $volume = $it['volume'] ?? 0;
-                $price = $it['price_with_tax'] ?? 0;
-
-                $t_pallets += $pallets;
-                $t_packages += $packages;
-                $t_tonnes += $tonnes;
-                $t_gross += $gross;
-                $t_volume += $volume;
-                $t_price += $price;
-            @endphp
-
-            <tr>
-                <td class="center">{{ $pallets ?: '—' }}</td>
-                <td class="center">{{ $packages ?: '—' }}</td>
-                <td class="center">{{ $tonnes ?: '—' }}</td>
-                <td>{{ $it['description'] ?? '' }}</td>
-                <td class="right">
-                    @if($price)
-                        {{ number_format($price, 2, '.', ' ') }} €
-                    @else — @endif
-                </td>
-                <td class="right">{{ $gross ?: '—' }}</td>
-                <td class="right">{{ $volume ?: '—' }}</td>
-            </tr>
-        @endforeach
-
-        <tr style="font-weight:bold; background:#f4f4f4;">
-            <td class="center">{{ $t_pallets }}</td>
-            <td class="center">{{ $t_packages }}</td>
-            <td class="center">{{ number_format($t_tonnes, 2) }}</td>
-            <td class="right">TOTALS:</td>
-          <td class="right">{{ number_format($total_price_with_tax, 2, '.', ' ') }} €</td>
-            <td class="right">{{ number_format($t_gross, 2) }}</td>
-            <td class="right">{{ number_format($t_volume, 2) }}</td>
-        </tr>
-    </table>
-
-
-{{-- === ITEM DETAILS BLOCK (HORIZONTAL TABLE) === --}}
-{{-- === ITEM DETAILS BLOCK: SINGLE TABLE WITH SPLIT AFTER 8 ROWS === --}}
-@if(!empty($items))
-
-    <h4 style="margin:10px 0 4px; font-weight:bold;">Cargo item details</h4>
-
-    @php
-        // Разбиваем на две части: первые 8, остальные — вторая таблица
-        $chunks = array_chunk($items, 8);
-    @endphp
-
-    @foreach($chunks as $chunkIndex => $chunk)
-        <table style="margin-bottom:10px;">
-            <tr class="center">
-                <th>Paletes</th>
-                <th>Vietas</th>
-                <th>Gab.</th>
-                <th>Tonnas</th>
-                <th>Net kg</th>
-                <th>Bruto kg</th>
-                <th>m³</th>
-                <th>LM</th>
-                <th>ADR</th>
-                <th>Temp</th>
-                <th>Stackable</th>
-                <th>Apraksts</th>
-            </tr>
-
-            @foreach($chunk as $it)
-                @php
-                    $pallets = $it['pallets'] ?? '—';
-                    $packages = $it['packages'] ?? '—';
-                    $units = $it['units'] ?? '—';
-                    $tonnes = $it['tonnes'] ?? '—';
-                    $net = $it['net_weight'] ?? '—';
-                    $gross = $it['gross_weight'] ?? '—';
-                    $volume = $it['volume'] ?? '—';
-                    $lm = $it['loading_meters'] ?? '—';
-                    $adr = $it['hazmat'] ?? '—';
-                    $temp = $it['temperature'] ?? '—';
-                    $stack = isset($it['stackable']) ? ($it['stackable'] ? 'Yes' : 'No') : '—';
-                    $desc = $it['description'] ?? '—';
-                @endphp
-
-                <tr>
-                    <td class="center">{{ $pallets }}</td>
-                    <td class="center">{{ $packages }}</td>
-                    <td class="center">{{ $units }}</td>
-                    <td class="center">{{ $tonnes }}</td>
-                    <td class="right">{{ $net }}</td>
-                    <td class="right">{{ $gross }}</td>
-                    <td class="right">{{ $volume }}</td>
-                    <td class="center">{{ $lm }}</td>
-                    <td class="center">{{ $adr }}</td>
-                    <td class="center">{{ $temp }}</td>
-                    <td class="center">{{ $stack }}</td>
-                    <td>{{ $desc }}</td>
-                </tr>
-            @endforeach
-
-        </table>
-    @endforeach
-
-@endif
-
-
-
-
-    {{-- === BLOCK 13–20 === --}}
-    <table>
-        <tr>
-            <td width="50%">
-                <div class="field-num">13. Nosūtītāja norādījumi / Sender's instructions</div>
-                — 
-            </td>
-            <td>
-                <div class="field-num">14. Samaksa pēc piegādes / Cash on delivery</div>
-                —
-            </td>
-        </tr>
-
-        <tr>
-            <td>
-                <div class="field-num">15. Apdrošinājuma vērtība / Declared value</div>
-                —
-            </td>
-
-            <td>
-                <div class="field-num">16. Pārvadātājs / Carrier</div>
-                <b>{{ $carrier['name'] }}</b><br>
-                {{ $carrier['address'] }}, {{ $carrier['city'] }}<br>
-                {{ $carrier['country'] }}<br>
-                Reg. Nr: {{ $carrier['reg_nr'] }}
-            </td>
-        </tr>
-    </table>
-
-
-    {{-- === FOOTER 21–25 === --}}
-    <table>
-        <tr>
-            <td width="25%">
-                <div class="field-num">21. Sastādīts / Established</div>
-                {{ $date }}
-            </td>
-
-            <td width="25%">
-                <div class="field-num">22. Iekraušana / Taking over</div>
-                Time: ___________
-            </td>
-
-            <td width="25%">
-                <div class="field-num">23. Transportlīdzeklis</div>
-                {{ $carrier['truck'] }} &nbsp;{{ $carrier['truck_plate'] }}
-            </td>
-
-            <td>
-                <div class="field-num">24. Piekabe / Trailer</div>
-                {{ $carrier['trailer'] }} &nbsp;{{ $carrier['trailer_plate'] }}
-            </td>
-        </tr>
-    </table>
-
-    <table style="margin-top: 6px;">
-        <tr>
-            <td>
-                <div class="field-num">25. Krava saņemta / Goods received</div>
-                Date: ________________ &nbsp;&nbsp; Time: ________________<br><br>
-                Signature and stamp of consignee:
-                <div style="height:40px; border:1px solid #000; margin-top:4px;"></div>
-            </td>
-        </tr>
-    </table>
-
 </div>
+
 </body>
 </html>

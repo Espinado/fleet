@@ -246,11 +246,12 @@ $unloadingPlaces = $unloadingSteps
     Storage::disk('public')->makeDirectory($dir);
 
     $pdf = Pdf::loadView('pdf.cmr-template', $data)
-        ->setPaper('A4')
-        ->setOption('margin-top', 0)
-        ->setOption('margin-right', 0)
-        ->setOption('margin-bottom', 0)
-        ->setOption('margin-left', 0);
+    ->setPaper('A4')
+    ->setOptions([
+        'isHtml5ParserEnabled' => true,
+        'isRemoteEnabled'      => true,
+        'defaultFont'          => 'DejaVu Sans',
+    ]);
 
     Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
 
