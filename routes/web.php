@@ -22,6 +22,22 @@ use App\Notifications\TestPushNotification;
 
 // Главная страница
 Route::redirect('/', '/dashboard');
+Route::get('/_dev/find-odometer', function () {
+    $root = app_path();
+
+    $rii = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+    );
+
+    $matches = [];
+    foreach ($rii as $file) {
+        if ($file->getFilename() === 'MaponOdometerFetcher.php') {
+            $matches[] = $file->getPathname();
+        }
+    }
+
+    return $matches;
+});
 
 // test push
 Route::get('/test-push', function () {

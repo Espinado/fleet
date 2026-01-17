@@ -116,8 +116,8 @@ public function user()
 public function activeTrip()
 {
     return $this->hasOne(\App\Models\Trip::class, 'driver_id', 'id')
-        ->where('status', '!=', 'completed')
-        ->latest();
+        ->whereNull('end_date')        // ✅ активный = не завершён по дате
+        ->latest('id');
 }
 
 

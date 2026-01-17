@@ -109,6 +109,9 @@ public function shortLabel(): string
     return $this->typeLabel() . ' • ' . $this->addressLine() . ' • ' . $this->dateTimeLabel();
 }
 
-
+public function odometerEvents(): HasMany
+{
+    return $this->hasMany(\App\Models\OdometerEvent::class, 'trip_step_id');
+}
 
 }

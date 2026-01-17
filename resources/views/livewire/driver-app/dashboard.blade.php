@@ -62,6 +62,49 @@
             <p class="text-gray-700">
                 Статус: <strong class="text-blue-700">{{ $trip->status }}</strong>
             </p>
+{{-- Гараж: выезд/возврат --}}
+<div class="pt-2 space-y-2">
+
+    @if($garageError)
+        <div class="p-3 rounded-xl bg-red-100 text-red-800 text-sm">
+            {{ $garageError }}
+        </div>
+    @endif
+
+    @if($garageSuccess)
+        <div class="p-3 rounded-xl bg-green-100 text-green-800 text-sm">
+            {{ $garageSuccess }}
+        </div>
+    @endif
+
+    <button
+        wire:click="departFromGarage"
+        wire:loading.attr="disabled"
+        @disabled(!$canDepart)
+        class="w-full flex items-center justify-center gap-2
+               bg-emerald-600 hover:bg-emerald-700
+               text-white py-3 rounded-xl font-semibold
+               disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+        <span wire:loading.remove>🚛 Выехал из гаража</span>
+        <span wire:loading>⏳ Получаем CAN odometer…</span>
+    </button>
+
+    <button
+        wire:click="backToGarage"
+        wire:loading.attr="disabled"
+        @disabled(!$canReturn)
+        class="w-full flex items-center justify-center gap-2
+               bg-blue-600 hover:bg-blue-700
+               text-white py-3 rounded-xl font-semibold
+               disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+        <span wire:loading.remove>🏁 Вернулся в гараж</span>
+        <span wire:loading>⏳ Получаем CAN odometer…</span>
+    </button>
+
+</div>
+
 
             <a href="{{ route('driver.trip', $trip) }}"
    class="block text-center bg-blue-600 text-white py-2 rounded-xl font-medium mt-3">

@@ -113,6 +113,16 @@ public function cargos()
     return $this->hasMany(\App\Models\TripExpense::class);
 }
 
+public function vehicleRun(): BelongsTo
+{
+    return $this->belongsTo(\App\Models\VehicleRun::class, 'vehicle_run_id');
+}
+
+public function odometerEvents(): HasMany
+{
+    return $this->hasMany(\App\Models\OdometerEvent::class);
+}
+
 
 
 }

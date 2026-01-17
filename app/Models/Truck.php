@@ -53,4 +53,14 @@ class Truck extends Model
     {
         return "{$this->brand} {$this->model} ({$this->plate})";
     }
+
+    public function vehicleRuns(): HasMany
+{
+    return $this->hasMany(\App\Models\VehicleRun::class);
+}
+
+public function odometerEvents(): HasMany
+{
+    return $this->hasMany(\App\Models\OdometerEvent::class);
+}
 }
