@@ -6,18 +6,35 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
 return new class extends Migration {
-   public function up(): void
+ public function up(): void
 {
+    // 1) колонка
     Schema::table('trips', function (Blueprint $table) {
         if (!Schema::hasColumn('trips', 'vehicle_run_id')) {
             $table->unsignedBigInteger('vehicle_run_id')
                 ->nullable()
                 ->after('truck_id');
         }
-
-        $table->index('vehicle_run_id');
     });
+
+    // 2) индекс (проверяем, есть ли уже)
+    $db = DB::getDatabaseName();
+
+    $hasIndex = DB::table('information_schema.STATISTICS')
+        ->where('TABLE_SCHEMA', $db)
+        ->where('TABLE_NAME', 'trips')
+        ->where('INDEX_NAME', 'trips_vehicle_run_id_index')
+        ->exists();
+
+    if (!$hasIndex) {
+        Schema::table('trips', function (Blueprint $table) {
+            $table->index('vehicle_run_id', 'trips_vehicle_run_id_index');
+        });
+    }
+
+    // ❌ FK не добавляем (как договорились)
 }
+
 
     public function down(): void
     {
