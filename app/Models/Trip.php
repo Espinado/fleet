@@ -123,6 +123,13 @@ public function odometerEvents(): HasMany
     return $this->hasMany(\App\Models\OdometerEvent::class);
 }
 
-
+public function scopeActiveForDriver($query, int $driverId)
+{
+    return $query
+        ->where('driver_id', $driverId)
+        ->whereHas('vehicleRun', function ($q) {
+            $q->where('status', 'open');
+        });
+}
 
 }

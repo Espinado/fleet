@@ -2,6 +2,7 @@
 
 namespace App\Services\Services\Odometer;
 
+use App\Models\Trip;
 use App\Models\Truck;
 use App\Models\TruckOdometerEvent;
 use Illuminate\Support\Facades\DB;
@@ -10,17 +11,18 @@ use RuntimeException;
 class GarageDepartureService
 {
     public function __construct(
-        protected MaponOdometerFetcher $fetcher
+        protected MaponOdometerFetcher $fetcher,
+        protected VehicleRunService $runs,
     ) {}
 
-    public function recordDeparture(Truck $truck, ?int $driverId = null): TruckOdometerEvent
+    public function recordDeparture(Trip $trip, Truck $truck, ?int $driverId = null): TruckOdometerEvent
     {
         $unitId = $truck->mapon_unit_id;
         if (!$unitId) {
             throw new RuntimeException('mapon_unit_id не задан для данного трака.');
         }
 
-        // 🔒 защита от двойного выезда
+        // 🔒 защита от двойного выезда по событиям
         $last = TruckOdometerEvent::where('truck_id', $truck->id)
             ->latest('occurred_at')
             ->first();
@@ -49,8 +51,9 @@ class GarageDepartureService
             $note = "⚠️ CAN odometer меньше предыдущего ({$prev->odometer_km}).";
         }
 
-        return DB::transaction(function () use ($truck, $driverId, $can, $note) {
-            return TruckOdometerEvent::create([
+        return DB::transaction(function () use ($trip, $truck, $driverId, $can, $note) {
+
+            $event = TruckOdometerEvent::create([
                 'truck_id' => $truck->id,
                 'driver_id' => $driverId,
                 'type' => TruckOdometerEvent::TYPE_DEPARTURE,
@@ -60,59 +63,80 @@ class GarageDepartureService
                 'mapon_at' => $can['mapon_at'] ?? null,
                 'is_stale' => (bool) ($can['is_stale'] ?? false),
                 'stale_minutes' => $can['stale_minutes'] ?? null,
-               'raw' => is_array($can['raw'] ?? null) ? $can['raw'] : null,
+                'raw' => is_array($can['raw'] ?? null) ? $can['raw'] : null,
                 'note' => $note,
             ]);
+
+            // ✅ Открываем смену и привязываем её к Trip
+            $this->runs->openRun(
+                trip: $trip,
+                truck: $truck,
+                driverId: $driverId,
+                startKm: (float) $event->odometer_km
+            );
+
+            return $event;
         });
     }
 
-    public function recordReturn(Truck $truck, ?int $driverId = null): TruckOdometerEvent
-{
-    $unitId = $truck->mapon_unit_id;
-    if (!$unitId) {
-        throw new RuntimeException('mapon_unit_id не задан для данного трака.');
+    public function recordReturn(Trip $trip, Truck $truck, ?int $driverId = null): TruckOdometerEvent
+    {
+        $unitId = $truck->mapon_unit_id;
+        if (!$unitId) {
+            throw new RuntimeException('mapon_unit_id не задан для данного трака.');
+        }
+
+        // Должен быть открытый выезд
+        $last = TruckOdometerEvent::where('truck_id', $truck->id)
+            ->latest('occurred_at')
+            ->first();
+
+        if (!$last || (int)$last->type !== TruckOdometerEvent::TYPE_DEPARTURE) {
+            throw new RuntimeException('Нельзя отметить возврат: нет открытого выезда.');
+        }
+
+        $can = $this->fetcher->fetchCanOdometer($unitId);
+        if (!$can) {
+            throw new RuntimeException('Не удалось получить данные из Mapon.');
+        }
+
+        if ($can['km'] === null) {
+            throw new RuntimeException('Mapon не вернул CAN odometer (can.odom.value).');
+        }
+
+        $note = null;
+
+        // Возвратный одометр не должен быть меньше выездного
+        if ($last->odometer_km !== null && (float)$can['km'] < (float)$last->odometer_km) {
+            $note = "⚠️ CAN odometer меньше odometer выезда ({$last->odometer_km}).";
+        }
+
+        return DB::transaction(function () use ($trip, $truck, $driverId, $can, $note) {
+
+            $event = TruckOdometerEvent::create([
+                'truck_id' => $truck->id,
+                'driver_id' => $driverId,
+                'type' => TruckOdometerEvent::TYPE_RETURN,
+                'odometer_km' => $can['km'],
+                'source' => TruckOdometerEvent::SOURCE_CAN,
+                'occurred_at' => now(),
+                'mapon_at' => $can['mapon_at'] ?? null,
+                'is_stale' => (bool) ($can['is_stale'] ?? false),
+                'stale_minutes' => $can['stale_minutes'] ?? null,
+                'raw' => is_array($can['raw'] ?? null) ? $can['raw'] : null,
+                'note' => $note,
+            ]);
+
+            // ✅ Закрываем смену и отвязываем Trip
+            $this->runs->closeRun(
+                trip: $trip,
+                truck: $truck,
+                driverId: $driverId,
+                endKm: (float) $event->odometer_km,
+                reason: 'manual'
+            );
+
+            return $event;
+        });
     }
-
-    // Должен быть открытый выезд
-    $last = TruckOdometerEvent::where('truck_id', $truck->id)
-        ->latest('occurred_at')
-        ->first();
-
-    if (!$last || (int)$last->type !== TruckOdometerEvent::TYPE_DEPARTURE) {
-        throw new RuntimeException('Нельзя отметить возврат: нет открытого выезда.');
-    }
-
-    $can = $this->fetcher->fetchCanOdometer($unitId);
-    if (!$can) {
-        throw new RuntimeException('Не удалось получить данные из Mapon.');
-    }
-
-    if ($can['km'] === null) {
-        throw new RuntimeException('Mapon не вернул CAN odometer (can.odom.value).');
-    }
-
-    $note = null;
-
-    // Возвратный одометр не должен быть меньше выездного
-    if ($last->odometer_km !== null && (float)$can['km'] < (float)$last->odometer_km) {
-        $note = "⚠️ CAN odometer меньше odometer выезда ({$last->odometer_km}).";
-    }
-
-    return DB::transaction(function () use ($truck, $driverId, $can, $note) {
-        return TruckOdometerEvent::create([
-            'truck_id' => $truck->id,
-            'driver_id' => $driverId,
-            'type' => TruckOdometerEvent::TYPE_RETURN,
-            'odometer_km' => $can['km'],
-            'source' => TruckOdometerEvent::SOURCE_CAN,
-            'occurred_at' => now(),
-            'mapon_at' => $can['mapon_at'] ?? null,
-            'is_stale' => (bool) ($can['is_stale'] ?? false),
-            'stale_minutes' => $can['stale_minutes'] ?? null,
-            'raw' => is_array($can['raw'] ?? null) ? $can['raw'] : null,
-            'note' => $note,
-        ]);
-    });
-}
-
 }
