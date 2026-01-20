@@ -28,17 +28,61 @@
                 </a>
             </div>
 
-            <div>
-                <h2 class="text-xl font-semibold mb-2 border-b pb-1">👤 Personal Info</h2>
-                <p><span class="font-semibold">Personal Code:</span> <span class="text-gray-700">{{ $driver->pers_code ?? '-' }}</span></p>
-                <p><span class="font-semibold">Phone:</span> <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span></p>
-                <p><span class="font-semibold">Email:</span> <span class="text-gray-700">{{ $driver->email ?? '-' }}</span></p>
-               <span class="font-semibold">Citizenship:</span>
-               <span class="text-gray-700">{{ config('countries')[$driver->citizenship_id]['name'] ?? '-' }} </span>
-                  <p><span class="font-semibold">Company:</span> <span class="text-gray-700">{{ config('companies')[$driver->company]['name'] ?? '-' }}</span></p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
+    {{-- LEFT: Personal Info --}}
+    <div class="md:col-span-2">
+        <h2 class="text-xl font-semibold mb-2 border-b pb-1">👤 Personal Info</h2>
 
+        <p>
+            <span class="font-semibold">Personal Code:</span>
+            <span class="text-gray-700">{{ $driver->pers_code ?? '-' }}</span>
+        </p>
+
+        <p>
+            <span class="font-semibold">Phone:</span>
+            <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span>
+        </p>
+
+        <p>
+            <span class="font-semibold">Email:</span>
+            <span class="text-gray-700">{{ $driver->email ?? '-' }}</span>
+        </p>
+
+        <p>
+            <span class="font-semibold">Citizenship:</span>
+            <span class="text-gray-700">
+                {{ config('countries')[$driver->citizenship_id]['name'] ?? '-' }}
+            </span>
+        </p>
+
+        <p>
+            <span class="font-semibold">Company:</span>
+            <span class="text-gray-700">
+                {{ config('companies')[$driver->company]['name'] ?? '-' }}
+            </span>
+        </p>
+    </div>
+
+    {{-- RIGHT: PIN --}}
+    <div class="flex items-center justify-center">
+        <div class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-center shadow-sm">
+            <div class="text-sm text-gray-500 uppercase tracking-wide mb-1">
+                Driver PIN
             </div>
+
+            <div class="text-3xl font-bold tracking-widest text-gray-800">
+                {{ $driver->login_pin ?? '— — — —' }}
+            </div>
+
+            <div class="text-xs text-gray-400 mt-2">
+                Used for driver login
+            </div>
+        </div>
+    </div>
+
+</div>
+
 
           <div>
     <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 Addresses</h2>
