@@ -60,56 +60,78 @@
             </p>
         </div>
 
-        {{-- CAN Odometer --}}
-        <div class="bg-gray-50 border rounded-xl p-4">
-            <p class="text-sm text-gray-500 mb-1">Odometer (CAN)</p>
+      {{-- Odometer (CAN → mileage) --}}
+<div class="bg-gray-50 border rounded-xl p-4">
+    <p class="text-sm text-gray-500 mb-1">Odometer</p>
 
-            @if($maponError)
-                <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
-            @else
-                <p class="text-base font-semibold text-gray-800">
-                    {{ $maponCanMileageKm !== null ? number_format($maponCanMileageKm, 0, '.', ' ') . ' km' : '—' }}
-                </p>
+    @if($maponError)
+        {{-- Реальная ошибка только если Mapon вообще недоступен или нет mileage/can --}}
+        <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
+    @else
+        <p class="text-base font-semibold text-gray-800">
+            {{ $maponCanMileageKm !== null ? number_format($maponCanMileageKm, 0, '.', ' ') . ' km' : '—' }}
+        </p>
 
-                @php
-                    $canAt = $maponCanAt ? \Carbon\Carbon::parse($maponCanAt) : null;
-                    $canDaysAgo = $canAt ? $canAt->diffInDays(now()) : null;
-                @endphp
+        @php
+            $at = $maponCanAt ? \Carbon\Carbon::parse($maponCanAt) : null;
+            $daysAgo = $at ? $at->diffInDays(now()) : null;
+            $minutesAgo = $at ? $at->diffInMinutes(now()) : null;
 
-                {{-- Alarm if CAN is stale --}}
-                @if($canAt)
-                    @if($canDaysAgo !== null && $canDaysAgo >= 2)
-                        <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
-                                    text-xs font-semibold rounded-full
-                                    bg-red-100 text-red-700">
-                            🚨 CAN not updated {{ $canDaysAgo }} days
-                        </div>
-                    @else
-                        <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
-                                    text-xs font-semibold rounded-full
-                                    bg-green-100 text-green-700">
-                            ✅ Updated {{ $canAt->diffForHumans() }}
-                        </div>
-                    @endif
+            $staleDays = (int) config('mapon.can_stale_days', 2);
+            $staleMinutes = (int) config('mapon.can_stale_minutes', 30);
 
-                    <p class="text-xs text-gray-400 mt-2">
-                        CAN at: {{ $maponCanAt }}
-                    </p>
-                @else
-                    <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
-                                text-xs font-semibold rounded-full
-                                bg-yellow-100 text-yellow-800">
-                        ⚠️ No CAN timestamp
-                    </div>
-                @endif
+            // если источник = CAN (т.е. can.odom.value был) — обычно maponCanAt будет can.odom.gmt
+            // если CAN нет — maponCanAt мы ставим в last_update
+            $isStale = false;
+            if ($minutesAgo !== null && $staleMinutes > 0 && $minutesAgo >= $staleMinutes) $isStale = true;
+            if ($daysAgo !== null && $staleDays > 0 && $daysAgo >= $staleDays) $isStale = true;
 
-                @if($maponLastUpdate)
-                    <p class="text-xs text-gray-400 mt-1">
-                        Last update: {{ $maponLastUpdate }}
-                    </p>
-                @endif
-            @endif
+            // Попытка определить источник по наличию CAN timestamp:
+            // если can.odom.gmt пустой, а last_update есть — вероятнее всего mileage.
+            $source = ($maponCanAt && $maponLastUpdate && $maponCanAt === $maponLastUpdate) ? 'mileage' : 'CAN';
+        @endphp
+
+        {{-- Source badge --}}
+        <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                    text-xs font-semibold rounded-full
+                    bg-gray-200 text-gray-700">
+            📡 Source: {{ $source }}
         </div>
+
+        {{-- Updated / stale badge --}}
+        @if($at)
+            @if($isStale)
+                <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                            text-xs font-semibold rounded-full
+                            bg-red-100 text-red-700">
+                    🚨 Not updated ({{ $at->diffForHumans() }})
+                </div>
+            @else
+                <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                            text-xs font-semibold rounded-full
+                            bg-green-100 text-green-700">
+                    ✅ Updated {{ $at->diffForHumans() }}
+                </div>
+            @endif
+
+            <p class="text-xs text-gray-400 mt-2">
+                Odometer at: {{ $maponCanAt }}
+            </p>
+        @else
+            <div class="mt-2 inline-flex items-center gap-1 px-2 py-1
+                        text-xs font-semibold rounded-full
+                        bg-yellow-100 text-yellow-800">
+                ⚠️ No timestamp
+            </div>
+        @endif
+
+        @if($maponLastUpdate)
+            <p class="text-xs text-gray-400 mt-1">
+                Last update: {{ $maponLastUpdate }}
+            </p>
+        @endif
+    @endif
+</div>
 
         {{-- Unit name --}}
         <div class="bg-gray-50 border rounded-xl p-4">
