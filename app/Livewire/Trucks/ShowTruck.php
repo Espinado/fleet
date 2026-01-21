@@ -46,7 +46,7 @@ class ShowTruck extends Component
         $this->loadMaponData();
     }
 
-    public function loadMaponData(): void
+  public function loadMaponData(): void
 {
     // reset so nothing "sticks"
     $this->maponError = null;
@@ -65,17 +65,20 @@ class ShowTruck extends Component
         return;
     }
 
-    $cacheKey = $this->cacheKey($unitId);
+    // ✅ cache должен учитывать компанию (ключ Mapon разный)
+    $companyId = (int) ($this->truck->company ?? 0);
+    $cacheKey = $this->cacheKey($unitId) . ':company:' . $companyId;
 
-    $result = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($unitId) {
+    $result = Cache::remember($cacheKey, now()->addMinutes(5), function () {
         try {
             /** @var MaponService $svc */
             $svc = app(MaponService::class);
 
-            // include=can
-            return $svc->getUnitData($unitId, 'can');
+            // ✅ ключ выбирается внутри сервиса по $truck->company
+            return $svc->getUnitDataForTruck($this->truck, 'can');
         } catch (\Throwable $e) {
-            Log::warning("MaponService getUnitData failed unit_id={$unitId}: " . $e->getMessage());
+            $unitId = $this->truck->mapon_unit_id ?? 'null';
+            \Log::warning("MaponService getUnitDataForTruck failed unit_id={$unitId}: " . $e->getMessage());
             return null;
         }
     });
@@ -87,10 +90,12 @@ class ShowTruck extends Component
 
     // debug only in local
     if (app()->isLocal()) {
-        Log::info('Mapon unit payload (with CAN)', [
-            'unit_id' => $unitId,
-            'can' => $result['can'] ?? null,
-            'last_update' => $result['last_update'] ?? null,
+        \Log::info('Mapon unit payload (with CAN)', [
+            'truck_id'     => $this->truck->id ?? null,
+            'company_id'   => $this->truck->company ?? null,
+            'unit_id'      => $unitId,
+            'can'          => $result['can'] ?? null,
+            'last_update'  => $result['last_update'] ?? null,
         ]);
     }
 
@@ -101,7 +106,7 @@ class ShowTruck extends Component
 
     $this->maponLastUpdate = $result['last_update'] ?? null;
 
-    // ✅ CAN odometer path for your payload: can.odom.value (km)
+    // ✅ CAN odometer path: can.odom.value (km)
     $canValue = data_get($result, 'can.odom.value');
     $canAt    = data_get($result, 'can.odom.gmt');
 
@@ -113,16 +118,29 @@ class ShowTruck extends Component
     $this->maponCanMileageKm = round((float) $canValue, 1);
     $this->maponCanAt = !empty($canAt) ? (string) $canAt : null;
 
-    // ✅ stale logic via config/mapon.php => can_stale_days
+    // ✅ stale logic via config/mapon.php => can_stale_days + can_stale_minutes
     if ($this->maponCanAt) {
-        $now = now();
+        try {
+            $now = now();
+            $at  = \Carbon\Carbon::parse($this->maponCanAt);
 
-        $this->maponCanDaysAgo = Carbon::parse($this->maponCanAt)->diffInDays($now);
+            $this->maponCanDaysAgo = $at->diffInDays($now);
 
-        $threshold = (int) config('mapon.can_stale_days', 2);
-        $this->maponCanStale = $this->maponCanDaysAgo >= $threshold;
+            $thresholdDays    = (int) config('mapon.can_stale_days', 2);
+            $thresholdMinutes = (int) config('mapon.can_stale_minutes', 30);
+
+            // stale если прошло >= thresholdDays ИЛИ >= thresholdMinutes
+            $isStaleByDays = $thresholdDays > 0 && $at->diffInDays($now) >= $thresholdDays;
+            $isStaleByMin  = $thresholdMinutes > 0 && $at->diffInMinutes($now) >= $thresholdMinutes;
+
+            $this->maponCanStale = $isStaleByDays || $isStaleByMin;
+        } catch (\Throwable $e) {
+            // если дата неожиданно не парсится — просто не помечаем stale, но логируем
+            \Log::warning("Mapon CAN time parse failed: {$this->maponCanAt}. " . $e->getMessage());
+        }
     }
 }
+
 
 
     protected function cacheKey(int|string $unitId): string
