@@ -4,6 +4,7 @@ namespace App\Services\Services;
 
 use App\Models\Truck;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MaponService
 {
