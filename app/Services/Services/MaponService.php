@@ -56,16 +56,29 @@ class MaponService
             $query['include'] = $include; // Laravel превратит в include[0]=...
         }
 
-        if (app()->isLocal()) {
-    \Log::info('Mapon request', [
-        'company_id' => $truck->company,
-        'unit_id'    => $unitId,
-        'include'    => $include,
-        'query'      => $query,
-        'base_url'   => $this->baseUrl,
-    ]);
-}
+      \Log::build([
+    'driver' => 'single',
+    'path'   => storage_path('logs/mapon.log'),
+])->info('Mapon request', [
+    'env'        => app()->environment(),
+    'company_id' => $truck->company,
+    'unit_id'    => $unitId,
+    'include'    => $include,
+    'query'      => $query,
+    'url'        => $url,
+]);
         $response = Http::timeout(15)->get($url, $query);
+        if (!$response->ok()) {
+    \Log::build([
+        'driver' => 'single',
+        'path'   => storage_path('logs/mapon.log'),
+    ])->warning('Mapon response not ok', [
+        'status' => $response->status(),
+        'body'   => $response->body(),
+    ]);
+
+    return null;
+}
         if (!$response->ok()) return null;
 
         $json = $response->json();
