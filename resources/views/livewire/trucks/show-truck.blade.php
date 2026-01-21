@@ -64,10 +64,9 @@
 <div class="bg-gray-50 border rounded-xl p-4">
     <p class="text-sm text-gray-500 mb-1">Odometer</p>
 
-    @if($maponError)
-        {{-- Реальная ошибка только если Mapon вообще недоступен или нет mileage/can --}}
-        <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
-    @else
+   @if($maponError && $maponCanMileageKm === null)
+    <p class="text-sm font-semibold text-red-700">{{ $maponError }}</p>
+@else
         <p class="text-base font-semibold text-gray-800">
             {{ $maponCanMileageKm !== null ? number_format($maponCanMileageKm, 0, '.', ' ') . ' km' : '—' }}
         </p>

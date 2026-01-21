@@ -46,7 +46,7 @@ class ShowTruck extends Component
         $this->loadMaponData();
     }
 
-  public function loadMaponData(): void
+public function loadMaponData(): void
 {
     // reset so nothing "sticks"
     $this->maponError = null;
@@ -65,7 +65,7 @@ class ShowTruck extends Component
         return;
     }
 
-    // ✅ cache должен учитывать компанию (ключ Mapon разный)
+    // cache учитывает компанию (ключ Mapon разный)
     $companyId = (int) ($this->truck->company ?? 0);
     $cacheKey = $this->cacheKey($unitId) . ':company:' . $companyId;
 
@@ -74,7 +74,6 @@ class ShowTruck extends Component
             /** @var MaponService $svc */
             $svc = app(MaponService::class);
 
-            // ✅ ключ выбирается внутри сервиса по $truck->company
             return $svc->getUnitDataForTruck($this->truck, 'can');
         } catch (\Throwable $e) {
             $unitId = $this->truck->mapon_unit_id ?? 'null';
@@ -88,17 +87,6 @@ class ShowTruck extends Component
         return;
     }
 
-    // debug only in local
-    if (app()->isLocal()) {
-        \Log::info('Mapon unit payload (with CAN)', [
-            'truck_id'     => $this->truck->id ?? null,
-            'company_id'   => $this->truck->company ?? null,
-            'unit_id'      => $unitId,
-            'can'          => $result['can'] ?? null,
-            'last_update'  => $result['last_update'] ?? null,
-        ]);
-    }
-
     $this->maponUnitName = $result['label']
         ?? $result['number']
         ?? ($result['vehicle_title'] ?? null)
@@ -106,19 +94,41 @@ class ShowTruck extends Component
 
     $this->maponLastUpdate = $result['last_update'] ?? null;
 
-    // ✅ CAN odometer path: can.odom.value (km)
+    // --------------------------------------
+    // ODOMETER: CAN → fallback mileage
+    // --------------------------------------
     $canValue = data_get($result, 'can.odom.value');
     $canAt    = data_get($result, 'can.odom.gmt');
 
-    if ($canValue === null || $canValue === '') {
-        $this->maponError = 'Mapon не вернул CAN odometer (can.odom.value).';
-        return;
+    if ($canValue !== null && $canValue !== '') {
+        // ✅ CAN odometer (км)
+        $this->maponCanMileageKm = round((float) $canValue, 1);
+
+        // timestamp CAN, если нет — берём last_update
+        $this->maponCanAt = !empty($canAt)
+            ? (string) $canAt
+            : ($this->maponLastUpdate ? (string) $this->maponLastUpdate : null);
+
+    } else {
+        // ✅ CAN нет (Lakna) → используем mileage
+        $rawMileage = data_get($result, 'mileage');
+
+        if ($rawMileage === null || $rawMileage === '') {
+            // ❌ вот это уже реальная ошибка
+            $this->maponError = 'Mapon не вернул ни CAN odometer, ни mileage.';
+            return;
+        }
+
+        // mileage обычно в метрах → конвертим в км
+        $this->maponCanMileageKm = round(((float) $rawMileage) / 1000, 1);
+
+        // timestamp берём last_update
+        $this->maponCanAt = $this->maponLastUpdate ? (string) $this->maponLastUpdate : null;
     }
 
-    $this->maponCanMileageKm = round((float) $canValue, 1);
-    $this->maponCanAt = !empty($canAt) ? (string) $canAt : null;
-
-    // ✅ stale logic via config/mapon.php => can_stale_days + can_stale_minutes
+    // --------------------------------------
+    // stale logic via config/mapon.php
+    // --------------------------------------
     if ($this->maponCanAt) {
         try {
             $now = now();
@@ -129,17 +139,16 @@ class ShowTruck extends Component
             $thresholdDays    = (int) config('mapon.can_stale_days', 2);
             $thresholdMinutes = (int) config('mapon.can_stale_minutes', 30);
 
-            // stale если прошло >= thresholdDays ИЛИ >= thresholdMinutes
             $isStaleByDays = $thresholdDays > 0 && $at->diffInDays($now) >= $thresholdDays;
             $isStaleByMin  = $thresholdMinutes > 0 && $at->diffInMinutes($now) >= $thresholdMinutes;
 
             $this->maponCanStale = $isStaleByDays || $isStaleByMin;
         } catch (\Throwable $e) {
-            // если дата неожиданно не парсится — просто не помечаем stale, но логируем
-            \Log::warning("Mapon CAN time parse failed: {$this->maponCanAt}. " . $e->getMessage());
+            \Log::warning("Mapon time parse failed: {$this->maponCanAt}. " . $e->getMessage());
         }
     }
 }
+
 
 
 
