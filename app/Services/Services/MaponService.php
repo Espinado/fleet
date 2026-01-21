@@ -55,6 +55,15 @@ class MaponService
             $query['include'] = $include; // Laravel превратит в include[0]=...
         }
 
+        if (app()->isLocal()) {
+    \Log::info('Mapon request', [
+        'company_id' => $truck->company,
+        'unit_id'    => $unitId,
+        'include'    => $include,
+        'query'      => $query,
+        'base_url'   => $this->baseUrl,
+    ]);
+}
         $response = Http::timeout(15)->get($url, $query);
         if (!$response->ok()) return null;
 
