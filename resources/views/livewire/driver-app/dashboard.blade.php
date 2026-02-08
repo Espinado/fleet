@@ -63,7 +63,15 @@
                 Статус: <strong class="text-blue-700">{{ $trip->status }}</strong>
             </p>
 {{-- Гараж: выезд/возврат --}}
+{{-- Гараж: выезд/возврат --}}
 <div class="pt-2 space-y-2">
+
+    {{-- debug (можно потом убрать) --}}
+    <div class="text-xs text-gray-500">
+        canDepart: {{ $canDepart ? 'true' : 'false' }},
+        canReturn: {{ $canReturn ? 'true' : 'false' }},
+        trip.vehicle_run_id: {{ $trip->vehicle_run_id ?? 'null' }}
+    </div>
 
     @if($garageError)
         <div class="p-3 rounded-xl bg-red-100 text-red-800 text-sm">
@@ -77,36 +85,46 @@
         </div>
     @endif
 
-   <button
-    wire:click="departFromGarage"
-    wire:loading.attr="disabled"
-    :disabled="{{ $canDepart ? 'false' : 'true' }}"
-    class="w-full flex items-center justify-center gap-2
-           bg-emerald-600 hover:bg-emerald-700
-           text-white py-3 rounded-xl font-semibold
-           disabled:opacity-50 disabled:cursor-not-allowed"
->
-    <span wire:loading.remove>
-        🚛 <span class="ml-1">Выехал из гаража</span>
-    </span>
-
-    <span wire:loading>
-        ⏳ Получаем одометр…
-    </span>
-</button>
-
-
+    {{-- ВЫЕЗД --}}
     <button
+        type="button"
+        wire:click="departFromGarage"
+        wire:loading.attr="disabled"
+        wire:target="departFromGarage"
+        {{ $canDepart ? '' : 'disabled' }}
+        class="w-full flex items-center justify-center gap-2
+               bg-emerald-600 hover:bg-emerald-700
+               text-white py-3 rounded-xl font-semibold
+               disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+        <span wire:loading.remove wire:target="departFromGarage">
+            🚛 <span class="ml-1">Выехал из гаража</span>
+        </span>
+
+        <span wire:loading wire:target="departFromGarage">
+            ⏳ Получаем одометр…
+        </span>
+    </button>
+
+    {{-- ВОЗВРАТ --}}
+    <button
+        type="button"
         wire:click="backToGarage"
         wire:loading.attr="disabled"
-        @disabled(!$canReturn)
+        wire:target="backToGarage"
+        {{ $canReturn ? '' : 'disabled' }}
         class="w-full flex items-center justify-center gap-2
                bg-blue-600 hover:bg-blue-700
                text-white py-3 rounded-xl font-semibold
                disabled:opacity-50 disabled:cursor-not-allowed"
     >
-        <span wire:loading.remove>🏁 Вернулся в гараж</span>
-        <span wire:loading>⏳ Получаем CAN odometer…</span>
+        <span wire:loading.remove wire:target="backToGarage">
+            🏁 <span class="ml-1">Вернулся в гараж</span>
+        </span>
+
+        <span wire:loading wire:target="backToGarage">
+            ⏳ Получаем одометр…
+        </span>
     </button>
 
 </div>
