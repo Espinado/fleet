@@ -18,12 +18,17 @@ class MaponOdometerFetcher
      */
     public function fetchOdometer(int $unitId, int $companyId): ?array
     {
-        $unit = $this->mapon->getUnitData($unitId, $companyId, 'can');
-        if (!is_array($unit)) {
-            return null;
-        }
+         $unit = $this->mapon->getUnitData(
+        (int) $unitId,
+        (int) $companyId,
+        'can'
+    );
 
-        $lastUpdate = (string) (data_get($unit, 'last_update') ?? '');
+    if (!is_array($unit)) {
+        return null;
+    }
+
+    $lastUpdate = (string) (data_get($unit, 'last_update') ?? '');
 
         // 1) CAN
         $canKm = data_get($unit, 'can.odom.value');
