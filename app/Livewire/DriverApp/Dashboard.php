@@ -6,6 +6,7 @@ use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\Trip;
+use App\Models\VehicleRun;
 use App\Models\TruckOdometerEvent;
 use App\Services\Services\Odometer\GarageDepartureService;
 
@@ -25,13 +26,14 @@ class Dashboard extends Component
         $user = Auth::user();
 
         if (!$user || $user->role !== 'driver' || !$user->driver) {
-            return redirect()->route('driver.login');
+            redirect()->route('driver.login')->send();
+            return;
         }
 
         $this->driver = $user->driver;
 
-        // ✅ Нам нужен "текущий рейс" (по бизнес-логике), даже если смена ещё не открыта
-        $this->trip = Trip::where('driver_id', $this->driver->id)
+        $this->trip = Trip::query()
+            ->where('driver_id', $this->driver->id)
             ->where('status', '!=', 'completed')
             ->latest('id')
             ->first();
@@ -46,19 +48,21 @@ class Dashboard extends Component
 
         if (!$this->trip) {
             $this->garageError = 'Нет активного рейса.';
+            $this->syncGarageFlags();
             return;
         }
 
         $truck = $this->trip->truck;
         if (!$truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
+            $this->syncGarageFlags();
             return;
         }
 
         try {
+            /** @var GarageDepartureService $svc */
             $svc = app(GarageDepartureService::class);
 
-            // ✅ новая сигнатура: (Trip $trip, Truck $truck, ?int $driverId)
             $event = $svc->recordDeparture($this->trip, $truck, $this->driver->id);
 
             $msg = "✅ Выезд: {$event->odometer_km} км";
@@ -68,11 +72,13 @@ class Dashboard extends Component
 
             $this->garageSuccess = $msg;
 
-            // refresh trip (vehicle_run_id мог измениться)
-            $this->trip->refresh();
+            // ✅ надежно перезагружаем trip из БД (vehicle_run_id мог измениться)
+            $this->trip = Trip::query()->find($this->trip->id);
 
         } catch (\Throwable $e) {
             $this->garageError = $e->getMessage();
+            // тоже перезагрузим на всякий случай
+            $this->trip = $this->trip?->id ? Trip::query()->find($this->trip->id) : $this->trip;
         }
 
         $this->syncGarageFlags();
@@ -85,19 +91,21 @@ class Dashboard extends Component
 
         if (!$this->trip) {
             $this->garageError = 'Нет активного рейса.';
+            $this->syncGarageFlags();
             return;
         }
 
         $truck = $this->trip->truck;
         if (!$truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
+            $this->syncGarageFlags();
             return;
         }
 
         try {
+            /** @var GarageDepartureService $svc */
             $svc = app(GarageDepartureService::class);
 
-            // ✅ новая сигнатура
             $event = $svc->recordReturn($this->trip, $truck, $this->driver->id);
 
             $msg = "✅ Возврат: {$event->odometer_km} км";
@@ -107,15 +115,13 @@ class Dashboard extends Component
 
             $this->garageSuccess = $msg;
 
-            // после возврата vehicle_run_id должен стать null
-            $this->trip->refresh();
-
         } catch (\Throwable $e) {
             $this->garageError = $e->getMessage();
         }
 
-        // на всякий случай перезагрузим текущий рейс (если он мог смениться)
-        $this->trip = Trip::where('driver_id', $this->driver->id)
+        // ✅ на всякий случай заново берем текущий рейс
+        $this->trip = Trip::query()
+            ->where('driver_id', $this->driver->id)
             ->where('status', '!=', 'completed')
             ->latest('id')
             ->first();
@@ -125,7 +131,6 @@ class Dashboard extends Component
 
     private function syncGarageFlags(): void
     {
-        // по умолчанию
         $this->canDepart = false;
         $this->canReturn = false;
 
@@ -133,15 +138,41 @@ class Dashboard extends Component
             return;
         }
 
-        // ✅ главный индикатор смены: vehicle_run_id в Trip
-        $runOpen = !empty($this->trip->vehicle_run_id);
+        $truckId = (int) $this->trip->truck_id;
 
-        $this->canDepart = !$runOpen;
-        $this->canReturn = $runOpen;
+        // 1) Основной индикатор — vehicle_run_id в Trip
+        $runOpenByTrip = !empty($this->trip->vehicle_run_id);
 
-        // (дополнительно) можно свериться по событиям, но не обязательно:
-        // $last = TruckOdometerEvent::where('truck_id', $this->trip->truck_id)->latest('occurred_at')->first();
-        // $runOpen = $last && (int)$last->type === TruckOdometerEvent::TYPE_DEPARTURE;
+        // 2) Fallback по событиям одометра (если Trip не привязан)
+        $lastEvent = TruckOdometerEvent::query()
+            ->where('truck_id', $truckId)
+            ->latest('occurred_at')
+            ->first();
+
+        $runOpenByEvents = $lastEvent && (int) $lastEvent->type === TruckOdometerEvent::TYPE_DEPARTURE;
+
+        // 3) Fallback по VehicleRun (если есть открытая смена)
+        $openRun = VehicleRun::query()
+            ->where('truck_id', $truckId)
+            ->where('status', 'open')
+            ->latest('id')
+            ->first();
+
+        $runOpenByRuns = (bool) $openRun;
+
+        $isOpen = $runOpenByTrip || $runOpenByEvents || $runOpenByRuns;
+
+        $this->canDepart = !$isOpen;
+        $this->canReturn = $isOpen;
+
+        // 4) Автовосстановление: если есть openRun, но Trip не привязан — привяжем
+        if (!$runOpenByTrip && $openRun) {
+            $this->trip->forceFill(['vehicle_run_id' => $openRun->id])->save();
+            $this->trip = Trip::query()->find($this->trip->id);
+
+            $this->canDepart = false;
+            $this->canReturn = true;
+        }
     }
 
     public function render()
