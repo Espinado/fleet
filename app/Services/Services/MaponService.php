@@ -14,18 +14,20 @@ class MaponService
         $this->baseUrl = (string) config('mapon.base_url', 'https://mapon.com/api/v1');
     }
 
-    protected function apiKeyForCompany(?int $companyId): string
-    {
-        $companyId = $companyId ?: null;
+   protected function apiKeyForCompany(int|string|null $companyId): string
+{
+    $companyId = (int) ($companyId ?? 0);
+    $companyId = $companyId > 0 ? $companyId : null;
 
-        if ($companyId !== null) {
-            $key = (string) (config("mapon.keys.$companyId") ?? '');
-            if ($key !== '') return $key;
-        }
-
-        // fallback ключ (старый вариант)
-        return (string) config('mapon.key', '');
+    if ($companyId !== null) {
+        $key = (string) (config("mapon.keys.$companyId") ?? '');
+        if ($key !== '') return $key;
     }
+
+    // fallback ключ (старый вариант)
+    return (string) config('mapon.key', '');
+}
+
 
     /**
      * Основной метод: получить unit данные Mapon по Truck
@@ -45,13 +47,14 @@ class MaponService
     /**
      * Обратная совместимость: получить unit данные по unitId + companyId
      */
-    public function getUnitData(int|string $unitId, int $companyId, array|string|null $include = null): ?array
-    {
-        $apiKey = $this->apiKeyForCompany($companyId);
-        if ($apiKey === '') return null;
+   public function getUnitData(int|string $unitId, int|string|null $companyId, array|string|null $include = null): ?array
+{
+    $apiKey = $this->apiKeyForCompany($companyId);
+    if ($apiKey === '') return null;
 
-        return $this->fetchUnit((int) $unitId, $apiKey, $include);
-    }
+    return $this->fetchUnit((int) $unitId, $apiKey, $include);
+}
+
 
     /**
      * Пробег (сырой) по Truck (как отдаёт Mapon)
@@ -67,13 +70,14 @@ class MaponService
     /**
      * Пробег (сырой) по unitId + companyId
      */
-    public function getMileageRaw(int|string $unitId, int $companyId): ?float
-    {
-        $data = $this->getUnitData($unitId, $companyId);
-        if (!$data) return null;
+   public function getMileageRaw(int|string $unitId, int|string|null $companyId): ?float
+{
+    $data = $this->getUnitData($unitId, $companyId);
+    if (!$data) return null;
 
-        return isset($data['mileage']) ? (float) $data['mileage'] : null;
-    }
+    return isset($data['mileage']) ? (float) $data['mileage'] : null;
+}
+
 
     /**
      * Низкоуровневый запрос к Mapon.
