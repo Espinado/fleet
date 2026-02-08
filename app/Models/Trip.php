@@ -18,7 +18,7 @@ class Trip extends Model
         'expeditor_bank_id', 'expeditor_bank', 'expeditor_iban', 'expeditor_bic',
 
         // Transport
-        'driver_id', 'truck_id', 'trailer_id',
+        'driver_id', 'truck_id', 'trailer_id', 'vehicle_run_id',
 
         // Dates
         'start_date', 'end_date',
@@ -55,7 +55,7 @@ class Trip extends Model
         return $this->belongsTo(Trailer::class);
     }
 
-    
+
 
  public function steps()
 {

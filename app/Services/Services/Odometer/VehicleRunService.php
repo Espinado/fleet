@@ -16,16 +16,14 @@ class VehicleRunService
     {
         return DB::transaction(function () use ($trip, $truck, $driverId, $startKm) {
 
-            // если уже есть открытая смена по этому траку — используем её
             $existing = VehicleRun::where('truck_id', $truck->id)
                 ->where('status', 'open')
                 ->latest('id')
                 ->first();
 
             if ($existing) {
-                // привяжем trip к этой смене (если ещё не привязан)
-                if ($trip->vehicle_run_id !== $existing->id) {
-                    $trip->update(['vehicle_run_id' => $existing->id]);
+                if ((int) $trip->vehicle_run_id !== (int) $existing->id) {
+                    $trip->forceFill(['vehicle_run_id' => $existing->id])->save();
                 }
                 return $existing;
             }
@@ -39,8 +37,7 @@ class VehicleRunService
                 'created_by' => 'manual',
             ]);
 
-            // ✅ привязываем Trip к смене
-            $trip->update(['vehicle_run_id' => $run->id]);
+            $trip->forceFill(['vehicle_run_id' => $run->id])->save();
 
             return $run;
         });
@@ -59,7 +56,6 @@ class VehicleRunService
                 ->first();
 
             if (!$run) {
-                // нечего закрывать
                 return null;
             }
 
@@ -70,8 +66,7 @@ class VehicleRunService
                 'close_reason' => $reason,
             ]);
 
-            // ✅ отвязываем Trip (теперь рейс перестанет считаться активным)
-            $trip->update(['vehicle_run_id' => null]);
+            $trip->forceFill(['vehicle_run_id' => null])->save();
 
             return $run;
         });
