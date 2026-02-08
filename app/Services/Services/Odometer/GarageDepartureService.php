@@ -58,12 +58,16 @@ class GarageDepartureService
 
         return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $km, $note) {
 
+        $source = (($odo['source'] ?? null) === 'can')
+    ? TruckOdometerEvent::SOURCE_CAN
+    : TruckOdometerEvent::SOURCE_MILEAGE;
+
             $event = TruckOdometerEvent::create([
                 'truck_id'      => $truck->id,
                 'driver_id'     => $driverId,
                 'type'          => TruckOdometerEvent::TYPE_DEPARTURE,
                 'odometer_km'   => $km,
-                'source'        => $odo['source'] ?? null, // 'can' | 'mileage'
+                'source'        => $source,
                 'occurred_at'   => now(),
                 'mapon_at'      => $odo['mapon_at'] ?? null,
                 'is_stale'      => (bool) ($odo['is_stale'] ?? false),

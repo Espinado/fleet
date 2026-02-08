@@ -77,18 +77,24 @@
         </div>
     @endif
 
-    <button
-        wire:click="departFromGarage"
-        wire:loading.attr="disabled"
-        @disabled(!$canDepart)
-        class="w-full flex items-center justify-center gap-2
-               bg-emerald-600 hover:bg-emerald-700
-               text-white py-3 rounded-xl font-semibold
-               disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-        <span wire:loading.remove>🚛 Выехал из гаража</span>
-        <span wire:loading>⏳ Получаем CAN odometer…</span>
-    </button>
+   <button
+    wire:click="departFromGarage"
+    wire:loading.attr="disabled"
+    :disabled="{{ $canDepart ? 'false' : 'true' }}"
+    class="w-full flex items-center justify-center gap-2
+           bg-emerald-600 hover:bg-emerald-700
+           text-white py-3 rounded-xl font-semibold
+           disabled:opacity-50 disabled:cursor-not-allowed"
+>
+    <span wire:loading.remove>
+        🚛 <span class="ml-1">Выехал из гаража</span>
+    </span>
+
+    <span wire:loading>
+        ⏳ Получаем одометр…
+    </span>
+</button>
+
 
     <button
         wire:click="backToGarage"
