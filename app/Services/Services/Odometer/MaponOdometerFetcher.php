@@ -16,24 +16,24 @@ class MaponOdometerFetcher
      * 1) CAN odom (если есть)
      * 2) fallback: mileage (обычно в метрах -> км)
      */
-    public function fetchOdometer(int $unitId, int $companyId): ?array
+    public function fetchOdometer(int|string $unitId, int|string|null $companyId): ?array
     {
-         $unit = $this->mapon->getUnitData(
-        (int) $unitId,
-        (int) $companyId,
-        'can'
-    );
+        $unitId = (int) $unitId;
+        $companyId = (int) ($companyId ?? 0);
 
-    if (!is_array($unit)) {
-        return null;
-    }
+        $unit = $this->mapon->getUnitData($unitId, $companyId, 'can');
 
-    $lastUpdate = (string) (data_get($unit, 'last_update') ?? '');
+        if (!is_array($unit)) {
+            return null;
+        }
+
+        $lastUpdate = (string) (data_get($unit, 'last_update') ?? '');
 
         // 1) CAN
         $canKm = data_get($unit, 'can.odom.value');
         if ($canKm !== null && $canKm !== '') {
             $canAt = (string) (data_get($unit, 'can.odom.gmt') ?? '');
+
             return $this->decorate([
                 'km'       => (float) $canKm,
                 'source'   => 'can',
@@ -42,11 +42,11 @@ class MaponOdometerFetcher
             ]);
         }
 
-        // 2) mileage fallback
+        // 2) mileage fallback (часто метры)
         $mileageRaw = data_get($unit, 'mileage');
         if ($mileageRaw !== null && $mileageRaw !== '') {
             return $this->decorate([
-                'km'       => ((float) $mileageRaw) / 1000, // метры -> км (по твоим данным)
+                'km'       => ((float) $mileageRaw) / 1000,
                 'source'   => 'mileage',
                 'mapon_at' => $lastUpdate !== '' ? $lastUpdate : null,
                 'raw'      => $unit,
