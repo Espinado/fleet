@@ -31,43 +31,39 @@ class GarageDepartureService
             throw new RuntimeException('Выезд уже зафиксирован. Сначала отметьте возврат в гараж.');
         }
 
-        $companyId = (int) ($truck->company ?? 0);
-
-        // ✅ CAN -> mileage
-        $odo = $this->fetcher->fetchOdometer((int) $unitId, $companyId);
+        $odo = $this->fetcher->fetchOdometer($unitId, $truck->company);
         if (!$odo) {
             throw new RuntimeException('Не удалось получить данные из Mapon.');
         }
 
-        if (($odo['km'] ?? null) === null) {
-            throw new RuntimeException('Mapon не вернул данные одометра (CAN/mileage).');
+        if ($odo['km'] === null) {
+            throw new RuntimeException('Mapon не вернул одометр (CAN и mileage пустые).');
         }
 
-        $km = (float) $odo['km'];
+        // source int
+        $sourceInt = ($odo['source'] ?? null) === 'can'
+            ? TruckOdometerEvent::SOURCE_CAN
+            : TruckOdometerEvent::SOURCE_MILEAGE;
 
-        // ⚠️ Если odometer меньше предыдущего — не блокируем, но пишем note
+        // ⚠️ Если одометр меньше предыдущего — note
         $note = null;
         $prev = TruckOdometerEvent::where('truck_id', $truck->id)
             ->whereNotNull('odometer_km')
             ->latest('occurred_at')
             ->first();
 
-        if ($prev && (float) $km < (float) $prev->odometer_km) {
-            $note = "⚠️ Odometer меньше предыдущего ({$prev->odometer_km}).";
+        if ($prev && (float) $odo['km'] < (float) $prev->odometer_km) {
+            $note = "⚠️ Оdometer меньше предыдущего ({$prev->odometer_km}).";
         }
 
-        return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $km, $note) {
-
-        $source = (($odo['source'] ?? null) === 'can')
-    ? TruckOdometerEvent::SOURCE_CAN
-    : TruckOdometerEvent::SOURCE_MILEAGE;
+        return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $sourceInt, $note) {
 
             $event = TruckOdometerEvent::create([
                 'truck_id'      => $truck->id,
                 'driver_id'     => $driverId,
                 'type'          => TruckOdometerEvent::TYPE_DEPARTURE,
-                'odometer_km'   => $km,
-                'source'        => $source,
+                'odometer_km'   => (float) $odo['km'],
+                'source'        => $sourceInt,
                 'occurred_at'   => now(),
                 'mapon_at'      => $odo['mapon_at'] ?? null,
                 'is_stale'      => (bool) ($odo['is_stale'] ?? false),
@@ -76,7 +72,6 @@ class GarageDepartureService
                 'note'          => $note,
             ]);
 
-            // ✅ Открываем смену и привязываем её к Trip
             $this->runs->openRun(
                 trip: $trip,
                 truck: $truck,
@@ -95,7 +90,6 @@ class GarageDepartureService
             throw new RuntimeException('mapon_unit_id не задан для данного трака.');
         }
 
-        // Должен быть открытый выезд
         $last = TruckOdometerEvent::where('truck_id', $truck->id)
             ->latest('occurred_at')
             ->first();
@@ -104,35 +98,32 @@ class GarageDepartureService
             throw new RuntimeException('Нельзя отметить возврат: нет открытого выезда.');
         }
 
-        $companyId = (int) ($truck->company ?? 0);
-
-        // ✅ CAN -> mileage
-        $odo = $this->fetcher->fetchOdometer((int) $unitId, $companyId);
+        $odo = $this->fetcher->fetchOdometer($unitId, $truck->company);
         if (!$odo) {
             throw new RuntimeException('Не удалось получить данные из Mapon.');
         }
 
-        if (($odo['km'] ?? null) === null) {
-            throw new RuntimeException('Mapon не вернул данные одометра (CAN/mileage).');
+        if ($odo['km'] === null) {
+            throw new RuntimeException('Mapon не вернул одометр (CAN и mileage пустые).');
         }
 
-        $km = (float) $odo['km'];
+        $sourceInt = ($odo['source'] ?? null) === 'can'
+            ? TruckOdometerEvent::SOURCE_CAN
+            : TruckOdometerEvent::SOURCE_MILEAGE;
 
         $note = null;
-
-        // Возвратный одометр не должен быть меньше выездного
-        if ($last->odometer_km !== null && (float) $km < (float) $last->odometer_km) {
-            $note = "⚠️ Odometer меньше odometer выезда ({$last->odometer_km}).";
+        if ($last->odometer_km !== null && (float) $odo['km'] < (float) $last->odometer_km) {
+            $note = "⚠️ Оdometer меньше odometer выезда ({$last->odometer_km}).";
         }
 
-        return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $km, $note) {
+        return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $sourceInt, $note) {
 
             $event = TruckOdometerEvent::create([
                 'truck_id'      => $truck->id,
                 'driver_id'     => $driverId,
                 'type'          => TruckOdometerEvent::TYPE_RETURN,
-                'odometer_km'   => $km,
-                'source'        => $odo['source'] ?? null, // 'can' | 'mileage'
+                'odometer_km'   => (float) $odo['km'],
+                'source'        => $sourceInt,
                 'occurred_at'   => now(),
                 'mapon_at'      => $odo['mapon_at'] ?? null,
                 'is_stale'      => (bool) ($odo['is_stale'] ?? false),
@@ -141,7 +132,6 @@ class GarageDepartureService
                 'note'          => $note,
             ]);
 
-            // ✅ Закрываем смену и отвязываем Trip
             $this->runs->closeRun(
                 trip: $trip,
                 truck: $truck,
