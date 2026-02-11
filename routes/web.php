@@ -10,6 +10,8 @@ use App\Livewire\TrucksTable;
 use App\Livewire\TrailersTable;
 use App\Livewire\ClientsTable;
 
+use App\Livewire\Stats\TripsStatsTable;
+
 use App\Livewire\Drivers\{ShowDriver, EditDriver, CreateDriver};
 use App\Livewire\Trucks\{ShowTruck, EditTruck, CreateTruck};
 use App\Livewire\Trailers\{ShowTrailer, EditTrailer, CreateTrailer};
@@ -86,6 +88,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/trips/create', CreateTrip::class)->name('trips.create');
     Route::get('/trips/{trip}', ViewTrip::class)->name('trips.show');
     Route::get('/trips/{trip}/edit', EditTrip::class)->name('trips.edit');
+
+     // Stats
+    Route::get('/stats', TripsStatsTable::class)->name('stats.index');
 
     // CMR generate
     Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])

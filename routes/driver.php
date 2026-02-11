@@ -22,9 +22,9 @@ Route::get('/driver/manifest.webmanifest', function () {
 
 Route::get('/driver/icons/{filename}', function ($filename) {
     $path = public_path("driver/icons/{$filename}");
-    if (!file_exists($path)) abort(404);
+    abort_unless(is_file($path), 404);
     return response()->file($path);
-});
+})->where('filename', '^[A-Za-z0-9._-]+\.(png|svg|ico)$');
 
 /*
 |--------------------------------------------------------------------------
@@ -60,5 +60,6 @@ Route::middleware(['auth:driver'])->group(function () {
         return redirect('/driver/login');
     })->name('driver.logout');
 
-    Route::view('/driver/offline', 'driver-app.offline');
+
 });
+Route::view('/driver/offline', 'driver-app.offline');

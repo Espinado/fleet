@@ -120,7 +120,7 @@ public function vehicleRun(): BelongsTo
 
 public function odometerEvents(): HasMany
 {
-    return $this->hasMany(\App\Models\OdometerEvent::class);
+    return $this->hasMany(\App\Models\TruckOdometerEvent::class);
 }
 
 public function scopeActiveForDriver($query, int $driverId)

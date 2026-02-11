@@ -43,6 +43,7 @@
             <a href="{{ route('trailers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚚 Trailers</a>
             <a href="{{ route('clients.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🏢 Clients</a>
             <a href="{{ route('trips.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🧭 Trips</a>
+         <a href="{{ route('stats.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Stats</a>
         </nav>
     </aside>
 
@@ -111,7 +112,7 @@
     </script>
 
     {{-- Livewire scripts --}}
-   <script src="/vendor/livewire/livewire.js" data-navigate-once></script>
+  @livewireScripts
 
     {{-- Push notifications --}}
     <script src="/pwa/push.js"></script>
