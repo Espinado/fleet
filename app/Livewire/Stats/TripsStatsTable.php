@@ -4,8 +4,11 @@ namespace App\Livewire\Stats;
 
 use App\Models\Trip;
 use App\Models\TripCargo;
+use App\Models\TripExpense;
 use App\Models\TruckOdometerEvent;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -17,8 +20,8 @@ class TripsStatsTable extends Component
     public string $sortField = 'id';
     public string $sortDirection = 'desc';
 
-    public ?string $dateFrom = null; // Y-m-d
-    public ?string $dateTo   = null; // Y-m-d
+    public ?string $dateFrom = null;
+    public ?string $dateTo   = null;
 
     protected $queryString = [
         'search'        => ['except' => ''],
@@ -31,15 +34,43 @@ class TripsStatsTable extends Component
 
     public function mount(): void
     {
-        if (!$this->dateFrom && !$this->dateTo) {
-            $this->dateFrom = now()->startOfMonth()->toDateString();
-            $this->dateTo   = now()->endOfMonth()->toDateString();
-        }
+        // по умолчанию показываем всё
     }
 
     public function updatedSearch(): void { $this->resetPage(); }
     public function updatedDateFrom(): void { $this->resetPage(); }
     public function updatedDateTo(): void { $this->resetPage(); }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->dateFrom = null;
+        $this->dateTo = null;
+        $this->resetPage();
+    }
+
+    public function clearDates(): void
+    {
+        $this->dateFrom = null;
+        $this->dateTo = null;
+        $this->resetPage();
+    }
+
+    public function quickRange(int $days): void
+    {
+        $this->dateFrom = Carbon::now()->subDays($days)->toDateString();
+        $this->dateTo   = Carbon::now()->toDateString();
+        $this->resetPage();
+    }
+
+    public function getActiveFiltersCountProperty(): int
+    {
+        $n = 0;
+        if (filled($this->search))   $n++;
+        if (filled($this->dateFrom)) $n++;
+        if (filled($this->dateTo))   $n++;
+        return $n;
+    }
 
     public function sortBy(string $field): void
     {
@@ -59,22 +90,21 @@ class TripsStatsTable extends Component
             ->with(['truck', 'driver'])
             ->select('trips.*');
 
-        /**
-         * ✅ Показываем "начавшиеся" в диапазоне
-         * (если хочешь вообще без фильтра — просто удали эти if)
-         */
+        // 🔎 Фильтр по датам
         if ($this->dateFrom) {
             $q->whereDate('trips.start_date', '>=', $this->dateFrom);
         }
+
         if ($this->dateTo) {
             $q->whereDate('trips.start_date', '<=', $this->dateTo);
         }
 
-        // ✅ Поиск
+        // 🔎 Поиск
         if (($s = trim($this->search)) !== '') {
             $q->where(function (Builder $qq) use ($s) {
+
                 if (is_numeric($s)) {
-                    $qq->orWhere('trips.id', (int)$s);
+                    $qq->orWhere('trips.id', (int) $s);
                 }
 
                 $qq->orWhereHas('driver', function (Builder $d) use ($s) {
@@ -92,56 +122,68 @@ class TripsStatsTable extends Component
             });
         }
 
-        // ✅ Фрахт (если грузов нет -> 0)
+        /*
+        |--------------------------------------------------------------------------
+        | 💰 ФРАХТ
+        |--------------------------------------------------------------------------
+        */
         $q->addSelect([
             'freight_total' => TripCargo::query()
                 ->selectRaw('COALESCE(SUM(price), 0)')
                 ->whereColumn('trip_id', 'trips.id'),
         ]);
 
-        // ✅ Odometer events (опционально)
-       // ✅ более надёжные границы (MySQL)
-$rangeStart = "TIMESTAMP(trips.start_date, '00:00:00')";
-$rangeEnd   = "TIMESTAMP(trips.end_date, '23:59:59')";
+        /*
+        |--------------------------------------------------------------------------
+        | 💸 РАСХОДЫ
+        |--------------------------------------------------------------------------
+        */
+        $q->addSelect([
+            'expenses_total' => TripExpense::query()
+                ->selectRaw('COALESCE(SUM(amount), 0)')
+                ->whereColumn('trip_id', 'trips.id'),
+        ]);
 
-$q->addSelect([
-    'departure_at' => TruckOdometerEvent::query()
-        ->select('occurred_at')
-        ->whereColumn('truck_id', 'trips.truck_id')
-        ->where('type', TruckOdometerEvent::TYPE_DEPARTURE)
-        ->whereRaw("occurred_at >= {$rangeStart}")
-        ->whereRaw("occurred_at <= {$rangeEnd}")
-        ->orderBy('occurred_at', 'asc')
-        ->limit(1),
+        /*
+        |--------------------------------------------------------------------------
+        | 📈 PROFIT = freight - expenses
+        |--------------------------------------------------------------------------
+        */
+        $q->selectRaw('
+            (
+                COALESCE((SELECT SUM(price) FROM trip_cargos WHERE trip_cargos.trip_id = trips.id), 0)
+                -
+                COALESCE((SELECT SUM(amount) FROM trip_expenses WHERE trip_expenses.trip_id = trips.id), 0)
+            ) AS profit
+        ');
 
-    'departure_odometer' => TruckOdometerEvent::query()
-        ->select('odometer_km')
-        ->whereColumn('truck_id', 'trips.truck_id')
-        ->where('type', TruckOdometerEvent::TYPE_DEPARTURE)
-        ->whereRaw("occurred_at >= {$rangeStart}")
-        ->whereRaw("occurred_at <= {$rangeEnd}")
-        ->orderBy('occurred_at', 'asc')
-        ->limit(1),
+        /*
+        |--------------------------------------------------------------------------
+        | 🚛 Odometer events
+        |--------------------------------------------------------------------------
+        */
+        $rangeStart = "TIMESTAMP(trips.start_date, '00:00:00')";
+        $rangeEnd   = "TIMESTAMP(trips.end_date, '23:59:59')";
 
-    'return_at' => TruckOdometerEvent::query()
-        ->select('occurred_at')
-        ->whereColumn('truck_id', 'trips.truck_id')
-        ->where('type', TruckOdometerEvent::TYPE_RETURN)
-        ->whereRaw("occurred_at >= {$rangeStart}")
-        ->whereRaw("occurred_at <= {$rangeEnd}")
-        ->orderBy('occurred_at', 'desc')
-        ->limit(1),
+        $q->addSelect([
+            'departure_at' => TruckOdometerEvent::query()
+                ->select('occurred_at')
+                ->whereColumn('truck_id', 'trips.truck_id')
+                ->where('type', TruckOdometerEvent::TYPE_DEPARTURE)
+                ->whereRaw("occurred_at >= {$rangeStart}")
+                ->whereRaw("occurred_at <= {$rangeEnd}")
+                ->orderBy('occurred_at', 'asc')
+                ->limit(1),
 
-    'return_odometer' => TruckOdometerEvent::query()
-        ->select('odometer_km')
-        ->whereColumn('truck_id', 'trips.truck_id')
-        ->where('type', TruckOdometerEvent::TYPE_RETURN)
-        ->whereRaw("occurred_at >= {$rangeStart}")
-        ->whereRaw("occurred_at <= {$rangeEnd}")
-        ->orderBy('occurred_at', 'desc')
-        ->limit(1),
-]);
-
+            'return_at' => TruckOdometerEvent::query()
+                ->select('occurred_at')
+                ->whereColumn('truck_id', 'trips.truck_id')
+                ->where('type', TruckOdometerEvent::TYPE_RETURN)
+                ->whereRaw("occurred_at >= {$rangeStart}")
+                ->whereRaw("occurred_at <= {$rangeEnd}")
+                ->orderBy('occurred_at', 'desc')
+                ->limit(1),
+        ]);
 
         return $q;
     }
@@ -153,16 +195,28 @@ $q->addSelect([
             'start_date',
             'end_date',
             'freight_total',
+            'expenses_total',
+            'profit',
             'departure_at',
             'return_at',
         ];
 
-        $sortField = in_array($this->sortField, $allowedSort, true) ? $this->sortField : 'id';
-        $sortDir   = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+        $sortField = in_array($this->sortField, $allowedSort, true)
+            ? $this->sortField
+            : 'id';
 
-        $rows = $this->query()
-            ->orderBy($sortField, $sortDir)
-            ->paginate(15);
+        $sortDir = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+
+        $q = $this->query();
+
+        // для вычисляемых полей
+        if (in_array($sortField, ['freight_total', 'expenses_total', 'profit'], true)) {
+            $q->orderByRaw("{$sortField} {$sortDir}");
+        } else {
+            $q->orderBy($sortField, $sortDir);
+        }
+
+        $rows = $q->paginate(15);
 
         return view('livewire.stats.trips-stats-table', compact('rows'))
             ->title('Stats')
