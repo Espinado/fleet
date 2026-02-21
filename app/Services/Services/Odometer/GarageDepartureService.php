@@ -5,6 +5,10 @@ namespace App\Services\Services\Odometer;
 use App\Models\Trip;
 use App\Models\Truck;
 use App\Models\TruckOdometerEvent;
+
+use App\Enums\TripStatus;
+use App\Enums\TripStepStatus;
+
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -53,7 +57,7 @@ class GarageDepartureService
             ->first();
 
         if ($prev && (float) $odo['km'] < (float) $prev->odometer_km) {
-            $note = "⚠️ Оdometer меньше предыдущего ({$prev->odometer_km}).";
+            $note = "⚠️ Odometer меньше предыдущего ({$prev->odometer_km}).";
         }
 
         return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $sourceInt, $note) {
@@ -78,6 +82,12 @@ class GarageDepartureService
                 driverId: $driverId,
                 startKm: (float) $event->odometer_km
             );
+
+            // ✅ если рейс был AWAITING_GARAGE и водитель снова выехал — вернём в IN_PROGRESS
+            $trip->refresh();
+            if ($trip->status === TripStatus::AWAITING_GARAGE) {
+                $trip->forceFill(['status' => TripStatus::IN_PROGRESS])->save();
+            }
 
             return $event;
         });
@@ -113,7 +123,7 @@ class GarageDepartureService
 
         $note = null;
         if ($last->odometer_km !== null && (float) $odo['km'] < (float) $last->odometer_km) {
-            $note = "⚠️ Оdometer меньше odometer выезда ({$last->odometer_km}).";
+            $note = "⚠️ Odometer меньше odometer выезда ({$last->odometer_km}).";
         }
 
         return DB::transaction(function () use ($trip, $truck, $driverId, $odo, $sourceInt, $note) {
@@ -139,6 +149,17 @@ class GarageDepartureService
                 endKm: (float) $event->odometer_km,
                 reason: 'manual'
             );
+
+            // ✅ После закрытия смены проверяем: все ли шаги завершены
+            $trip->refresh();
+
+            $allStepsCompleted = !$trip->steps()
+                ->where('status', '!=', TripStepStatus::COMPLETED->value)
+                ->exists();
+
+            if ($allStepsCompleted && $trip->status !== TripStatus::COMPLETED) {
+                $trip->forceFill(['status' => TripStatus::COMPLETED])->save();
+            }
 
             return $event;
         });

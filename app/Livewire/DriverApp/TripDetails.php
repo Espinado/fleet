@@ -5,9 +5,12 @@ namespace App\Livewire\DriverApp;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+
 use App\Models\Trip;
 use App\Models\TripStatusHistory;
 use App\Models\TripStep;
+
+use App\Enums\TripStatus;
 use App\Enums\TripStepStatus;
 
 class TripDetails extends Component
@@ -48,7 +51,6 @@ class TripDetails extends Component
             ]);
     }
 
-
     /**
      * Обновление статуса шага
      */
@@ -60,13 +62,11 @@ class TripDetails extends Component
         DB::beginTransaction();
 
         try {
-
             // Сбрасываем ошибочный шаг
             $this->errorStepId = null;
 
             // 1) Проверка — нельзя разгрузить раньше загрузки
             foreach ($step->cargos as $cargo) {
-
                 if ($this->isUnloadingStep($step, $cargo)) {
 
                     $loadingSteps = $cargo->steps()
@@ -93,14 +93,14 @@ class TripDetails extends Component
             $step->update([
                 'status'       => $newStatus->value,
                 'started_at'   => $newStatus === TripStepStatus::ON_THE_WAY
-                                    ? now()
-                                    : $step->started_at,
+                    ? now()
+                    : $step->started_at,
                 'completed_at' => $newStatus === TripStepStatus::COMPLETED
-                                    ? now()
-                                    : $step->completed_at,
+                    ? now()
+                    : $step->completed_at,
             ]);
 
-            // 3) История статусов
+            // 3) История статусов (шага)
             TripStatusHistory::create([
                 'trip_id'   => $this->trip->id,
                 'driver_id' => Auth::user()->driver->id,
@@ -120,17 +120,18 @@ class TripDetails extends Component
                 ->orderBy('id')
                 ->get();
 
+            // Обновляем историю
+            $this->history = TripStatusHistory::where('trip_id', $this->trip->id)
+                ->orderBy('time', 'desc')
+                ->get();
+
             $this->dispatch('success', 'Status veiksmīgi atjaunots!');
-
         } catch (\Throwable $e) {
-
             DB::rollBack();
             report($e);
-
             $this->dispatch('error', 'Radās kļūda!');
         }
     }
-
 
     /**
      * Проверяет, является ли шаг разгрузкой для этого груза
@@ -145,30 +146,51 @@ class TripDetails extends Component
         return $pivot?->role === 'unloading';
     }
 
-
     /**
-     * Логика статуса всего рейса
+     * Логика статуса всего рейса:
+     * - IN_PROGRESS: если первый шаг уже тронут
+     * - AWAITING_GARAGE: все шаги завершены, но vehicle_run_id ещё открыт (не вернулся в гараж)
+     * - COMPLETED: все шаги завершены + vehicle_run_id пуст (вернулся в гараж)
      */
-    private function updateTripStatusBasedOnSteps()
+    private function updateTripStatusBasedOnSteps(): void
     {
-        $steps = $this->trip
-            ->steps()
-            ->orderBy('order')
-            ->orderBy('id')
-            ->get();
+        // ✅ свежий trip (vehicle_run_id мог поменяться из Dashboard)
+        $trip = Trip::query()->findOrFail($this->trip->id);
+
+        $steps = $trip->steps()->get();
 
         $first = $steps->first();
         $last  = $steps->last();
 
+        // Если шагов нет — ничего не делаем
+        if (!$first || !$last) {
+            $this->trip = $trip;
+            return;
+        }
+
         // 1) Trip → IN_PROGRESS
         if ($first->status !== TripStepStatus::NOT_STARTED) {
-
-            if ($this->trip->status !== 'in_progress') {
-
-                $this->trip->update(['status' => 'in_progress']);
+            if ($trip->status !== TripStatus::IN_PROGRESS
+                && $trip->status !== TripStatus::AWAITING_GARAGE
+                && $trip->status !== TripStatus::COMPLETED
+            ) {
+                $trip->update(['status' => TripStatus::IN_PROGRESS]);
 
                 TripStatusHistory::create([
-                    'trip_id'   => $this->trip->id,
+                    'trip_id'   => $trip->id,
+                    'driver_id' => Auth::user()->driver->id,
+                    'status'    => 'trip_in_progress',
+                    'time'      => now(),
+                    'comment'   => 'Trip sākts',
+                ]);
+            }
+
+            // Если был PLANNED, тоже переводим в IN_PROGRESS
+            if ($trip->status === TripStatus::PLANNED) {
+                $trip->update(['status' => TripStatus::IN_PROGRESS]);
+
+                TripStatusHistory::create([
+                    'trip_id'   => $trip->id,
                     'driver_id' => Auth::user()->driver->id,
                     'status'    => 'trip_in_progress',
                     'time'      => now(),
@@ -177,18 +199,40 @@ class TripDetails extends Component
             }
         }
 
-        // 2) Trip → COMPLETED
+        // 2) Если последний шаг завершён — проверяем гараж
         if ($last->status === TripStepStatus::COMPLETED) {
 
-            $this->trip->update(['status' => 'completed']);
+            $returnedToGarage = empty($trip->vehicle_run_id);
 
-            TripStatusHistory::create([
-                'trip_id'   => $this->trip->id,
-                'driver_id' => Auth::user()->driver->id,   // ← ДОБАВИЛ
-                'status'    => 'trip_completed',
-                'time'      => now(),
-                'comment'   => 'Trip pabeigts',
-            ]);
+            if ($returnedToGarage) {
+
+                if ($trip->status !== TripStatus::COMPLETED) {
+                    $trip->update(['status' => TripStatus::COMPLETED]);
+
+                    TripStatusHistory::create([
+                        'trip_id'   => $trip->id,
+                        'driver_id' => Auth::user()->driver->id,
+                        'status'    => 'trip_completed',
+                        'time'      => now(),
+                        'comment'   => 'Trip pabeigts (pēc atgriešanās garāžā)',
+                    ]);
+                }
+            } else {
+
+                if ($trip->status !== TripStatus::AWAITING_GARAGE) {
+                    $trip->update(['status' => TripStatus::AWAITING_GARAGE]);
+
+                    TripStatusHistory::create([
+                        'trip_id'   => $trip->id,
+                        'driver_id' => Auth::user()->driver->id,
+                        'status'    => 'trip_awaiting_garage',
+                        'time'      => now(),
+                        'comment'   => 'Visi soļi pabeigti — gaidām atgriešanos garāžā',
+                    ]);
+                }
+            }
         }
+
+        $this->trip = $trip;
     }
 }

@@ -1,3 +1,5 @@
+{{-- resources/views/livewire/driver-app/dashboard.blade.php --}}
+
 <div class="space-y-6">
 
     {{-- Приветствие --}}
@@ -56,27 +58,30 @@
     @if($trip)
         <div class="bg-white p-4 rounded-xl shadow space-y-3">
 
-            <h2 class="text-lg font-bold">
-                🚛 Текущий рейс #{{ $trip->id }}
-            </h2>
+            <div class="flex items-start justify-between gap-3">
+                <h2 class="text-lg font-bold">
+                    🚛 Текущий рейс #{{ $trip->id }}
+                </h2>
+
+                {{-- Бейдж статуса (из enum TripStatus::color()) --}}
+                <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $trip->status->color() }}">
+                    {{ $trip->status->label() }}
+                </span>
+            </div>
 
             <p class="text-gray-700">
                 Машина: <strong>{{ $trip->truck?->plate ?? '—' }}</strong>
             </p>
 
-            <p class="text-gray-700">
-                Статус: <strong class="text-blue-700">{{ $trip->status }}</strong>
-            </p>
+            {{-- Если все шаги завершены, но еще не вернулся в гараж --}}
+            @if($trip->status->value === 'awaiting_garage')
+                <div class="p-3 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-900 text-sm">
+                    ✅ Все шаги завершены. Осталось отметить <strong>возврат в гараж</strong>, чтобы рейс закрылся.
+                </div>
+            @endif
 
             {{-- Гараж: выезд/возврат --}}
             <div class="pt-2 space-y-2">
-
-                {{-- debug (можно потом убрать) --}}
-                <div class="text-xs text-gray-500">
-                    canDepart: {{ $canDepart ? 'true' : 'false' }},
-                    canReturn: {{ $canReturn ? 'true' : 'false' }},
-                    trip.vehicle_run_id: {{ $trip->vehicle_run_id ?? 'null' }}
-                </div>
 
                 @if($garageError)
                     <div class="p-3 rounded-xl bg-red-100 text-red-800 text-sm">
@@ -131,6 +136,16 @@
                         ⏳ Получаем одометр…
                     </span>
                 </button>
+
+                {{-- Мини-индикатор состояния (без дебага) --}}
+                <div class="text-xs text-gray-500 flex items-center justify-between">
+                    <span>
+                        Смена: <span class="font-medium">{{ $trip->vehicle_run_id ? 'открыта' : 'закрыта' }}</span>
+                    </span>
+                    <span>
+                        {{ $trip->vehicle_run_id ? '🚚 В пути' : '🏠 В гараже' }}
+                    </span>
+                </div>
 
             </div>
 

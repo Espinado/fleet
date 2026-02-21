@@ -10,6 +10,8 @@ use App\Models\VehicleRun;
 use App\Models\TruckOdometerEvent;
 use App\Services\Services\Odometer\GarageDepartureService;
 
+use App\Enums\TripStatus;
+
 class Dashboard extends Component
 {
     public $driver;
@@ -32,13 +34,18 @@ class Dashboard extends Component
 
         $this->driver = $user->driver;
 
-        $this->trip = Trip::query()
-            ->where('driver_id', $this->driver->id)
-            ->where('status', '!=', 'completed')
-            ->latest('id')
-            ->first();
+        $this->loadCurrentTrip();
 
         $this->syncGarageFlags();
+    }
+
+    private function loadCurrentTrip(): void
+    {
+        $this->trip = Trip::query()
+            ->where('driver_id', $this->driver->id)
+            ->where('status', '!=', TripStatus::COMPLETED->value)
+            ->latest('id')
+            ->first();
     }
 
     public function departFromGarage(): void
@@ -72,15 +79,12 @@ class Dashboard extends Component
 
             $this->garageSuccess = $msg;
 
-            // ✅ надежно перезагружаем trip из БД (vehicle_run_id мог измениться)
-            $this->trip = Trip::query()->find($this->trip->id);
-
         } catch (\Throwable $e) {
             $this->garageError = $e->getMessage();
-            // тоже перезагрузим на всякий случай
-            $this->trip = $this->trip?->id ? Trip::query()->find($this->trip->id) : $this->trip;
         }
 
+        // ✅ берём актуальный рейс/статус/vehicle_run_id
+        $this->loadCurrentTrip();
         $this->syncGarageFlags();
     }
 
@@ -119,22 +123,23 @@ class Dashboard extends Component
             $this->garageError = $e->getMessage();
         }
 
-        // ✅ на всякий случай заново берем текущий рейс
-        $this->trip = Trip::query()
-            ->where('driver_id', $this->driver->id)
-            ->where('status', '!=', 'completed')
-            ->latest('id')
-            ->first();
-
+        // ✅ после возврата рейс мог стать COMPLETED (если все шаги закрыты)
+        $this->loadCurrentTrip();
         $this->syncGarageFlags();
     }
 
     private function syncGarageFlags(): void
     {
+        // дефолты
         $this->canDepart = false;
         $this->canReturn = false;
 
         if (!$this->trip || !$this->trip->truck_id) {
+            return;
+        }
+
+        // если рейс вдруг completed (на всякий) — блокируем всё
+        if ($this->trip->status instanceof TripStatus && $this->trip->status === TripStatus::COMPLETED) {
             return;
         }
 

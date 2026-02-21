@@ -25,6 +25,7 @@ class TruckOdometerEvent extends Model
     // Константы (пока без Enum, чтобы проще)
   public const TYPE_DEPARTURE = 1;
 public const TYPE_RETURN    = 2;
+public const TYPE_FUEL      = 3; // ✅ заправка (снимок одометра на момент заправки)
 
 public const SOURCE_CAN     = 1;
 public const SOURCE_MILEAGE = 2;
