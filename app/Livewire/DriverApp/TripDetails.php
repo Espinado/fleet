@@ -57,27 +57,37 @@ class TripDetails extends Component
             ]);
     }
 
-    public function startTrip(): void
+   public function startTrip(): void
 {
-    // обновим данные рейса и трака
-    $this->trip->refresh()->load('truck');
+    // свежие данные
+    $this->reloadTrip();
 
-    // если уже стартовали — ничего не делаем
+    // уже стартовали — ничего не делаем
     if ($this->trip->started_at) {
         return;
     }
 
-    // если CAN нет — открываем форму ввода odo_start
+    // если CAN нет — ручной ввод
     if ($this->manualOdoRequired()) {
         $this->odo_start_km = $this->trip->odo_start_km;
         $this->showOdoStart = true;
         return;
     }
 
-    // CAN есть — стартуем сразу
+    // CAN есть — попробуем взять последнее значение одометра
+    $odo = $this->latestTruckOdoKm();
+
+    // если по CAN данных нет/не пришли — fallback на ручной ввод
+    if ($odo === null) {
+        $this->odo_start_km = $this->trip->odo_start_km;
+        $this->showOdoStart = true;
+        return;
+    }
+
     $this->trip->update([
-        'started_at' => now(),
-        'status'     => TripStatus::IN_PROGRESS,
+        'started_at'   => now(),
+        'status'       => TripStatus::IN_PROGRESS,
+        'odo_start_km' => $odo,
     ]);
 
     TripStatusHistory::create([
@@ -88,13 +98,15 @@ class TripDetails extends Component
         'comment'   => 'Trip uzsākts (izbrauca no garāžas)',
     ]);
 
-    $this->trip->refresh();
+    // важное: переприсвоить модель, чтобы кнопка/статус обновились в UI
+    $this->reloadTrip();
+
     $this->dispatch('success', 'Reiss uzsākts!');
 }
 
 public function endTrip(): void
 {
-    $this->trip->refresh()->load('truck');
+    $this->reloadTrip();
 
     if (!$this->trip->started_at) {
         $this->dispatch('error', 'Vispirms uzsāciet reisu (izbraukšana no garāžas).');
@@ -105,19 +117,37 @@ public function endTrip(): void
         return;
     }
 
-    // Если CAN нет — просим beigu odometru
+    // если CAN нет — ручной ввод
     if ($this->manualOdoRequired()) {
         $this->odo_end_km = $this->trip->odo_end_km;
         $this->showOdoEnd = true;
         return;
     }
 
-    // CAN есть — закрываем сразу
+    // CAN есть — берём последнее значение одометра
+    $odo = $this->latestTruckOdoKm();
+
+    // если данных нет — fallback на ручной ввод
+    if ($odo === null) {
+        $this->odo_end_km = $this->trip->odo_end_km;
+        $this->showOdoEnd = true;
+        return;
+    }
+
+    // защита от "конец меньше старта" (бывает при stale)
+    if ($this->trip->odo_start_km !== null && $odo < (int) $this->trip->odo_start_km) {
+        $this->odo_end_km = $this->trip->odo_end_km;
+        $this->showOdoEnd = true;
+
+        $this->dispatch('error', 'CAN odometrs ir mazāks par starta. Ievadiet beigu odometru manuāli.');
+        return;
+    }
+
     $this->trip->update([
-        'ended_at' => now(),
-        'status'   => TripStatus::COMPLETED,
-        // если vehicle_run_id у вас маркер "в гараже" — закрываем его
+        'ended_at'       => now(),
+        'status'         => TripStatus::COMPLETED,
         'vehicle_run_id' => null,
+        'odo_end_km'     => $odo,
     ]);
 
     TripStatusHistory::create([
@@ -128,7 +158,8 @@ public function endTrip(): void
         'comment'   => 'Trip pabeigts (atgriezās garāžā)',
     ]);
 
-    $this->trip->refresh();
+    $this->reloadTrip();
+
     $this->dispatch('success', 'Reiss pabeigts!');
 }
 
@@ -426,5 +457,21 @@ public function saveOdoStart(): void
     private function manualOdoRequired(): bool
 {
     return !($this->trip->truck?->can_available ?? false);
+}
+private function latestTruckOdoKm(): ?int
+{
+    $e = \App\Models\TruckOdometerEvent::query()
+        ->where('truck_id', $this->trip->truck_id)
+        ->orderByDesc('occurred_at')
+        ->first();
+
+    return $e ? (int) round($e->odometer_km) : null;
+}
+
+private function reloadTrip(): void
+{
+    $this->trip = Trip::query()
+        ->with('truck')
+        ->findOrFail($this->trip->id);
 }
 }
