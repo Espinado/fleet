@@ -16,6 +16,7 @@ class Trip extends Model
         'expeditor_country', 'expeditor_city', 'expeditor_address',
         'expeditor_post_code', 'expeditor_email', 'expeditor_phone',
         'expeditor_bank_id', 'expeditor_bank', 'expeditor_iban', 'expeditor_bic',
+         'started_at', 'ended_at', 'odo_start_km', 'odo_end_km',
 
         // Transport
         'driver_id', 'truck_id', 'trailer_id', 'vehicle_run_id',
@@ -34,6 +35,8 @@ class Trip extends Model
         'start_date' => 'date',
         'end_date'   => 'date',
         'status'     => TripStatus::class,
+         'started_at' => 'datetime',
+        'ended_at'   => 'datetime',
     ];
 
     /** ========================

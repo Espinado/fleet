@@ -14,6 +14,7 @@ class Truck extends Model
     protected $fillable = [
         'brand',
         'model',
+        'can_available',
         'plate',
         'year',
         'company',
@@ -46,7 +47,7 @@ class Truck extends Model
     'tech_passport_expired' => 'date',
      'license_issued'  => 'date',
     'license_expired' => 'date',
-    
+
 ];
 
     public function getDisplayNameAttribute(): string

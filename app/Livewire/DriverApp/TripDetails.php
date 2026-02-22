@@ -18,6 +18,11 @@ class TripDetails extends Component
     public Trip $trip;
     public $steps;
     public $history;
+    public ?int $odo_start_km = null;
+    public ?int $odo_end_km = null;
+
+    public bool $showOdoStart = false;
+    public bool $showOdoEnd = false;
 
     // ID шага, на котором произошла ошибка
     public $errorStepId = null;
@@ -31,6 +36,7 @@ class TripDetails extends Component
         }
 
         $this->trip = $trip;
+        $this->trip->load('truck');
 
         $this->steps = TripStep::where('trip_id', $trip->id)
             ->orderBy('order')
@@ -51,87 +57,268 @@ class TripDetails extends Component
             ]);
     }
 
+    public function startTrip(): void
+{
+    // обновим данные рейса и трака
+    $this->trip->refresh()->load('truck');
+
+    // если уже стартовали — ничего не делаем
+    if ($this->trip->started_at) {
+        return;
+    }
+
+    // если CAN нет — открываем форму ввода odo_start
+    if ($this->manualOdoRequired()) {
+        $this->odo_start_km = $this->trip->odo_start_km;
+        $this->showOdoStart = true;
+        return;
+    }
+
+    // CAN есть — стартуем сразу
+    $this->trip->update([
+        'started_at' => now(),
+        'status'     => TripStatus::IN_PROGRESS,
+    ]);
+
+    TripStatusHistory::create([
+        'trip_id'   => $this->trip->id,
+        'driver_id' => Auth::user()->driver->id,
+        'status'    => 'trip_started_garage',
+        'time'      => now(),
+        'comment'   => 'Trip uzsākts (izbrauca no garāžas)',
+    ]);
+
+    $this->trip->refresh();
+    $this->dispatch('success', 'Reiss uzsākts!');
+}
+
+public function endTrip(): void
+{
+    $this->trip->refresh()->load('truck');
+
+    if (!$this->trip->started_at) {
+        $this->dispatch('error', 'Vispirms uzsāciet reisu (izbraukšana no garāžas).');
+        return;
+    }
+
+    if ($this->trip->ended_at) {
+        return;
+    }
+
+    // Если CAN нет — просим beigu odometru
+    if ($this->manualOdoRequired()) {
+        $this->odo_end_km = $this->trip->odo_end_km;
+        $this->showOdoEnd = true;
+        return;
+    }
+
+    // CAN есть — закрываем сразу
+    $this->trip->update([
+        'ended_at' => now(),
+        'status'   => TripStatus::COMPLETED,
+        // если vehicle_run_id у вас маркер "в гараже" — закрываем его
+        'vehicle_run_id' => null,
+    ]);
+
+    TripStatusHistory::create([
+        'trip_id'   => $this->trip->id,
+        'driver_id' => Auth::user()->driver->id,
+        'status'    => 'trip_ended_garage',
+        'time'      => now(),
+        'comment'   => 'Trip pabeigts (atgriezās garāžā)',
+    ]);
+
+    $this->trip->refresh();
+    $this->dispatch('success', 'Reiss pabeigts!');
+}
+
+public function saveOdoEnd(): void
+{
+    $this->validate([
+        'odo_end_km' => ['required', 'integer', 'min:0'],
+    ]);
+
+    $this->trip->refresh()->load('truck');
+
+    if (!$this->manualOdoRequired()) {
+        $this->showOdoEnd = false;
+        return;
+    }
+
+    if ($this->trip->odo_start_km === null) {
+        $this->dispatch('error', 'Nav starta odometra. Vispirms ievadiet starta odometru.');
+        return;
+    }
+
+    $start = (int)$this->trip->odo_start_km;
+    $end   = (int)$this->odo_end_km;
+
+    if ($end < $start) {
+        $this->addError('odo_end_km', 'Beigu rādījums nevar būt mazāks par starta.');
+        return;
+    }
+
+    $this->trip->update([
+        'ended_at'   => now(),
+        'odo_end_km' => $end,
+        'status'     => TripStatus::COMPLETED,
+        'vehicle_run_id' => null,
+    ]);
+
+    TripStatusHistory::create([
+        'trip_id'   => $this->trip->id,
+        'driver_id' => Auth::user()->driver->id,
+        'status'    => 'trip_ended_garage_manual_odo',
+        'time'      => now(),
+        'comment'   => 'Trip pabeigts + beigu odometrs ievadīts',
+    ]);
+
+    $this->showOdoEnd = false;
+
+    $this->trip->refresh();
+    $this->dispatch('success', 'Beigu odometrs saglabāts, reiss pabeigts!');
+}
+
+public function saveOdoStart(): void
+{
+    $this->validate([
+        'odo_start_km' => ['required', 'integer', 'min:0'],
+    ]);
+
+    $this->trip->refresh()->load('truck');
+
+    // Если вдруг CAN доступен — просто закрываем форму
+    if (!$this->manualOdoRequired()) {
+        $this->showOdoStart = false;
+        return;
+    }
+
+    $this->trip->update([
+        'started_at'   => $this->trip->started_at ?? now(),
+        'odo_start_km' => (int)$this->odo_start_km,
+        'status'       => TripStatus::IN_PROGRESS,
+    ]);
+
+    TripStatusHistory::create([
+        'trip_id'   => $this->trip->id,
+        'driver_id' => Auth::user()->driver->id,
+        'status'    => 'trip_started_garage_manual_odo',
+        'time'      => now(),
+        'comment'   => 'Trip uzsākts + starta odometrs ievadīts',
+    ]);
+
+    $this->showOdoStart = false;
+
+    $this->trip->refresh();
+    $this->dispatch('success', 'Starta odometrs saglabāts, reiss uzsākts!');
+}
+
     /**
      * Обновление статуса шага
      */
-    public function updateStepStatus(int $stepId, int $newStatusInt)
-    {
-        $step = TripStep::findOrFail($stepId);
+   public function updateStepStatus(int $stepId, int $newStatusInt): void
+{
+    // ✅ обновим trip + truck
+    $this->trip->refresh()->load('truck');
+
+    // 🚫 Нельзя менять шаги, пока водитель не выехал из гаража
+    if (!$this->trip->started_at) {
+        $this->dispatch('error', 'Vispirms uzsāciet reisu (izbraukšana no garāžas).');
+        return;
+    }
+
+    // 🚫 Нельзя менять шаги после завершения рейса
+    if ($this->trip->ended_at) {
+        $this->dispatch('error', 'Reiss jau ir pabeigts.');
+        return;
+    }
+
+    // ✅ Валидация статуса
+    try {
         $newStatus = TripStepStatus::from($newStatusInt);
+    } catch (\ValueError $e) {
+        $this->dispatch('error', 'Nederīgs status.');
+        return;
+    }
 
-        DB::beginTransaction();
+    $tripId = $this->trip->id;
 
-        try {
-            // Сбрасываем ошибочный шаг
-            $this->errorStepId = null;
+    DB::beginTransaction();
 
-            // 1) Проверка — нельзя разгрузить раньше загрузки
-            foreach ($step->cargos as $cargo) {
-                if ($this->isUnloadingStep($step, $cargo)) {
+    try {
+        // Сбрасываем ошибочный шаг
+        $this->errorStepId = null;
 
-                    $loadingSteps = $cargo->steps()
-                        ->wherePivot('role', 'loading')
-                        ->get();
+        // Берём шаг (лучше блокируем на обновление, чтобы не было гонок)
+        $step = TripStep::query()->whereKey($stepId)->lockForUpdate()->firstOrFail();
 
-                    $hasCompletedLoading = $loadingSteps->contains(
-                        fn($s) => $s->status === TripStepStatus::COMPLETED
-                    );
+        // 1) Проверка — нельзя разгрузить раньше загрузки
+        foreach ($step->cargos as $cargo) {
+            if ($this->isUnloadingStep($step, $cargo)) {
 
-                    if (!$hasCompletedLoading) {
+                $loadingSteps = $cargo->steps()
+                    ->wherePivot('role', 'loading')
+                    ->get();
 
-                        // 🚨 отмечаем шаг как ошибочный
-                        $this->errorStepId = $step->id;
+                $hasCompletedLoading = $loadingSteps->contains(
+                    fn($s) => $s->status === TripStepStatus::COMPLETED
+                );
 
-                        DB::rollBack();
-                        $this->dispatch('error', 'Šo kravu vēl neesat iekraujis!');
-                        return;
-                    }
+                if (!$hasCompletedLoading) {
+                    // 🚨 отмечаем шаг как ошибочный
+                    $this->errorStepId = $step->id;
+
+                    DB::rollBack();
+                    $this->dispatch('error', 'Šo kravu vēl neesat iekraujis!');
+                    return;
                 }
             }
-
-            // 2) Обновляем сам шаг
-            $step->update([
-                'status'       => $newStatus->value,
-                'started_at'   => $newStatus === TripStepStatus::ON_THE_WAY
-                    ? now()
-                    : $step->started_at,
-                'completed_at' => $newStatus === TripStepStatus::COMPLETED
-                    ? now()
-                    : $step->completed_at,
-            ]);
-
-            // 3) История статусов (шага)
-            TripStatusHistory::create([
-                'trip_id'   => $this->trip->id,
-                'driver_id' => Auth::user()->driver->id,
-                'status'    => "step_{$newStatus->value}",
-                'time'      => now(),
-                'comment'   => "Step #{$step->id} → {$newStatus->label()}",
-            ]);
-
-            // 4) Логика смены статуса рейса
-            $this->updateTripStatusBasedOnSteps();
-
-            DB::commit();
-
-            // Обновляем отображение шагов
-            $this->steps = TripStep::where('trip_id', $this->trip->id)
-                ->orderBy('order')
-                ->orderBy('id')
-                ->get();
-
-            // Обновляем историю
-            $this->history = TripStatusHistory::where('trip_id', $this->trip->id)
-                ->orderBy('time', 'desc')
-                ->get();
-
-            $this->dispatch('success', 'Status veiksmīgi atjaunots!');
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            report($e);
-            $this->dispatch('error', 'Radās kļūda!');
         }
+
+        // 2) Обновляем сам шаг
+        $step->update([
+            'status'       => $newStatus->value,
+            'started_at'   => $newStatus === TripStepStatus::ON_THE_WAY
+                ? now()
+                : $step->started_at,
+            'completed_at' => $newStatus === TripStepStatus::COMPLETED
+                ? now()
+                : $step->completed_at,
+        ]);
+
+        // 3) История статусов (шага)
+        TripStatusHistory::create([
+            'trip_id'   => $tripId,
+            'driver_id' => Auth::user()->driver->id,
+            'status'    => "step_{$newStatus->value}",
+            'time'      => now(),
+            'comment'   => "Step #{$step->id} → {$newStatus->label()}",
+        ]);
+
+        // 4) Логика смены статуса рейса
+        $this->updateTripStatusBasedOnSteps();
+
+        DB::commit();
+
+        // ✅ Обновляем отображение шагов/истории/рейса
+        $this->steps = TripStep::where('trip_id', $tripId)
+            ->orderBy('order')
+            ->orderBy('id')
+            ->get();
+
+        $this->history = TripStatusHistory::where('trip_id', $tripId)
+            ->orderBy('time', 'desc')
+            ->get();
+
+        $this->trip->refresh()->load('truck');
+
+        $this->dispatch('success', 'Status veiksmīgi atjaunots!');
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        report($e);
+        $this->dispatch('error', 'Radās kļūda!');
     }
+}
 
     /**
      * Проверяет, является ли шаг разгрузкой для этого груза
@@ -235,4 +422,9 @@ class TripDetails extends Component
 
         $this->trip = $trip;
     }
+
+    private function manualOdoRequired(): bool
+{
+    return !($this->trip->truck?->can_available ?? false);
+}
 }

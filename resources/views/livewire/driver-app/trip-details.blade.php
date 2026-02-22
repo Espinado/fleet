@@ -30,7 +30,7 @@
     {{-- ============================
          ОБЩАЯ ИНФОРМАЦИЯ
     ============================ --}}
-    <div 
+    <div
     x-data="{ show: false, msg: '' }"
     x-on:driver-error.window="
         msg = $event.detail;
@@ -71,6 +71,112 @@
         </p>
     </div>
 
+    {{-- ============================
+     GARAGE START (Trip start)
+============================ --}}
+{{-- ============================
+     GARĀŽA → GARĀŽA (Trip start/end)
+============================ --}}
+<div class="bg-white shadow rounded-xl p-4 space-y-3 mt-3">
+
+    <div class="flex items-center justify-between">
+        <div class="text-sm font-semibold">🚪 Garāža → Garāža</div>
+
+        @php $can = (bool)($trip->truck?->can_available); @endphp
+        <span class="text-[11px] px-2 py-1 rounded-full {{ $can ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
+            {{ $can ? 'CAN auto' : 'Manual odometrs' }}
+        </span>
+    </div>
+
+    <div class="text-xs text-gray-600 space-y-1">
+        <div><strong>Start:</strong> {{ $trip->started_at?->format('d.m.Y H:i') ?? '—' }}</div>
+        <div><strong>End:</strong> {{ $trip->ended_at?->format('d.m.Y H:i') ?? '—' }}</div>
+
+        @if(!$can)
+            <div><strong>Odo start:</strong>
+                {{ $trip->odo_start_km !== null ? number_format($trip->odo_start_km, 0, '.', ' ') . ' km' : '—' }}
+            </div>
+            <div><strong>Odo end:</strong>
+                {{ $trip->odo_end_km !== null ? number_format($trip->odo_end_km, 0, '.', ' ') . ' km' : '—' }}
+            </div>
+
+            @if($trip->odo_start_km !== null && $trip->odo_end_km !== null)
+                <div class="pt-1">
+                    <strong>Manual nobraukums:</strong>
+                    {{ number_format(($trip->odo_end_km - $trip->odo_start_km), 0, '.', ' ') }} km
+                </div>
+            @endif
+        @endif
+    </div>
+
+    {{-- Buttons --}}
+    @if(!$trip->started_at)
+        <button
+            wire:click="startTrip"
+            wire:loading.attr="disabled"
+            class="w-full inline-flex justify-center items-center px-3 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold active:scale-95 disabled:opacity-60">
+            ▶️ Sākt reisu (izbraukšana)
+        </button>
+
+    @elseif($trip->started_at && !$trip->ended_at)
+        <button
+            wire:click="endTrip"
+            wire:loading.attr="disabled"
+            class="w-full inline-flex justify-center items-center px-3 py-3 rounded-xl bg-green-600 text-white text-sm font-semibold active:scale-95 disabled:opacity-60">
+            ✅ Pabeigt reisu (atgriešanās)
+        </button>
+
+    @else
+        <div class="text-sm font-semibold text-green-700">✅ Reiss pabeigts</div>
+    @endif
+
+    {{-- Start odometer input --}}
+    @if($showOdoStart)
+        <div class="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+            <div class="text-sm font-semibold">🧭 Ievadi starta odometru (km)</div>
+
+            <input type="number"
+                   wire:model="odo_start_km"
+                   class="w-full rounded-lg border-gray-300"
+                   placeholder="km">
+
+            @error('odo_start_km')
+                <div class="text-xs text-red-600">{{ $message }}</div>
+            @enderror
+
+            <button
+                wire:click="saveOdoStart"
+                wire:loading.attr="disabled"
+                class="w-full inline-flex justify-center items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold disabled:opacity-60">
+                Saglabāt un sākt
+            </button>
+        </div>
+    @endif
+
+    {{-- End odometer input --}}
+    @if($showOdoEnd)
+        <div class="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+            <div class="text-sm font-semibold">🧭 Ievadi beigu odometru (km)</div>
+
+            <input type="number"
+                   wire:model="odo_end_km"
+                   class="w-full rounded-lg border-gray-300"
+                   placeholder="km">
+
+            @error('odo_end_km')
+                <div class="text-xs text-red-600">{{ $message }}</div>
+            @enderror
+
+            <button
+                wire:click="saveOdoEnd"
+                wire:loading.attr="disabled"
+                class="w-full inline-flex justify-center items-center px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold disabled:opacity-60">
+                Saglabāt un pabeigt
+            </button>
+        </div>
+    @endif
+
+</div>
 
 
 
@@ -231,7 +337,7 @@
 
                 {{-- Форма загрузки --}}
                 <div x-show="openUpload" x-collapse class="mt-3">
-                    <livewire:driver-app.driver-step-document-uploader 
+                    <livewire:driver-app.driver-step-document-uploader
                         :trip="$trip"
                         :step="$step"
                         :key="'driver-upload-'.$step->id"
