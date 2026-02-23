@@ -1,5 +1,16 @@
 <div class="p-8 bg-gray-100 min-h-screen flex justify-center">
+@php
+    use Carbon\Carbon;
 
+    $fmt = function ($value) {
+        if (blank($value)) return '-';
+        try {
+            return Carbon::parse($value)->format('d.m.Y');
+        } catch (\Throwable $e) {
+            return '-';
+        }
+    };
+@endphp
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-7xl p-8">
 
         {{-- Верхняя панель действий --}}
@@ -41,7 +52,7 @@
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-2xl shadow-inner space-y-3">
                 <p><strong>Insurance Company:</strong> {{ $trailer->insurance_company }}</p>
                 <p><strong>Insurance #:</strong> {{ $trailer->insurance_number }}</p>
-                <p><strong>Valid:</strong> {{ $trailer->insurance_issued }} → {{ $trailer->insurance_expired }}</p>
+                <p><strong>Valid:</strong> {{ $fmt($trailer->insurance_issued) }} → {{ $fmt($trailer->insurance_expired) }}</p>
             </div>
         </div>
 
@@ -49,8 +60,8 @@
         <div class="bg-gray-50 p-6 rounded-2xl shadow-inner mb-10">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Inspection</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <p><strong>Issued:</strong> {{ $trailer->inspection_issued }}</p>
-                <p><strong>Expires:</strong> {{ $trailer->inspection_expired }}</p>
+                <p><strong>Issued:</strong> {{  $fmt($trailer->inspection_issued) }}</p>
+                <p><strong>Expires:</strong> {{ $fmt($trailer->inspection_expired) }}</p>
             </div>
         </div>
 
@@ -59,8 +70,8 @@
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">Technical Passport</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <p><strong>Number:</strong> {{ $trailer->tech_passport_nr ?? '-' }}</p>
-                <p><strong>Issued:</strong> {{ $trailer->tech_passport_issued ?? '-' }}</p>
-                <p><strong>Expired:</strong> {{ $trailer->tech_passport_expired ?? '-' }}</p>
+                <p><strong>Issued:</strong> {{  $fmt($trailer->tech_passport_issued ?? null) }}</p>
+                <p><strong>Expired:</strong> {{ $fmt($trailer->tech_passport_expired ?? null) }}</p>
             </div>
         </div>
 

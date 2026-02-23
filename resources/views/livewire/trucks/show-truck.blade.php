@@ -1,5 +1,16 @@
 <div class="p-6 bg-white rounded-2xl shadow-lg max-w-6xl mx-auto mt-10 relative">
+@php
+    use Carbon\Carbon;
 
+    $fmt = function ($value) {
+        if (blank($value)) return '-';
+        try {
+            return Carbon::parse($value)->format('d.m.Y');
+        } catch (\Throwable $e) {
+            return '-';
+        }
+    };
+@endphp
     {{-- Верхняя панель действий --}}
     <div class="flex justify-between items-center mb-8">
         <h1 class="text-3xl font-bold text-gray-800">
@@ -31,7 +42,7 @@
         <div class="space-y-2">
             <p><strong>Insurance Company:</strong> {{ $truck->insurance_company }}</p>
             <p><strong>Insurance #:</strong> {{ $truck->insurance_number }}</p>
-            <p><strong>Valid:</strong> {{ $truck->insurance_issued }} → {{ $truck->insurance_expired }}</p>
+            <p><strong>Valid:</strong> {{  $fmt($truck->insurance_issued) }} → {{ $fmt($truck->insurance_expired)    }}</p>
         </div>
     </div>
    {{-- MAPON --}}
@@ -148,54 +159,34 @@
 
 
     {{-- Техосмотр --}}
-    <div class="mb-8">
-        <h2 class="text-xl font-semibold mb-2 border-b pb-1">Inspection</h2>
-        <p><strong>Issued:</strong> {{ $truck->inspection_issued }}</p>
-        <p><strong>Expires:</strong> {{ $truck->inspection_expired }}</p>
-    </div>
+   <div class="mb-8">
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">Inspection</h2>
+    <p><strong>Issued:</strong> {{ $fmt($truck->inspection_issued) }}</p>
+    <p><strong>Expires:</strong> {{ $fmt($truck->inspection_expired) }}</p>
+</div>
 
     {{-- License --}}
-<div class="mb-8">
-    <h2 class="text-xl font-semibold mb-2 border-b pb-1">License</h2>
+<div class="bg-gray-50 border rounded-xl p-4">
+    <p class="text-sm text-gray-500 mb-1">Expired</p>
+    <p class="text-base font-semibold text-gray-800">
+        {{ $truck->license_expired ? $truck->license_expired->format('d.m.Y') : '—' }}
+    </p>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-gray-50 border rounded-xl p-4">
-            <p class="text-sm text-gray-500 mb-1">License Number</p>
-            <p class="text-base font-semibold text-gray-800">
-                {{ $truck->license_number ?? '—' }}
-            </p>
-        </div>
-
-        <div class="bg-gray-50 border rounded-xl p-4">
-            <p class="text-sm text-gray-500 mb-1">Issued</p>
-            <p class="text-base font-semibold text-gray-800">
-                {{ $truck->license_issued?->format('Y-m-d') ?? '—' }}
-            </p>
-        </div>
-
-        <div class="bg-gray-50 border rounded-xl p-4">
-            <p class="text-sm text-gray-500 mb-1">Expired</p>
-            <p class="text-base font-semibold text-gray-800">
-                {{ $truck->license_expired?->format('Y-m-d') ?? '—' }}
-            </p>
-
-            @if($truck->license_expired)
-                @if($truck->license_expired->isPast())
-                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                        Expired
-                    </span>
-                @elseif($truck->license_expired->diffInDays(now()) <= 30)
-                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                        Expires soon
-                    </span>
-                @else
-                    <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                        Valid
-                    </span>
-                @endif
-            @endif
-        </div>
-    </div>
+    @if($truck->license_expired)
+        @if($truck->license_expired->isPast())
+            <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                Expired
+            </span>
+        @elseif($truck->license_expired->diffInDays(now()) <= 30)
+            <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                Expires soon
+            </span>
+        @else
+            <span class="inline-flex mt-2 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                Valid
+            </span>
+        @endif
+    @endif
 </div>
 
 
@@ -203,8 +194,15 @@
     <div class="mb-8">
         <h2 class="text-xl font-semibold mb-2 border-b pb-1">Technical Passport</h2>
         <p><strong>Number:</strong> {{ $truck->tech_passport_nr ?? '-' }}</p>
-        <p><strong>Issued:</strong> {{ $truck->tech_passport_issued ?? '-' }}</p>
-        <p><strong>Expired:</strong> {{ $truck->tech_passport_expired ?? '-' }}</p>
+       <p>
+    <strong>Issued:</strong>
+    {{ $fmt($truck->tech_passport_issued) }}
+</p>
+
+<p>
+    <strong>Expired:</strong>
+    {{ $fmt($truck->tech_passport_expired) }}
+</p>
     </div>
 
     {{-- Фото --}}

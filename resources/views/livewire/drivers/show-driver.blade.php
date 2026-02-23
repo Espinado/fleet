@@ -121,27 +121,59 @@
 </div>
 
 
-            <div>
-                <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 Documents</h2>
-                <p><span class="font-semibold">License:</span>
-                    <span class="text-gray-700">{{ $driver->license_number ?? '-' }}
-                    ({{ $driver->license_issued ?? '-' }} – {{ $driver->license_end ?? '-' }})</span>
-                </p>
-                <p><span class="font-semibold">95 Code:</span>
-                    <span class="text-gray-700">{{ $driver->code95_issued ?? '-' }} – {{ $driver->code95_end ?? '-' }}</span>
-                </p>
-                <p><span class="font-semibold">Permit:</span>
-                    <span class="text-gray-700">{{ $driver->permit_issued ?? '-' }} – {{ $driver->permit_expired ?? '-' }}</span>
-                </p>
-                <p><span class="font-semibold">Medical Exam:</span>
-                    <span class="text-gray-700">{{ $driver->medical_exam_passed ?? $driver->medical_issued ?? '-' }}
-                    – {{ $driver->medical_exam_expired ?? $driver->medical_expired ?? '-' }}</span>
-                </p>
-                <p><span class="font-semibold">Declaration:</span>
-                    <span class="text-gray-700">{{ $driver->declaration_issued ?? '-' }} – {{ $driver->declaration_expired ?? '-' }}</span>
-                </p>
-            </div>
+        @php
+    use Carbon\Carbon;
 
+    $fmt = function ($value) {
+        if (blank($value)) return '-';
+        try {
+            return Carbon::parse($value)->format('d.m.Y');
+        } catch (\Throwable $e) {
+            return '-';
+        }
+    };
+@endphp
+
+<div>
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 Documents</h2>
+
+    <p>
+        <span class="font-semibold">License:</span>
+        <span class="text-gray-700">
+            {{ $driver->license_number ?? '-' }}
+            ({{ $fmt($driver->license_issued) }} – {{ $fmt($driver->license_end) }})
+        </span>
+    </p>
+
+    <p>
+        <span class="font-semibold">95 Code:</span>
+        <span class="text-gray-700">
+            {{ $fmt($driver->code95_issued) }} – {{ $fmt($driver->code95_end) }}
+        </span>
+    </p>
+
+    <p>
+        <span class="font-semibold">Permit:</span>
+        <span class="text-gray-700">
+            {{ $fmt($driver->permit_issued) }} – {{ $fmt($driver->permit_expired) }}
+        </span>
+    </p>
+
+    <p>
+        <span class="font-semibold">Medical Exam:</span>
+        <span class="text-gray-700">
+            {{ $fmt($driver->medical_exam_passed ?? $driver->medical_issued) }}
+            – {{ $fmt($driver->medical_exam_expired ?? $driver->medical_expired) }}
+        </span>
+    </p>
+
+    <p>
+        <span class="font-semibold">Declaration:</span>
+        <span class="text-gray-700">
+            {{ $fmt($driver->declaration_issued) }} – {{ $fmt($driver->declaration_expired) }}
+        </span>
+    </p>
+</div>
             <div>
                 <h2 class="text-xl font-semibold mb-2 border-b pb-1">📌 Status</h2>
                 <p><span class="font-semibold">Current Status:</span> <span class="text-gray-700">{{ $driver->status_label }}</span></p>
