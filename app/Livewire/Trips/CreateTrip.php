@@ -7,6 +7,8 @@ use App\Helpers\CalculateTax;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+
 use App\Models\{
     Trip,
     TripCargo,
@@ -140,11 +142,65 @@ class CreateTrip extends Component
     }
 
     /** ============================================================
+     *  HELPERS: NUM NORMALIZATION
+     * ============================================================ */
+    private function normNumString($v): ?string
+    {
+        if ($v === null) return null;
+        if ($v === '') return null;
+
+        $v = (string) $v;
+
+        // remove spaces + nbsp
+        $v = str_replace(["\xc2\xa0", ' '], '', $v);
+
+        // comma -> dot
+        $v = str_replace(',', '.', $v);
+
+        return $v === '' ? null : $v;
+    }
+
+    private function toFloat($v, float $default = 0.0): float
+    {
+        $v = $this->normNumString($v);
+        if ($v === null) return $default;
+        if (!is_numeric($v)) return $default;
+        return (float) $v;
+    }
+
+    private function toInt($v, int $default = 0): int
+    {
+        if ($v === null || $v === '') return $default;
+        $v = (string) $v;
+        $v = str_replace(["\xc2\xa0", ' '], '', $v);
+        if (!is_numeric($v)) return $default;
+        return (int) $v;
+    }
+
+    private function normalizeInputsForValidation(): void
+    {
+        // normalize cargo price + item numeric fields so Laravel numeric validation works with commas
+        foreach ($this->cargos as $ci => $cargo) {
+            $this->cargos[$ci]['price'] = $this->normNumString($cargo['price'] ?? null);
+
+            // tax_percent is select; but if you ever allow typing, keep safe:
+            $this->cargos[$ci]['tax_percent'] = $this->normNumString($cargo['tax_percent'] ?? null) ?? ($cargo['tax_percent'] ?? null);
+
+            foreach (($cargo['items'] ?? []) as $ii => $item) {
+                foreach (['packages','pallets','units','net_weight','gross_weight','tonnes','volume','loading_meters'] as $f) {
+                    $this->cargos[$ci]['items'][$ii][$f] = $this->normNumString($item[$f] ?? null);
+                }
+            }
+        }
+    }
+
+    /** ============================================================
      *  STEPS
      * ============================================================ */
     public function addStep()
     {
         $this->steps[] = [
+            'uid'        => (string) Str::uuid(),   // ✅ стабильный ключ для wire:key
             'type'       => 'loading',
             'country_id' => null,
             'city_id'    => null,
@@ -168,11 +224,11 @@ class CreateTrip extends Component
         foreach ($this->cargos as &$cargo) {
             $cargo['loading_step_ids'] = array_values(array_filter(
                 $cargo['loading_step_ids'] ?? [],
-                fn($i) => isset($this->steps[$i])
+                fn ($i) => isset($this->steps[$i])
             ));
             $cargo['unloading_step_ids'] = array_values(array_filter(
                 $cargo['unloading_step_ids'] ?? [],
-                fn($i) => isset($this->steps[$i])
+                fn ($i) => isset($this->steps[$i])
             ));
         }
     }
@@ -197,6 +253,8 @@ class CreateTrip extends Component
     public function addCargo()
     {
         $this->cargos[] = [
+            'uid'                => (string) Str::uuid(), // ✅ стабильный ключ для wire:key
+
             'customer_id'        => null,
             'shipper_id'         => null,
             'consignee_id'       => null,
@@ -216,6 +274,7 @@ class CreateTrip extends Component
 
             'items' => [
                 [
+                    'uid'             => (string) Str::uuid(), // ✅
                     'description'     => '',
                     'packages'        => null,
                     'pallets'         => null,
@@ -244,6 +303,7 @@ class CreateTrip extends Component
     public function addItem($cargoIndex)
     {
         $this->cargos[$cargoIndex]['items'][] = [
+            'uid'             => (string) Str::uuid(), // ✅
             'description'     => '',
             'packages'        => null,
             'pallets'         => null,
@@ -264,8 +324,7 @@ class CreateTrip extends Component
     public function removeItem($cargoIndex, $itemIndex)
     {
         unset($this->cargos[$cargoIndex]['items'][$itemIndex]);
-        $this->cargos[$cargoIndex]['items'] =
-            array_values($this->cargos[$cargoIndex]['items']);
+        $this->cargos[$cargoIndex]['items'] = array_values($this->cargos[$cargoIndex]['items']);
     }
 
     /** ============================================================
@@ -274,15 +333,15 @@ class CreateTrip extends Component
     public function updated($name)
     {
         if (preg_match('/^cargos\.(\d+)\.(price|tax_percent)$/', $name, $m)) {
-            $idx = (int)$m[1];
+            $idx = (int) $m[1];
             $this->recalcCargoTotals($idx);
         }
     }
 
     public function recalcCargoTotals($idx)
     {
-        $p  = (float)($this->cargos[$idx]['price'] ?? 0);
-        $t  = (float)($this->cargos[$idx]['tax_percent'] ?? 0);
+        $p = $this->toFloat($this->cargos[$idx]['price'] ?? null, 0.0);
+        $t = $this->toFloat($this->cargos[$idx]['tax_percent'] ?? null, 0.0);
 
         $tax = CalculateTax::calculate($p, $t);
 
@@ -295,6 +354,9 @@ class CreateTrip extends Component
      * ============================================================ */
     public function save()
     {
+        // ✅ важно: чтобы numeric валидация не падала на "1000,50" и т.п.
+        $this->normalizeInputsForValidation();
+
         $rules = [
             'expeditor_id' => 'required|integer',
             'bank_index'   => 'required',
@@ -348,14 +410,14 @@ class CreateTrip extends Component
                 foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
 
                     $hasAny =
-                        (!empty($item['packages'])       && $item['packages'] > 0) ||
-                        (!empty($item['pallets'])        && $item['pallets'] > 0) ||
-                        (!empty($item['units'])          && $item['units'] > 0) ||
-                        (!empty($item['net_weight'])     && $item['net_weight'] > 0) ||
-                        (!empty($item['gross_weight'])   && $item['gross_weight'] > 0) ||
-                        (!empty($item['tonnes'])         && $item['tonnes'] > 0) ||
-                        (!empty($item['volume'])         && $item['volume'] > 0) ||
-                        (!empty($item['loading_meters']) && $item['loading_meters'] > 0);
+                        ($this->toFloat($item['packages'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['pallets'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['units'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['net_weight'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['gross_weight'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['tonnes'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['volume'] ?? null, 0) > 0) ||
+                        ($this->toFloat($item['loading_meters'] ?? null, 0) > 0);
 
                     if (!$hasAny) {
                         $validator->errors()->add(
@@ -444,34 +506,43 @@ class CreateTrip extends Component
             // ------ CARGOS ------
             foreach ($this->cargos as $cargoData) {
 
+                $price = $this->toFloat($cargoData['price'] ?? null, 0.0);
+                $taxPercent = $this->toFloat($cargoData['tax_percent'] ?? null, 0.0);
+
+                // пересчёт перед записью (чтобы не зависеть от фронта)
+                $tax = CalculateTax::calculate($price, $taxPercent);
+
                 $cargo = TripCargo::create([
                     'trip_id'          => $trip->id,
                     'customer_id'      => $cargoData['customer_id'],
                     'shipper_id'       => $cargoData['shipper_id'],
                     'consignee_id'     => $cargoData['consignee_id'],
 
-                    'price'            => $cargoData['price'] ?: 0,
-                    'tax_percent'      => $cargoData['tax_percent'],
-                    'total_tax_amount' => $cargoData['total_tax_amount'],
-                    'price_with_tax'   => $cargoData['price_with_tax'],
+                    'price'            => $price,
+                    'tax_percent'      => $taxPercent,
+                    'total_tax_amount' => $tax['tax_amount'],
+                    'price_with_tax'   => $tax['price_with_tax'],
 
                     'currency'         => $cargoData['currency'],
                     'payment_terms'    => $cargoData['payment_terms'],
                     'payer_type_id'    => $cargoData['payer_type_id'],
                 ]);
 
-                // cargo items (NULL → 0 чтобы БД не падала)
+                // cargo items
                 foreach (($cargoData['items'] ?? []) as $item) {
                     $cargo->items()->create([
                         'description'    => $item['description'] ?? '',
-                        'packages'       => $item['packages'] ?? 0,
-                        'pallets'        => $item['pallets'] ?? 0,
-                        'units'          => $item['units'] ?? 0,
-                        'net_weight'     => $item['net_weight'] ?? 0,
-                        'gross_weight'   => $item['gross_weight'] ?? 0,
-                        'tonnes'         => $item['tonnes'] ?? 0,
-                        'volume'         => $item['volume'] ?? 0,
-                        'loading_meters' => $item['loading_meters'] ?? 0,
+
+                        'packages'       => $this->toInt($item['packages'] ?? null, 0),
+                        'pallets'        => $this->toInt($item['pallets'] ?? null, 0),
+                        'units'          => $this->toInt($item['units'] ?? null, 0),
+
+                        'net_weight'     => $this->toFloat($item['net_weight'] ?? null, 0.0),
+                        'gross_weight'   => $this->toFloat($item['gross_weight'] ?? null, 0.0),
+                        'tonnes'         => $this->toFloat($item['tonnes'] ?? null, 0.0),
+                        'volume'         => $this->toFloat($item['volume'] ?? null, 0.0),
+                        'loading_meters' => $this->toFloat($item['loading_meters'] ?? null, 0.0),
+
                         'hazmat'         => $item['hazmat'] ?? '',
                         'temperature'    => $item['temperature'] ?? '',
                         'stackable'      => (bool)($item['stackable'] ?? false),

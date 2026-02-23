@@ -15,12 +15,8 @@
                 wire:loading.attr="disabled"
                 class="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold
                        bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white shadow">
-                <span wire:loading.remove>
-                    💾 Сохранить
-                </span>
-                <span wire:loading>
-                    ⏳ Сохранение...
-                </span>
+                <span wire:loading.remove>💾 Сохранить</span>
+                <span wire:loading>⏳ Сохранение...</span>
             </button>
         </div>
     </div>
@@ -64,7 +60,6 @@
                 {{ $message }}
             </div>
         @enderror
-
 
         {{-- =========================
              EXPEDITOR
@@ -153,7 +148,6 @@
                 </div>
             </div>
         </section>
-
 
         {{-- =========================
              TRANSPORT
@@ -264,11 +258,7 @@
             </div>
         </section>
 
-        {{-- ========== ЧАСТЬ 1 ЗАКОНЧЕНА ==========
-             ДАЛЕЕ — Steps (Маршрут)
-             Продолжаю в ЧАСТИ 2
-        --}}
-                {{-- =========================
+        {{-- =========================
              STEPS (МАРШРУТ / TripStep)
         ========================== --}}
         <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4">
@@ -309,13 +299,16 @@
 
                     $date = $step['date'] ?? null;
                     $time = $step['time'] ?? null;
-                    $dateTimeShort = $date
-                        ? ($date . ($time ? ' '.$time : ''))
-                        : '—';
+                    $dateTimeShort = $date ? ($date . ($time ? ' '.$time : '')) : '—';
+
+                    $addrKey = "steps.$index.address";
+                    $addrErr = $errors->has($addrKey);
                 @endphp
 
-                <div x-data="{ open: true }"
-                     class="border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden">
+                <div
+                    wire:key="step-{{ $step['uid'] ?? $index }}"
+                    x-data="{ open: true }"
+                    class="border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 overflow-hidden">
 
                     {{-- STEP HEADER --}}
                     <button type="button"
@@ -337,6 +330,10 @@
                                 <span>{{ $stepLocation }}</span>
                                 <span class="text-gray-400">•</span>
                                 <span>{{ $dateTimeShort }}</span>
+                                @if($addrErr)
+                                    <span class="text-gray-400">•</span>
+                                    <span class="text-red-600 font-semibold">❗ Адрес обязателен</span>
+                                @endif
                             </span>
                         </div>
 
@@ -355,9 +352,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             {{-- Тип шага --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Тип шага
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Тип шага</label>
                                 <select
                                     wire:model.live="steps.{{ $index }}.type"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
@@ -371,9 +366,7 @@
 
                             {{-- Дата / время --}}
                             <div class="space-y-1.5 sm:col-span-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Дата / время
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Дата / время</label>
                                 <div class="grid grid-cols-2 gap-2">
                                     <input type="date"
                                            wire:model.live="steps.{{ $index }}.date"
@@ -389,9 +382,7 @@
 
                             {{-- Порядок --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Порядок (order)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Порядок (order)</label>
                                 <input type="number"
                                        wire:model.live="steps.{{ $index }}.order"
                                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs"
@@ -406,9 +397,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             {{-- Страна --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Страна
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Страна</label>
                                 <select
                                     wire:model.live="steps.{{ $index }}.country_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
@@ -424,9 +413,7 @@
 
                             {{-- Город --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Город
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Город</label>
                                 <select
                                     wire:model.live="steps.{{ $index }}.city_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
@@ -442,12 +429,12 @@
 
                             {{-- Адрес --}}
                             <div class="sm:col-span-2">
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Адрес
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Адрес</label>
                                 <input type="text"
                                        wire:model.live="steps.{{ $index }}.address"
-                                       class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 text-xs">
+                                       class="w-full rounded-xl border text-xs
+                                            @if($addrErr) border-red-500 input-error @else border-gray-300 dark:border-gray-700 @endif
+                                            dark:bg-gray-900 dark:text-gray-100">
                                 @error("steps.$index.address")
                                     <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
                                 @enderror
@@ -456,9 +443,7 @@
 
                         {{-- Заметки --}}
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">
-                                Заметки (notes)
-                            </label>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">Заметки (notes)</label>
                             <textarea
                                 rows="2"
                                 wire:model.live="steps.{{ $index }}.notes"
@@ -473,10 +458,7 @@
             @endforelse
         </section>
 
-        {{-- ========== ЧАСТЬ 2 ЗАКОНЧЕНА ==========
-             Далее — CARGOS (часть 3)
-        --}}
-                {{-- =========================
+        {{-- =========================
              CARGOS (MULTI-CARGO)
         ========================== --}}
         <section class="space-y-4">
@@ -502,40 +484,38 @@
 
                     $summaryParts = [];
                     if (!empty($cargo['price_with_tax'])) {
-                        $summaryParts[] = number_format($cargo['price_with_tax'], 2, '.', ' ') . ' € с НДС';
+                        $summaryParts[] = number_format((float)$cargo['price_with_tax'], 2, '.', ' ') . ' € с НДС';
                     }
                     if (!empty($cargo['loading_step_ids'] ?? []) && count($cargo['loading_step_ids']) > 0) {
                         $firstIndex = $cargo['loading_step_ids'][0];
                         if (isset($steps[$firstIndex])) {
-                            $step = $steps[$firstIndex];
-                            $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                            $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                ? getCityNameByCountryId($step['country_id'], $step['city_id'])
+                            $st = $steps[$firstIndex];
+                            $country = !empty($st['country_id']) ? getCountryById($st['country_id']) : null;
+                            $city = (!empty($st['country_id']) && !empty($st['city_id']))
+                                ? getCityNameByCountryId($st['country_id'], $st['city_id'])
                                 : null;
                             $from = $city ?: $country;
-                            if ($from) {
-                                $summaryParts[] = 'от ' . $from;
-                            }
+                            if ($from) $summaryParts[] = 'от ' . $from;
                         }
                     }
                     if (!empty($cargo['unloading_step_ids'] ?? []) && count($cargo['unloading_step_ids']) > 0) {
                         $firstIndex = $cargo['unloading_step_ids'][0];
                         if (isset($steps[$firstIndex])) {
-                            $step = $steps[$firstIndex];
-                            $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                            $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                ? getCityNameByCountryId($step['country_id'], $step['city_id'])
+                            $st = $steps[$firstIndex];
+                            $country = !empty($st['country_id']) ? getCountryById($st['country_id']) : null;
+                            $city = (!empty($st['country_id']) && !empty($st['city_id']))
+                                ? getCityNameByCountryId($st['country_id'], $st['city_id'])
                                 : null;
                             $to = $city ?: $country;
-                            if ($to) {
-                                $summaryParts[] = 'до ' . $to;
-                            }
+                            if ($to) $summaryParts[] = 'до ' . $to;
                         }
                     }
                 @endphp
 
-                <div x-data="{ open: true }"
-                     class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                <div
+                    wire:key="cargo-{{ $cargo['uid'] ?? $index }}"
+                    x-data="{ open: true }"
+                    class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
 
                     {{-- CARGO HEADER --}}
                     <div class="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800">
@@ -553,12 +533,14 @@
                             @endif
                         </button>
 
-                        <button
-                            type="button"
-                            wire:click="removeCargo({{ $index }})"
-                            class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
-                            ✕ Удалить
-                        </button>
+                        @if(count($cargos) > 1)
+                            <button
+                                type="button"
+                                wire:click="removeCargo({{ $index }})"
+                                class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
+                                ✕ Удалить
+                            </button>
+                        @endif
                     </div>
 
                     {{-- CARGO BODY --}}
@@ -569,9 +551,7 @@
 
                             {{-- Customer --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Заказчик (customer)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Заказчик (customer)</label>
                                 <select
                                     wire:model.live="cargos.{{ $index }}.customer_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs sm:text-sm">
@@ -620,9 +600,7 @@
 
                             {{-- Shipper --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Грузоотправитель (shipper)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Грузоотправитель (shipper)</label>
                                 <select
                                     wire:model.live="cargos.{{ $index }}.shipper_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs sm:text-sm">
@@ -671,9 +649,7 @@
 
                             {{-- Consignee --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Грузополучатель (consignee)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Грузополучатель (consignee)</label>
                                 <select
                                     wire:model.live="cargos.{{ $index }}.consignee_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs sm:text-sm">
@@ -721,7 +697,6 @@
                             </div>
                         </div>
 
-
                         {{-- ===== Привязка к шагам маршрута (multi-select) ===== --}}
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-3">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -729,32 +704,30 @@
                                 {{-- Мультивыбор погрузки --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-xs font-medium text-gray-500">
-                                            ⬆ Шаги погрузки (multi-select)
-                                        </label>
+                                        <label class="block text-xs font-medium text-gray-500">⬆ Шаги погрузки (multi-select)</label>
                                         <span class="text-[10px] text-gray-400">Можно выбрать несколько</span>
                                     </div>
 
                                     <div class="space-y-2">
-                                        @forelse($steps as $sIndex => $step)
-                                            @php $type = $step['type'] ?? 'loading'; @endphp
-                                            @continue($type !== 'loading')
+                                        @forelse($steps as $sIndex => $st)
+                                            @php $t = $st['type'] ?? 'loading'; @endphp
+                                            @continue($t !== 'loading')
 
                                             @php
-                                                $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                                                $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                                    ? getCityNameByCountryId($step['country_id'], $step['city_id'])
+                                                $country = !empty($st['country_id']) ? getCountryById($st['country_id']) : null;
+                                                $city = (!empty($st['country_id']) && !empty($st['city_id']))
+                                                    ? getCityNameByCountryId($st['country_id'], $st['city_id'])
                                                     : null;
                                                 $location = $city ?: $country ?: '—';
 
-                                                $date = $step['date'] ?? null;
-                                                $time = $step['time'] ?? null;
+                                                $date = $st['date'] ?? null;
+                                                $time = $st['time'] ?? null;
                                                 $dateFormatted = $date
                                                     ? \Carbon\Carbon::parse($date.' '.($time ?: '00:00'))->format('d.m.Y H:i')
                                                     : '—';
                                             @endphp
 
-                                            <label class="block">
+                                            <label class="block" wire:key="cargo-{{ $cargo['uid'] ?? $index }}-load-step-{{ $st['uid'] ?? $sIndex }}">
                                                 <input
                                                     type="checkbox"
                                                     class="peer hidden"
@@ -794,32 +767,30 @@
                                 {{-- Мультивыбор разгрузки --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
-                                        <label class="block text-xs font-medium text-gray-500">
-                                            ⬇ Шаги разгрузки (multi-select)
-                                        </label>
+                                        <label class="block text-xs font-medium text-gray-500">⬇ Шаги разгрузки (multi-select)</label>
                                         <span class="text-[10px] text-gray-400">Можно выбрать несколько</span>
                                     </div>
 
                                     <div class="space-y-2">
-                                        @forelse($steps as $sIndex => $step)
-                                            @php $type = $step['type'] ?? 'loading'; @endphp
-                                            @continue($type !== 'unloading')
+                                        @forelse($steps as $sIndex => $st)
+                                            @php $t = $st['type'] ?? 'loading'; @endphp
+                                            @continue($t !== 'unloading')
 
                                             @php
-                                                $country = !empty($step['country_id']) ? getCountryById($step['country_id']) : null;
-                                                $city = (!empty($step['country_id']) && !empty($step['city_id']))
-                                                    ? getCityNameByCountryId($step['country_id'], $step['city_id'])
+                                                $country = !empty($st['country_id']) ? getCountryById($st['country_id']) : null;
+                                                $city = (!empty($st['country_id']) && !empty($st['city_id']))
+                                                    ? getCityNameByCountryId($st['country_id'], $st['city_id'])
                                                     : null;
                                                 $location = $city ?: $country ?: '—';
 
-                                                $date = $step['date'] ?? null;
-                                                $time = $step['time'] ?? null;
+                                                $date = $st['date'] ?? null;
+                                                $time = $st['time'] ?? null;
                                                 $dateFormatted = $date
                                                     ? \Carbon\Carbon::parse($date.' '.($time ?: '00:00'))->format('d.m.Y H:i')
                                                     : '—';
                                             @endphp
 
-                                            <label class="block">
+                                            <label class="block" wire:key="cargo-{{ $cargo['uid'] ?? $index }}-unload-step-{{ $st['uid'] ?? $sIndex }}">
                                                 <input
                                                     type="checkbox"
                                                     class="peer hidden"
@@ -855,20 +826,18 @@
                                         <div class="mt-1 text-[11px] text-red-500">{{ $message }}</div>
                                     @enderror
                                 </div>
+
                             </div>
                         </div>
 
-
                         {{-- Payment section --}}
                         <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
-
                             {{-- Цена без НДС --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Цена (без НДС)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Цена (без НДС)</label>
                                 <input
                                     type="text"
+                                    inputmode="decimal"
                                     wire:model.live="cargos.{{ $index }}.price"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
                                 @error("cargos.$index.price")
@@ -878,9 +847,7 @@
 
                             {{-- НДС % --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    НДС, %
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">НДС, %</label>
                                 <select
                                     wire:model.live="cargos.{{ $index }}.tax_percent"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
@@ -895,9 +862,7 @@
 
                             {{-- Сумма НДС --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Сумма НДС
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Сумма НДС</label>
                                 <input
                                     type="number"
                                     wire:model.defer="cargos.{{ $index }}.total_tax_amount"
@@ -907,9 +872,7 @@
 
                             {{-- Цена с НДС --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Итого с НДС
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Итого с НДС</label>
                                 <input
                                     type="number"
                                     wire:model.defer="cargos.{{ $index }}.price_with_tax"
@@ -919,9 +882,7 @@
 
                             {{-- Оплата до --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Оплата до
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Оплата до</label>
                                 <input
                                     type="date"
                                     wire:model.defer="cargos.{{ $index }}.payment_terms"
@@ -930,9 +891,7 @@
 
                             {{-- Плательщик --}}
                             <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">
-                                    Плательщик (тип)
-                                </label>
+                                <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик (тип)</label>
                                 <select
                                     wire:model.live="cargos.{{ $index }}.payer_type_id"
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
@@ -946,211 +905,195 @@
                             </div>
                         </div>
 
-
-                        {{-- === ITEMS BLOCK начинается в ЧАСТИ 4 === --}}
-                                                {{-- =========================
+                        {{-- =========================
                              CARGO ITEMS (EU METRICS)
                         ========================== --}}
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-2">
 
-    <div class="flex items-center justify-between">
-        <div class="text-xs font-semibold text-gray-600 dark:text-gray-300">
-            📑 Позиции груза
-        </div>
+                            <div class="flex items-center justify-between">
+                                <div class="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                    📑 Позиции груза
+                                </div>
 
-        <button type="button"
-                wire:click="addItem({{ $index }})"
-                class="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">
-            ➕ Добавить позицию
-        </button>
-    </div>
+                                <button type="button"
+                                        wire:click="addItem({{ $index }})"
+                                        class="text-xs px-2 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100">
+                                    ➕ Добавить позицию
+                                </button>
+                            </div>
 
-    <div class="space-y-2">
+                            <div class="space-y-2">
+                                @foreach($cargo['items'] as $itemIndex => $item)
 
-        @foreach($cargo['items'] as $itemIndex => $item)
+                                    @php
+                                        $key = "cargos.$index.items.$itemIndex.measurements";
+                                        $itemError = $errors->has($key);
+                                    @endphp
 
-            @php
-                $key = "cargos.$index.items.$itemIndex.measurements";
-                $itemError = $errors->has($key);
-            @endphp
+                                    <div
+                                        wire:key="item-{{ $cargo['uid'] ?? $index }}-{{ $item['uid'] ?? $itemIndex }}"
+                                        x-data="{ open: {{ $itemError ? 'false' : 'true' }} }"
+                                        class="rounded-2xl px-3 py-3 space-y-3 border transition
+                                               @if($itemError)
+                                                   border-red-500 bg-red-50 dark:bg-red-900/20
+                                               @else
+                                                   border-gray-100 dark:border-gray-800
+                                               @endif">
 
-            {{-- =========================
-                 ITEM CONTAINER
-            ========================== --}}
-            <div x-data="{ open: {{ $itemError ? 'false' : 'true' }} }"
-                 class="rounded-2xl px-3 py-3 space-y-3 border transition
-                        @if($itemError)
-                            border-red-500 bg-red-50 dark:bg-red-900/20
-                        @else
-                            border-gray-100 dark:border-gray-800
-                        @endif">
+                                        {{-- HEADER --}}
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                                    Позиция #{{ $itemIndex + 1 }}
+                                                </span>
 
-                {{-- HEADER --}}
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
+                                                @if($itemError)
+                                                    <span class="text-xs text-red-600 font-semibold">
+                                                        ❗ Укажите хотя бы одну единицу измерения
+                                                    </span>
+                                                @endif
+                                            </div>
 
-                        <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">
-                            Позиция #{{ $itemIndex + 1 }}
-                        </span>
+                                            @if(count($cargo['items']) > 1)
+                                                <button type="button"
+                                                        wire:click="removeItem({{ $index }}, {{ $itemIndex }})"
+                                                        class="text-[10px] text-red-500 hover:text-red-600 px-1.5 py-0.5 rounded-lg hover:bg-red-50">
+                                                    ✕
+                                                </button>
+                                            @endif
+                                        </div>
 
-                        @if($itemError)
-                            <span class="text-xs text-red-600 font-semibold">
-                                ❗ Укажите хотя бы одну единицу измерения
-                            </span>
-                        @endif
+                                        {{-- Описание --}}
+                                        <div>
+                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Описание</div>
+                                            <input type="text"
+                                                   placeholder="Например: мебель, техника, продуктовая группа…"
+                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
+                                                   class="w-full rounded-xl border text-xs
+                                                          @if($itemError) border-red-500 input-error @else border-gray-300 dark:border-gray-700 @endif
+                                                          dark:bg-gray-800 dark:text-gray-100">
+                                        </div>
 
-                    </div>
+                                        {{-- Количества --}}
+                                        <div>
+                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Количества</div>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                @foreach(['packages'=>'Упаковок', 'pallets'=>'Паллет', 'units'=>'Штук'] as $field => $placeholder)
+                                                    <input type="text"
+                                                           inputmode="numeric"
+                                                           placeholder="{{ $placeholder }}"
+                                                           wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
+                                                           class="w-full rounded-xl border text-[11px]
+                                                                  @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                                  dark:bg-gray-800 dark:text-gray-100">
+                                                @endforeach
+                                            </div>
+                                        </div>
 
-                    @if(count($cargo['items']) > 1)
-                        <button type="button"
-                                wire:click="removeItem({{ $index }}, {{ $itemIndex }})"
-                                class="text-[10px] text-red-500 hover:text-red-600 px-1.5 py-0.5 rounded-lg hover:bg-red-50">
-                            ✕
-                        </button>
-                    @endif
-                </div>
+                                        {{-- Вес --}}
+                                        <div>
+                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Вес</div>
+                                            <div class="grid grid-cols-3 gap-2">
+                                                @foreach(['net_weight'=>'Нетто, кг', 'gross_weight'=>'Брутто, кг', 'tonnes'=>'Тонны, т'] as $field => $placeholder)
+                                                    <input type="text"
+                                                           inputmode="decimal"
+                                                           placeholder="{{ $placeholder }}"
+                                                           wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
+                                                           class="w-full rounded-xl border text-[11px]
+                                                                  @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                                  dark:bg-gray-800 dark:text-gray-100">
+                                                @endforeach
+                                            </div>
+                                        </div>
 
-                {{-- ============= Описание ============= --}}
-                <div>
-                    <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Описание</div>
-                    <input type="text"
-                           placeholder="Например: мебель, техника, продуктовая группа…"
-                           wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
-                           class="w-full rounded-xl border text-xs
-                                  @if($itemError) border-red-500 input-error @else border-gray-300 dark:border-gray-700 @endif
-                                  dark:bg-gray-800 dark:text-gray-100">
-                </div>
+                                        {{-- Объём / LM --}}
+                                        <div>
+                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Объём / Длина загрузки</div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                @foreach(['volume'=>'Объём (м³)', 'loading_meters'=>'LM — погрузочные метры'] as $field => $placeholder)
+                                                    <input type="text"
+                                                           inputmode="decimal"
+                                                           placeholder="{{ $placeholder }}"
+                                                           wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
+                                                           class="w-full rounded-xl border text-[11px]
+                                                                  @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                                  dark:bg-gray-800 dark:text-gray-100">
+                                                @endforeach
+                                            </div>
+                                        </div>
 
-                {{-- ============= Количества ============= --}}
-                <div>
-                    <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Количества</div>
-                    <div class="grid grid-cols-3 gap-2">
+                                        {{-- Условия перевозки --}}
+                                        <div>
+                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Условия перевозки</div>
+                                            <div class="grid grid-cols-3 gap-2 items-center">
+                                                <input type="text"
+                                                       placeholder="Темп. +2..+6"
+                                                       wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.temperature"
+                                                       class="w-full rounded-xl border text-[11px]
+                                                              @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                              dark:bg-gray-800 dark:text-gray-100">
 
-                        @foreach(['packages'=>'Упаковок', 'pallets'=>'Паллет', 'units'=>'Штук'] as $field => $placeholder)
-                            <input type="text"
-                                   placeholder="{{ $placeholder }}"
-                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
-                                   class="w-full rounded-xl border text-[11px]
-                                          @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                          dark:bg-gray-800 dark:text-gray-100">
-                        @endforeach
+                                                <select
+                                                    wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
+                                                    class="w-full rounded-xl border text-[11px]
+                                                           @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                           dark:bg-gray-800 dark:text-gray-100">
+                                                    <option value="">ADR</option>
+                                                    <option value="2">2</option>
+                                                    <option value="3">3</option>
+                                                    <option value="4.1">4.1</option>
+                                                    <option value="4.2">4.2</option>
+                                                    <option value="4.3">4.3</option>
+                                                    <option value="5.1">5.1</option>
+                                                    <option value="5.2">5.2</option>
+                                                    <option value="6.1">6.1</option>
+                                                    <option value="6.2">6.2</option>
+                                                    <option value="8">8</option>
+                                                    <option value="9">9</option>
+                                                </select>
 
-                    </div>
-                </div>
+                                                <div class="flex items-center gap-1">
+                                                    <input type="checkbox"
+                                                           id="stackable_{{ $cargo['uid'] ?? $index }}_{{ $item['uid'] ?? $itemIndex }}"
+                                                           wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.stackable"
+                                                           class="rounded border text-[11px]
+                                                                  @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-600 @endif
+                                                                  dark:bg-gray-800">
+                                                    <label for="stackable_{{ $cargo['uid'] ?? $index }}_{{ $item['uid'] ?? $itemIndex }}"
+                                                           class="text-[11px] text-gray-600 dark:text-gray-300">
+                                                        Штабелируется
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                {{-- ============= Вес ============= --}}
-                <div>
-                    <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Вес</div>
-                    <div class="grid grid-cols-3 gap-2">
+                                        {{-- COMMENT / INSTRUCTIONS --}}
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            <textarea rows="2"
+                                                      placeholder="Инструкции"
+                                                      wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.instructions"
+                                                      class="w-full rounded-xl border text-[11px]
+                                                             @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                             dark:bg-gray-800 dark:text-gray-100"></textarea>
 
-                        @foreach(['net_weight'=>'Нетто, кг', 'gross_weight'=>'Брутто, кг', 'tonnes'=>'Тонны, т'] as $field => $placeholder)
-                            <input type="text"
-                                   placeholder="{{ $placeholder }}"
-                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
-                                   class="w-full rounded-xl border text-[11px]
-                                          @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                          dark:bg-gray-800 dark:text-gray-100">
-                        @endforeach
+                                            <textarea rows="2"
+                                                      placeholder="Комментарии"
+                                                      wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks"
+                                                      class="w-full rounded-xl border text-[11px]
+                                                             @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                             dark:bg-gray-800 dark:text-gray-100"></textarea>
+                                        </div>
 
-                    </div>
-                </div>
+                                        @error($key)
+                                            <div class="text-[11px] text-red-600 mt-1 font-semibold">
+                                                {{ $message }}
+                                            </div>
+                                        @enderror
 
-                {{-- ============= Объём / LM ============= --}}
-                <div>
-                    <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Объём / Длина загрузки</div>
-                    <div class="grid grid-cols-2 gap-2">
-
-                        @foreach(['volume'=>'Объём (м³)', 'loading_meters'=>'LM — погрузочные метры'] as $field => $placeholder)
-                            <input type="text"
-                                   placeholder="{{ $placeholder }}"
-                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.{{ $field }}"
-                                   class="w-full rounded-xl border text-[11px]
-                                          @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                          dark:bg-gray-800 dark:text-gray-100">
-                        @endforeach
-
-                    </div>
-                </div>
-
-                {{-- ============= Условия перевозки ============= --}}
-                <div>
-                    <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Условия перевозки</div>
-                    <div class="grid grid-cols-3 gap-2 items-center">
-
-                        <input type="text"
-                               placeholder="Темп. +2..+6"
-                               wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.temperature"
-                               class="w-full rounded-xl border text-[11px]
-                                      @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                      dark:bg-gray-800 dark:text-gray-100">
-
-                        <select
-                            wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
-                            class="w-full rounded-xl border text-[11px]
-                                   @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                   dark:bg-gray-800 dark:text-gray-100">
-                            <option value="">ADR</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4.1">4.1</option>
-                            <option value="4.2">4.2</option>
-                            <option value="4.3">4.3</option>
-                            <option value="5.1">5.1</option>
-                            <option value="5.2">5.2</option>
-                            <option value="6.1">6.1</option>
-                            <option value="6.2">6.2</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                        </select>
-
-                        <div class="flex items-center gap-1">
-                            <input type="checkbox"
-                                   id="stackable_{{ $index }}_{{ $itemIndex }}"
-                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.stackable"
-                                   class="rounded border text-[11px]
-                                          @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-600 @endif
-                                          dark:bg-gray-800">
-                            <label for="stackable_{{ $index }}_{{ $itemIndex }}"
-                                   class="text-[11px] text-gray-600 dark:text-gray-300">
-                                Штабелируется
-                            </label>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
-
-                    </div>
-                </div>
-
-                {{-- COMMENT / INSTRUCTIONS --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-
-                    <textarea rows="2"
-                              placeholder="Инструкции"
-                              wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.instructions"
-                              class="w-full rounded-xl border text-[11px]
-                                     @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                     dark:bg-gray-800 dark:text-gray-100"></textarea>
-
-                    <textarea rows="2"
-                              placeholder="Комментарии"
-                              wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks"
-                              class="w-full rounded-xl border text-[11px]
-                                     @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
-                                     dark:bg-gray-800 dark:text-gray-100"></textarea>
-
-                </div>
-
-                {{-- === ERROR UNDER ITEM === --}}
-                @error($key)
-                    <div class="text-[11px] text-red-600 mt-1 font-semibold">
-                        {{ $message }}
-                    </div>
-                @enderror
-
-            </div> {{-- ITEM END --}}
-        @endforeach
-
-    </div>
-</div>
-
 
                     </div> {{-- /CARGO BODY END --}}
                 </div> {{-- /CARGO CONTAINER END --}}
@@ -1160,8 +1103,8 @@
                 </div>
             @endforelse
         </section>
-    </div>
 
+    </div>
 
     {{-- =========================
          BOTTOM FIXED ACTION BAR
@@ -1176,36 +1119,23 @@
                 wire:loading.attr="disabled"
                 class="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold
                        bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white shadow">
-                <span wire:loading.remove>
-                    💾 Сохранить рейс
-                </span>
-                <span wire:loading>
-                    ⏳ Сохранение...
-                </span>
+                <span wire:loading.remove>💾 Сохранить рейс</span>
+                <span wire:loading>⏳ Сохранение...</span>
             </button>
         </div>
     </div>
 </div>
+
 <script>
     document.addEventListener("livewire:initialized", () => {
         Livewire.hook('message.processed', () => {
-
-            // 1) Находим первое поле с ошибкой
             const firstError = document.querySelector('.input-error');
-
             if (firstError) {
-                // Авто-фокус
                 firstError.focus({ preventScroll: true });
-
-                // Авто-скролл
-                const yOffset = -140; // чтобы не скрывалось под хедером
+                const yOffset = -140;
                 const y = firstError.getBoundingClientRect().top + window.scrollY + yOffset;
-
                 window.scrollTo({ top: y, behavior: 'smooth' });
             }
         });
     });
 </script>
-
-
-
