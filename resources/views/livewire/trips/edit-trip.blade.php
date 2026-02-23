@@ -159,111 +159,122 @@
              TRANSPORT
         ========================== --}}
         <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
-                🚚 Транспорт
-            </h2>
+    <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+        🚚 Транспорт
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {{-- Driver --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Водитель</label>
+            <select wire:model.live="driver_id"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— выбрать —</option>
+                @foreach($drivers as $driver)
+                    <option value="{{ $driver->id }}">{{ $driver->first_name }} {{ $driver->last_name }}</option>
+                @endforeach
+            </select>
+            @error('driver_id') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        </div>
+
+        {{-- Truck --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Тягач</label>
+            <select wire:model.live="truck_id"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— выбрать —</option>
+                @foreach($trucks as $truck)
+                    <option value="{{ $truck->id }}">{{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})</option>
+                @endforeach
+            </select>
+            @error('truck_id') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        </div>
+
+        {{-- Trailer --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Прицеп</label>
+            <select wire:model.live="trailer_id"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— без прицепа —</option>
+                @foreach($trailers as $trailer)
+                    <option value="{{ $trailer->id }}">{{ $trailer->plate }} ({{ $trailer->brand }})</option>
+                @endforeach
+            </select>
+            @error('trailer_id') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+
+            @if($this->trailerTypeMeta)
+                <div class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
+                            border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <span class="text-sm leading-none">{{ $this->trailerTypeMeta['icon'] }}</span>
+                    <span class="text-gray-700 dark:text-gray-200">{{ $this->trailerTypeMeta['label'] }}</span>
+                    <span class="text-[10px] text-gray-400">#{{ $this->trailerTypeMeta['id'] }}</span>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- container-only fields --}}
+    @if($this->isContainerTrailer)
+        <div class="rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/10 p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    📦 Контейнер
+                </div>
+                <div class="text-[11px] text-gray-500 dark:text-gray-400">
+                    Можно оставить пустым (если номера ещё неизвестны)
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {{-- Driver --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Водитель
-                    </label>
-                    <select
-                        wire:model.live="driver_id"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— выбрать —</option>
-                        @foreach($drivers as $driver)
-                            <option value="{{ $driver->id }}">
-                                {{ $driver->first_name }} {{ $driver->last_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('driver_id')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- Truck --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Тягач
-                    </label>
-                    <select
-                        wire:model.live="truck_id"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— выбрать —</option>
-                        @foreach($trucks as $truck)
-                            <option value="{{ $truck->id }}">
-                                {{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('truck_id')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- Trailer --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Прицеп
-                    </label>
-                    <select
-                        wire:model.live="trailer_id"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— без прицепа —</option>
-                        @foreach($trailers as $trailer)
-                            <option value="{{ $trailer->id }}">
-                                {{ $trailer->plate }} ({{ $trailer->brand }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                {{-- Start date --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Дата начала
-                    </label>
-                    <input type="date"
-                           wire:model.defer="start_date"
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('start_date')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- End date --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Дата окончания
-                    </label>
-                    <input type="date"
-                           wire:model.defer="end_date"
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('end_date')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- Currency --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Валюта рейса
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        Номер контейнера (cont_nr)
                     </label>
                     <input type="text"
-                           wire:model.defer="currency"
+                           wire:model.defer="cont_nr"
+                           placeholder="Напр. MSKU1234567"
                            class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('currency')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
+                    @error('cont_nr') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        Номер пломбы (seal_nr)
+                    </label>
+                    <input type="text"
+                           wire:model.defer="seal_nr"
+                           placeholder="Напр. 998877"
+                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                    @error('seal_nr') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
                 </div>
             </div>
-        </section>
+        </div>
+    @endif
 
+    {{-- dates/currency --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Дата начала</label>
+            <input type="date" wire:model.defer="start_date"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('start_date') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Дата окончания</label>
+            <input type="date" wire:model.defer="end_date"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('end_date') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">Валюта рейса</label>
+            <input type="text" wire:model.defer="currency"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('currency') <div class="text-xs text-red-600 mt-1">{{ $message }}</div> @enderror
+        </div>
+    </div>
+</section>
 
         {{-- =========================
              STEPS (МАРШРУТ / TripStep)

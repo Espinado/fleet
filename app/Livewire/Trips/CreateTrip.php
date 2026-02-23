@@ -37,7 +37,10 @@ class CreateTrip extends Component
      * ============================================================ */
     public $driver_id;
     public $truck_id;
-    public $trailer_id;
+ public ?int $trailer_id = null;                 // выбранный trailer.id (FK в trips)
+public ?int $selected_trailer_type_id = null;   // выбранный тип прицепа (trailers.type_id)
+public ?string $cont_nr = null;
+public ?string $seal_nr = null;
 
     public $drivers = [];
     public $trucks = [];
@@ -66,17 +69,20 @@ class CreateTrip extends Component
     /** ============================================================
      *  MOUNT
      * ============================================================ */
-    public function mount()
-    {
-        $this->drivers  = Driver::where('is_active', 1)->get();
-        $this->trucks   = Truck::where('is_active', 1)->get();
-        $this->trailers = Trailer::where('is_active', 1)->get();
+   public function mount()
+{
+    $this->drivers  = Driver::where('is_active', 1)->get();
+    $this->trucks   = Truck::where('is_active', 1)->get();
+    $this->trailers = Trailer::where('is_active', 1)->get();
 
-        $this->payers = config('payers', []);
+    $this->payers = config('payers', []);
 
-        $this->addStep();
-        $this->addCargo();
-    }
+    // если trailer_id уже стоит (редко, но ок)
+    $this->updatedTrailerId($this->trailer_id);
+
+    $this->addStep();
+    $this->addCargo();
+}
 
     /** ============================================================
      *  EXPEDITOR
@@ -365,7 +371,8 @@ class CreateTrip extends Component
             'start_date'   => 'required|date',
             'end_date'     => 'required|date',
             'currency'     => 'required|string',
-
+             'cont_nr' => 'nullable|string|max:50',
+           'seal_nr' => 'nullable|string|max:50',
             // шаги маршрута
             'steps.*.type'       => 'required',
             'steps.*.country_id' => 'required|integer',
@@ -400,6 +407,8 @@ class CreateTrip extends Component
             'currency'     => $this->currency,
             'steps'        => $this->steps,
             'cargos'       => $this->cargos,
+            'cont_nr' => $this->cont_nr,
+            'seal_nr' => $this->seal_nr,
         ];
 
         $validator = Validator::make($data, $rules, $messages);
@@ -478,6 +487,8 @@ class CreateTrip extends Component
 
                 'currency'  => $this->currency,
                 'status'    => $this->status,
+                'cont_nr' => $this->cont_nr,
+                'seal_nr' => $this->seal_nr,
             ]);
 
             // ------ STEPS ------
@@ -598,4 +609,52 @@ class CreateTrip extends Component
             'taxRates'   => $this->taxRates,
         ])->layout('layouts.app');
     }
+
+    private function containerTypeId(): int
+{
+    $types = config('trailer-types.types', []);
+    $id = array_search('container', $types, true);
+
+    return $id ?: 2; // fallback
+}
+
+public function getIsContainerTrailerProperty(): bool
+{
+    return (int)($this->selected_trailer_type_id ?? 0) === (int)$this->containerTypeId();
+}
+public function updatedTrailerId($value): void
+{
+    // trailer_id = trailers.id (FK)
+    $this->trailer_id = $value ? (int)$value : null;
+
+    // selected_trailer_type_id = trailers.type_id
+    $this->selected_trailer_type_id = $this->trailer_id
+        ? (int) Trailer::whereKey($this->trailer_id)->value('type_id')
+        : null;
+
+    // если НЕ контейнер — чистим поля
+    if (!$this->isContainerTrailer) {
+        $this->cont_nr = null;
+        $this->seal_nr = null;
+    }
+}
+
+public function getTrailerTypeMetaProperty(): ?array
+{
+    if (!$this->selected_trailer_type_id) return null;
+
+    $types  = config('trailer-types.types', []);   // [1=>'cargo',2=>'container',3=>'ref']
+    $labels = config('trailer-types.labels', []);
+    $icons  = config('trailer-types.icons', []);
+
+    $key = $types[$this->selected_trailer_type_id] ?? null;
+    if (!$key) return null;
+
+    return [
+        'id'    => $this->selected_trailer_type_id,
+        'key'   => $key,
+        'label' => $labels[$key] ?? $key,
+        'icon'  => $icons[$key] ?? '🚚',
+    ];
+}
 }

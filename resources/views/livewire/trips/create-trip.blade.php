@@ -61,6 +61,7 @@
             </div>
         @enderror
 
+
         {{-- =========================
              EXPEDITOR
         ========================== --}}
@@ -76,6 +77,7 @@
                     <label class="block text-xs font-medium text-gray-500 mb-1">
                         Выберите экспедитора
                     </label>
+
                     <select
                         wire:model.live="expeditor_id"
                         class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
@@ -92,6 +94,7 @@
                     <label class="block text-xs font-medium text-gray-500 mb-1 mt-3">
                         Банковский счёт
                     </label>
+
                     <select
                         wire:model.live="bank_index"
                         class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
@@ -134,7 +137,7 @@
                             </div>
                         </div>
 
-                        <div class="text-gray-700 dark:text-gray-200 pt-1 border-top border-gray-200/70 dark:border-gray-700/70 mt-1">
+                        <div class="text-gray-700 dark:text-gray-200 pt-1 border-t border-gray-200/70 dark:border-gray-700/70 mt-1">
                             <div>Phone: <span class="font-medium">{{ $expeditorData['phone'] ?? '—' }}</span></div>
                             <div>Email: <span class="font-medium">{{ $expeditorData['email'] ?? '—' }}</span></div>
                         </div>
@@ -149,115 +152,183 @@
             </div>
         </section>
 
-        {{-- =========================
-             TRANSPORT
-        ========================== --}}
-        <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4">
-            <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
-                🚚 Транспорт
-            </h2>
+{{-- =========================
+     TRANSPORT
+========================== --}}
+<section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4">
+    <h2 class="text-base sm:text-lg font-semibold text-gray-800 dark:text-gray-100">
+        🚚 Транспорт
+    </h2>
+
+    {{-- top selects --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {{-- Driver --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Водитель
+            </label>
+            <select
+                wire:model.live="driver_id"
+                class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— выбрать —</option>
+                @foreach($drivers as $driver)
+                    <option value="{{ $driver->id }}">
+                        {{ $driver->first_name }} {{ $driver->last_name }}
+                    </option>
+                @endforeach
+            </select>
+            @error('driver_id')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        {{-- Truck --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Тягач
+            </label>
+            <select
+                wire:model.live="truck_id"
+                class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— выбрать —</option>
+                @foreach($trucks as $truck)
+                    <option value="{{ $truck->id }}">
+                        {{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})
+                    </option>
+                @endforeach
+            </select>
+            @error('truck_id')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        {{-- Trailer --}}
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Прицеп
+            </label>
+
+            <select
+                wire:model.live="trailer_id"
+                class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                <option value="">— без прицепа —</option>
+                @foreach($trailers as $trailer)
+                    <option value="{{ $trailer->id }}">
+                        {{ $trailer->plate }} ({{ $trailer->brand }})
+                    </option>
+                @endforeach
+            </select>
+
+            @error('trailer_id')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+
+            {{-- type badge (icon + label from config) --}}
+            @if($this->trailerTypeMeta)
+                <div class="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold
+                            border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                    <span class="text-sm leading-none">{{ $this->trailerTypeMeta['icon'] }}</span>
+                    <span class="text-gray-700 dark:text-gray-200">
+                        {{ $this->trailerTypeMeta['label'] }}
+                    </span>
+                    <span class="text-[10px] text-gray-400">
+                        #{{ $this->trailerTypeMeta['id'] }}
+                    </span>
+
+                    @if($this->isContainerTrailer)
+                        <span class="ml-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold
+                                     bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">
+                            контейнер
+                        </span>
+                    @endif
+                </div>
+            @endif
+        </div>
+    </div>
+
+    {{-- container-only fields --}}
+    @if($this->isContainerTrailer)
+        <div class="rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/10 p-4">
+            <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                    {{ config('trailer-types.icons.container', '📦') }} Контейнер
+                </div>
+                <div class="text-[11px] text-gray-500 dark:text-gray-400">
+                    Можно оставить пустым (если номера ещё неизвестны)
+                </div>
+            </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {{-- Driver --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Водитель
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        Номер контейнера (cont_nr)
                     </label>
-                    <select
-                        wire:model.live="driver_id"
+                    <input
+                        type="text"
+                        wire:model.defer="cont_nr"
+                        placeholder="Напр. MSKU1234567"
                         class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— выбрать —</option>
-                        @foreach($drivers as $driver)
-                            <option value="{{ $driver->id }}">
-                                {{ $driver->first_name }} {{ $driver->last_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('driver_id')
+                    @error('cont_nr')
                         <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                     @enderror
                 </div>
 
-                {{-- Truck --}}
                 <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Тягач
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                        Номер пломбы (seal_nr)
                     </label>
-                    <select
-                        wire:model.live="truck_id"
+                    <input
+                        type="text"
+                        wire:model.defer="seal_nr"
+                        placeholder="Напр. 998877"
                         class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— выбрать —</option>
-                        @foreach($trucks as $truck)
-                            <option value="{{ $truck->id }}">
-                                {{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('truck_id')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- Trailer --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Прицеп
-                    </label>
-                    <select
-                        wire:model.live="trailer_id"
-                        class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                        <option value="">— без прицепа —</option>
-                        @foreach($trailers as $trailer)
-                            <option value="{{ $trailer->id }}">
-                                {{ $trailer->plate }} ({{ $trailer->brand }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                {{-- Start date --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Дата начала
-                    </label>
-                    <input type="date"
-                           wire:model.defer="start_date"
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('start_date')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- End date --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Дата окончания
-                    </label>
-                    <input type="date"
-                           wire:model.defer="end_date"
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('end_date')
-                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                {{-- Currency --}}
-                <div>
-                    <label class="block text-xs font-medium text-gray-500 mb-1">
-                        Валюта рейса
-                    </label>
-                    <input type="text"
-                           wire:model.defer="currency"
-                           class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
-                    @error('currency')
+                    @error('seal_nr')
                         <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
-        </section>
+        </div>
+    @endif
 
+    {{-- dates/currency --}}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Дата начала
+            </label>
+            <input type="date"
+                   wire:model.defer="start_date"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('start_date')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Дата окончания
+            </label>
+            <input type="date"
+                   wire:model.defer="end_date"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('end_date')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div>
+            <label class="block text-xs font-medium text-gray-500 mb-1">
+                Валюта рейса
+            </label>
+            <input type="text"
+                   wire:model.defer="currency"
+                   class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            @error('currency')
+                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+            @enderror
+        </div>
+    </div>
+</section>
         {{-- =========================
              STEPS (МАРШРУТ / TripStep)
         ========================== --}}
@@ -350,7 +421,6 @@
                     {{-- STEP BODY --}}
                     <div x-show="open" x-collapse class="px-4 py-4 space-y-3">
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                            {{-- Тип шага --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Тип шага</label>
                                 <select
@@ -364,7 +434,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Дата / время --}}
                             <div class="space-y-1.5 sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Дата / время</label>
                                 <div class="grid grid-cols-2 gap-2">
@@ -380,7 +449,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Порядок --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Порядок (order)</label>
                                 <input type="number"
@@ -393,9 +461,7 @@
                             </div>
                         </div>
 
-                        {{-- Локация --}}
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                            {{-- Страна --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Страна</label>
                                 <select
@@ -411,7 +477,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Город --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Город</label>
                                 <select
@@ -427,7 +492,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Адрес --}}
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Адрес</label>
                                 <input type="text"
@@ -441,7 +505,6 @@
                             </div>
                         </div>
 
-                        {{-- Заметки --}}
                         <div>
                             <label class="block text-xs font-medium text-gray-500 mb-1">Заметки (notes)</label>
                             <textarea
@@ -457,6 +520,7 @@
                 </div>
             @endforelse
         </section>
+
 
         {{-- =========================
              CARGOS (MULTI-CARGO)
@@ -548,7 +612,6 @@
 
                         {{-- ===== Клиенты: Customer / Shipper / Consignee ===== --}}
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-
                             {{-- Customer --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Заказчик (customer)</label>
@@ -583,9 +646,7 @@
                                         <div>Address:
                                             <span class="font-medium">
                                                 {{ $customer->jur_address ?? '—' }}
-                                                @if($customer->jur_post_code)
-                                                    , {{ $customer->jur_post_code }}
-                                                @endif
+                                                @if($customer->jur_post_code), {{ $customer->jur_post_code }} @endif
                                             </span>
                                         </div>
 
@@ -632,9 +693,7 @@
                                         <div>Address:
                                             <span class="font-medium">
                                                 {{ $shipper->jur_address ?? '—' }}
-                                                @if($shipper->jur_post_code)
-                                                    , {{ $shipper->jur_post_code }}
-                                                @endif
+                                                @if($shipper->jur_post_code), {{ $shipper->jur_post_code }} @endif
                                             </span>
                                         </div>
 
@@ -681,9 +740,7 @@
                                         <div>Address:
                                             <span class="font-medium">
                                                 {{ $consignee->jur_address ?? '—' }}
-                                                @if($consignee->jur_post_code)
-                                                    , {{ $consignee->jur_post_code }}
-                                                @endif
+                                                @if($consignee->jur_post_code), {{ $consignee->jur_post_code }} @endif
                                             </span>
                                         </div>
 
@@ -701,7 +758,7 @@
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-3">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
 
-                                {{-- Мультивыбор погрузки --}}
+                                {{-- loading --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-xs font-medium text-gray-500">⬆ Шаги погрузки (multi-select)</label>
@@ -764,7 +821,7 @@
                                     @enderror
                                 </div>
 
-                                {{-- Мультивыбор разгрузки --}}
+                                {{-- unloading --}}
                                 <div>
                                     <div class="flex items-center justify-between mb-1">
                                         <label class="block text-xs font-medium text-gray-500">⬇ Шаги разгрузки (multi-select)</label>
@@ -832,7 +889,6 @@
 
                         {{-- Payment section --}}
                         <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
-                            {{-- Цена без НДС --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Цена (без НДС)</label>
                                 <input
@@ -845,7 +901,6 @@
                                 @enderror
                             </div>
 
-                            {{-- НДС % --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">НДС, %</label>
                                 <select
@@ -860,7 +915,6 @@
                                 @enderror
                             </div>
 
-                            {{-- Сумма НДС --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Сумма НДС</label>
                                 <input
@@ -870,7 +924,6 @@
                                     readonly>
                             </div>
 
-                            {{-- Цена с НДС --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Итого с НДС</label>
                                 <input
@@ -880,7 +933,6 @@
                                     readonly>
                             </div>
 
-                            {{-- Оплата до --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Оплата до</label>
                                 <input
@@ -889,7 +941,6 @@
                                     class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
                             </div>
 
-                            {{-- Плательщик --}}
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик (тип)</label>
                                 <select
@@ -909,7 +960,6 @@
                              CARGO ITEMS (EU METRICS)
                         ========================== --}}
                         <div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-2">
-
                             <div class="flex items-center justify-between">
                                 <div class="text-xs font-semibold text-gray-600 dark:text-gray-300">
                                     📑 Позиции груза
@@ -924,7 +974,6 @@
 
                             <div class="space-y-2">
                                 @foreach($cargo['items'] as $itemIndex => $item)
-
                                     @php
                                         $key = "cargos.$index.items.$itemIndex.measurements";
                                         $itemError = $errors->has($key);
@@ -932,7 +981,7 @@
 
                                     <div
                                         wire:key="item-{{ $cargo['uid'] ?? $index }}-{{ $item['uid'] ?? $itemIndex }}"
-                                        x-data="{ open: {{ $itemError ? 'false' : 'true' }} }"
+                                        x-data="{ open: {{ $itemError ? 'true' : 'true' }} }"
                                         class="rounded-2xl px-3 py-3 space-y-3 border transition
                                                @if($itemError)
                                                    border-red-500 bg-red-50 dark:bg-red-900/20
@@ -940,7 +989,6 @@
                                                    border-gray-100 dark:border-gray-800
                                                @endif">
 
-                                        {{-- HEADER --}}
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-2">
                                                 <span class="text-xs font-semibold text-gray-700 dark:text-gray-200">
@@ -963,7 +1011,6 @@
                                             @endif
                                         </div>
 
-                                        {{-- Описание --}}
                                         <div>
                                             <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Описание</div>
                                             <input type="text"
@@ -974,7 +1021,6 @@
                                                           dark:bg-gray-800 dark:text-gray-100">
                                         </div>
 
-                                        {{-- Количества --}}
                                         <div>
                                             <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Количества</div>
                                             <div class="grid grid-cols-3 gap-2">
@@ -990,7 +1036,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- Вес --}}
                                         <div>
                                             <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Вес</div>
                                             <div class="grid grid-cols-3 gap-2">
@@ -1006,7 +1051,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- Объём / LM --}}
                                         <div>
                                             <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Объём / Длина загрузки</div>
                                             <div class="grid grid-cols-2 gap-2">
@@ -1022,7 +1066,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- Условия перевозки --}}
                                         <div>
                                             <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Условия перевозки</div>
                                             <div class="grid grid-cols-3 gap-2 items-center">
@@ -1067,7 +1110,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- COMMENT / INSTRUCTIONS --}}
                                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <textarea rows="2"
                                                       placeholder="Инструкции"
@@ -1089,14 +1131,13 @@
                                                 {{ $message }}
                                             </div>
                                         @enderror
-
                                     </div>
                                 @endforeach
                             </div>
                         </div>
 
-                    </div> {{-- /CARGO BODY END --}}
-                </div> {{-- /CARGO CONTAINER END --}}
+                    </div>
+                </div>
             @empty
                 <div class="text-sm text-gray-500">
                     Пока нет ни одного груза. Нажмите «Добавить груз».
@@ -1127,7 +1168,7 @@
 </div>
 
 <script>
-    document.addEventListener("livewire:initialized", () => {
+    document.addEventListener("livewire:init", () => {
         Livewire.hook('message.processed', () => {
             const firstError = document.querySelector('.input-error');
             if (firstError) {

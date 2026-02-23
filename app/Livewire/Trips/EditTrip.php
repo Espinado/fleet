@@ -42,6 +42,11 @@ class EditTrip extends Component
     public $driver_id;
     public $truck_id;
     public $trailer_id;
+    public $cont_nr = null;
+     public $seal_nr = null;
+
+// чтобы IDE не ругалась + чтобы можно было определить контейнер
+   public ?int $selected_trailer_type_id = null;
 
     public $drivers = [];
     public $trucks = [];
@@ -90,6 +95,13 @@ class EditTrip extends Component
         $this->driver_id  = $this->trip->driver_id;
         $this->truck_id   = $this->trip->truck_id;
         $this->trailer_id = $this->trip->trailer_id;
+        $this->selected_trailer_type_id = $this->trailer_id
+    ? (int) Trailer::whereKey($this->trailer_id)->value('type_id')
+    : null;
+
+// ВАЖНО: берем значения из trips (они у тебя в таблице trips)
+$this->cont_nr = $this->trip->cont_nr;
+$this->seal_nr = $this->trip->seal_nr;
 
         $this->start_date = optional($this->trip->start_date)->format('Y-m-d');
         $this->end_date   = optional($this->trip->end_date)->format('Y-m-d');
@@ -546,9 +558,13 @@ class EditTrip extends Component
         'currency'     => $this->currency,
         'steps'        => $this->steps,
         'cargos'       => $this->cargos,
+        'cont_nr' => ['nullable','string','max:50'],
+        'seal_nr' => ['nullable','string','max:50'],
     ];
 
     $validator = Validator::make($data, $rules, $messages);
+    $validator->sometimes('cont_nr', 'required', fn () => $this->isContainerTrailer);
+$validator->sometimes('seal_nr', 'required', fn () => $this->isContainerTrailer);
 
     $validator->after(function ($validator) {
         foreach ($this->cargos as $cargoIndex => $cargo) {
@@ -623,6 +639,8 @@ class EditTrip extends Component
             'driver_id'  => $this->driver_id,
             'truck_id'   => $this->truck_id,
             'trailer_id' => $this->trailer_id,
+            'cont_nr' => $this->isContainerTrailer ? $this->cont_nr : null,
+           'seal_nr' => $this->isContainerTrailer ? $this->seal_nr : null,
 
             'start_date' => $this->start_date,
             'end_date'   => $this->end_date,
@@ -770,4 +788,52 @@ class EditTrip extends Component
             'taxRates'   => $this->taxRates,
         ])->layout('layouts.app');
     }
+
+   public function getIsContainerTrailerProperty(): bool
+{
+    // надежно: по key из конфига
+    return ($this->trailerTypeMeta['key'] ?? null) === 'container';
+}
+
+public function getTrailerTypeMetaProperty(): ?array
+{
+    $id = (int)($this->selected_trailer_type_id ?? 0);
+    if ($id <= 0) return null;
+
+    $types  = config('trailer-types.types', []);
+    $labels = config('trailer-types.labels', []);
+    $icons  = config('trailer-types.icons', []);
+
+    // у тебя types: [2 => 'container']
+    $key = $types[$id] ?? null;
+    if (!$key) {
+        return [
+            'id'    => $id,
+            'key'   => null,
+            'label' => 'Type #'.$id,
+            'icon'  => '🚚',
+        ];
+    }
+
+    return [
+        'id'    => $id,
+        'key'   => $key,
+        'label' => $labels[$key] ?? ucfirst($key),
+        'icon'  => $icons[$key] ?? '🚚',
+    ];
+}
+
+
+public function updatedTrailerId($value): void
+{
+    $this->selected_trailer_type_id = $value
+        ? (int) Trailer::whereKey($value)->value('type_id')
+        : null;
+
+    // если выбрали НЕ контейнер — чистим поля
+    if (!$this->isContainerTrailer) {
+        $this->cont_nr = null;
+        $this->seal_nr = null;
+    }
+}
 }

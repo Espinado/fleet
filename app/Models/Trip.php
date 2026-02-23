@@ -19,7 +19,7 @@ class Trip extends Model
          'started_at', 'ended_at', 'odo_start_km', 'odo_end_km',
 
         // Transport
-        'driver_id', 'truck_id', 'trailer_id', 'vehicle_run_id',
+        'driver_id', 'truck_id', 'trailer_id', 'vehicle_run_id',  'cont_nr', 'seal_nr',
 
         // Dates
         'start_date', 'end_date',
