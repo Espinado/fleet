@@ -43,4 +43,5 @@ return [
     37 => ['name' => 'Armenia',       'iso' => 'AM', 'phone_code' => '+374'],
     38 => ['name' => 'Moldova',       'iso' => 'MD', 'phone_code' => '+373'],
     39 => ['name' => 'Georgia',       'iso' => 'GE', 'phone_code' => '+995'],
+    40 => ['name' => 'United Arab Emirates', 'iso' => 'AE', 'phone_code' => '+971'],
 ];
