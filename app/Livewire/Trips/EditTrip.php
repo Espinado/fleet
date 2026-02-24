@@ -9,8 +9,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
-
-
 use App\Models\{
     Trip,
     TripCargo,
@@ -42,11 +40,12 @@ class EditTrip extends Component
     public $driver_id;
     public $truck_id;
     public $trailer_id;
-    public $cont_nr = null;
-     public $seal_nr = null;
 
-// чтобы IDE не ругалась + чтобы можно было определить контейнер
-   public ?int $selected_trailer_type_id = null;
+    public ?string $cont_nr = null;
+    public ?string $seal_nr = null;
+
+    // чтобы IDE не ругалась + чтобы можно было определить контейнер
+    public ?int $selected_trailer_type_id = null;
 
     public $drivers = [];
     public $trucks = [];
@@ -95,13 +94,15 @@ class EditTrip extends Component
         $this->driver_id  = $this->trip->driver_id;
         $this->truck_id   = $this->trip->truck_id;
         $this->trailer_id = $this->trip->trailer_id;
-        $this->selected_trailer_type_id = $this->trailer_id
-    ? (int) Trailer::whereKey($this->trailer_id)->value('type_id')
-    : null;
 
-// ВАЖНО: берем значения из trips (они у тебя в таблице trips)
-$this->cont_nr = $this->trip->cont_nr;
-$this->seal_nr = $this->trip->seal_nr;
+        // trailer type id (for UI)
+        $this->selected_trailer_type_id = $this->trailer_id
+            ? (int) Trailer::whereKey($this->trailer_id)->value('type_id')
+            : null;
+
+        // IMPORTANT: values from trips table
+        $this->cont_nr = $this->trip->cont_nr;
+        $this->seal_nr = $this->trip->seal_nr;
 
         $this->start_date = optional($this->trip->start_date)->format('Y-m-d');
         $this->end_date   = optional($this->trip->end_date)->format('Y-m-d');
@@ -111,7 +112,7 @@ $this->seal_nr = $this->trip->seal_nr;
         // Expeditor snapshot -> data for UI
         $this->hydrateExpeditor();
 
-        // но банк берём из trip snapshot, если есть (приоритетнее)
+        // bank from trip snapshot (priority)
         $this->expeditorData['bank'] = $this->trip->expeditor_bank;
         $this->expeditorData['iban'] = $this->trip->expeditor_iban;
         $this->expeditorData['bic']  = $this->trip->expeditor_bic;
@@ -133,7 +134,7 @@ $this->seal_nr = $this->trip->seal_nr;
             ];
 
             $this->stepCities[] = [
-                'cities' => $s->country_id ? (getCitiesByCountryId((int)$s->country_id) ?? []) : []
+                'cities' => $s->country_id ? (getCitiesByCountryId((int) $s->country_id) ?? []) : []
             ];
         }
 
@@ -160,6 +161,7 @@ $this->seal_nr = $this->trip->seal_nr;
             foreach ($cargo->items as $it) {
                 $items[] = [
                     'description'     => $it->description ?? '',
+                    'customs_code'    => $it->customs_code ?? '', // ✅ NEW
                     'packages'        => $it->packages,
                     'pallets'         => $it->pallets,
                     'units'           => $it->units,
@@ -192,8 +194,13 @@ $this->seal_nr = $this->trip->seal_nr;
                 'payment_terms'    => optional($cargo->payment_terms)->format('Y-m-d'),
                 'payer_type_id'    => $cargo->payer_type_id,
 
+                // ✅ NEW (как в create)
+                'supplier_invoice_nr'     => $cargo->supplier_invoice_nr ?? null,
+                'supplier_invoice_amount' => $cargo->supplier_invoice_amount ?? null,
+
                 'items' => $items ?: [[
                     'description'     => '',
+                    'customs_code'    => '', // ✅ NEW
                     'packages'        => null,
                     'pallets'         => null,
                     'units'           => null,
@@ -243,7 +250,6 @@ $this->seal_nr = $this->trip->seal_nr;
         $icon = $type === 'loading' ? '📦' : '📤';
         $typeLabel = $type === 'loading' ? 'Iekraušana' : 'Izkraušana';
 
-        // под твои helpers (они уже используются в blade)
         $country = !empty($s['country_id']) ? (getCountryById((int)$s['country_id']) ?? null) : null;
 
         $city = (!empty($s['country_id']) && !empty($s['city_id']))
@@ -375,9 +381,7 @@ $this->seal_nr = $this->trip->seal_nr;
         $field = $parts[1] ?? null;
 
         if ($field === 'country_id') {
-            $this->stepCities[$stepIndex]['cities'] =
-                getCitiesByCountryId((int)$value) ?? [];
-
+            $this->stepCities[$stepIndex]['cities'] = getCitiesByCountryId((int)$value) ?? [];
             $this->steps[$stepIndex]['city_id'] = null;
         }
     }
@@ -403,8 +407,13 @@ $this->seal_nr = $this->trip->seal_nr;
             'payment_terms'    => null,
             'payer_type_id'    => null,
 
+            // ✅ NEW
+            'supplier_invoice_nr'     => null,
+            'supplier_invoice_amount' => null,
+
             'items' => [[
                 'description'     => '',
+                'customs_code'    => '', // ✅ NEW
                 'packages'        => null,
                 'pallets'         => null,
                 'units'           => null,
@@ -432,6 +441,7 @@ $this->seal_nr = $this->trip->seal_nr;
     {
         $this->cargos[$cargoIndex]['items'][] = [
             'description'     => '',
+            'customs_code'    => '', // ✅ NEW
             'packages'        => null,
             'pallets'         => null,
             'units'           => null,
@@ -476,304 +486,303 @@ $this->seal_nr = $this->trip->seal_nr;
         $this->cargos[$idx]['price_with_tax']   = $tax['price_with_tax'];
     }
 
-
+    /** ============================================================
+     *  PURGE GENERATED DOCS
+     * ============================================================ */
     protected function purgeGeneratedCargoDocs(): array
-{
-    // вернём список путей, которые надо удалить из storage после commit
-    $paths = [];
+    {
+        $paths = [];
 
-    $this->trip->loadMissing('cargos');
+        $this->trip->loadMissing('cargos');
 
-    foreach ($this->trip->cargos as $cargo) {
-        foreach (['order_file', 'cmr_file', 'inv_file'] as $field) {
-            $path = (string)($cargo->{$field} ?? '');
-            $path = trim($path);
-
-            if ($path !== '') {
-                $paths[] = $path;
+        foreach ($this->trip->cargos as $cargo) {
+            foreach (['order_file', 'cmr_file', 'inv_file'] as $field) {
+                $path = trim((string)($cargo->{$field} ?? ''));
+                if ($path !== '') $paths[] = $path;
             }
+
+            $cargo->forceFill([
+                'cmr_file'         => null,
+                'cmr_nr'           => null,
+                'order_file'       => null,
+                'order_created_at' => null,
+                'order_nr'         => null,
+                'cmr_created_at'   => null,
+                'inv_nr'           => null,
+                'inv_file'         => null,
+                'inv_created_at'   => null,
+            ])->saveQuietly();
         }
 
-        // ✅ обнуляем поля в БД (даже если потом запись удалится — ты просил именно это)
-        $cargo->forceFill([
-            'cmr_file'        => null,
-            'cmr_nr'          => null,
-            'order_file'      => null,
-            'order_created_at'=> null,
-            'order_nr'        => null,
-            'cmr_created_at'  => null,
-            'inv_nr'          => null,
-            'inv_file'        => null,
-            'inv_created_at'  => null,
-        ])->saveQuietly();
+        return array_values(array_unique($paths));
     }
-
-    // уникализируем, чтобы не удалять один и тот же файл дважды
-    return array_values(array_unique($paths));
-}
 
     /** ============================================================
      *  SAVE
      * ============================================================ */
-   public function save()
-{
-    $rules = [
-        'expeditor_id' => 'required|integer',
-        'bank_index'   => 'required',
-        'driver_id'    => 'required|integer',
-        'truck_id'     => 'required|integer',
-        'start_date'   => 'required|date',
-        'end_date'     => 'required|date',
-        'currency'     => 'required|string',
+    public function save()
+    {
+        $rules = [
+            'expeditor_id' => 'required|integer',
+            'bank_index'   => 'required',
+            'driver_id'    => 'required|integer',
+            'truck_id'     => 'required|integer',
+            'start_date'   => 'required|date',
+            'end_date'     => 'required|date',
+            'currency'     => 'required|string',
 
-        'steps.*.type'       => 'required',
-        'steps.*.country_id' => 'required|integer',
-        'steps.*.city_id'    => 'required|integer',
-        'steps.*.address'    => 'required|string',
-        'steps.*.date'       => 'required|date',
-        'steps.*.time'       => 'nullable',
-        'steps.*.order'      => 'required|integer',
+            'cont_nr' => ['nullable','string','max:50'],
+            'seal_nr' => ['nullable','string','max:50'],
 
-        'cargos.*.customer_id'        => 'required|integer',
-        'cargos.*.shipper_id'         => 'required|integer',
-        'cargos.*.consignee_id'       => 'required|integer',
-        'cargos.*.loading_step_ids'   => 'required|array|min:1',
-        'cargos.*.unloading_step_ids' => 'required|array|min:1',
-        'cargos.*.price'              => 'required|numeric',
-        'cargos.*.tax_percent'        => 'required|numeric',
-    ];
+            'steps.*.type'       => 'required',
+            'steps.*.country_id' => 'required|integer',
+            'steps.*.city_id'    => 'required|integer',
+            'steps.*.address'    => 'required|string',
+            'steps.*.date'       => 'required|date',
+            'steps.*.time'       => 'nullable',
+            'steps.*.order'      => 'required|integer',
 
-    $messages = [
-        'cargos.*.loading_step_ids.required'   => 'Выберите хотя бы один шаг погрузки.',
-        'cargos.*.unloading_step_ids.required' => 'Выберите хотя бы один шаг разгрузки.',
-    ];
+            'cargos.*.customer_id'        => 'required|integer',
+            'cargos.*.shipper_id'         => 'required|integer',
+            'cargos.*.consignee_id'       => 'required|integer',
+            'cargos.*.loading_step_ids'   => 'required|array|min:1',
+            'cargos.*.unloading_step_ids' => 'required|array|min:1',
+            'cargos.*.price'              => 'required|numeric',
+            'cargos.*.tax_percent'        => 'required|numeric',
 
-    $data = [
-        'expeditor_id' => $this->expeditor_id,
-        'bank_index'   => $this->bank_index,
-        'driver_id'    => $this->driver_id,
-        'truck_id'     => $this->truck_id,
-        'start_date'   => $this->start_date,
-        'end_date'     => $this->end_date,
-        'currency'     => $this->currency,
-        'steps'        => $this->steps,
-        'cargos'       => $this->cargos,
-        'cont_nr' => ['nullable','string','max:50'],
-        'seal_nr' => ['nullable','string','max:50'],
-    ];
+            // ✅ NEW
+            'cargos.*.supplier_invoice_nr'     => 'nullable|string|max:64',
+            'cargos.*.supplier_invoice_amount' => 'nullable|numeric',
 
-    $validator = Validator::make($data, $rules, $messages);
-    $validator->sometimes('cont_nr', 'required', fn () => $this->isContainerTrailer);
-$validator->sometimes('seal_nr', 'required', fn () => $this->isContainerTrailer);
+            // ✅ NEW
+            'cargos.*.items.*.customs_code' => 'nullable|string|max:32',
+        ];
 
-    $validator->after(function ($validator) {
-        foreach ($this->cargos as $cargoIndex => $cargo) {
-            foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
+        $messages = [
+            'cargos.*.loading_step_ids.required'   => 'Выберите хотя бы один шаг погрузки.',
+            'cargos.*.unloading_step_ids.required' => 'Выберите хотя бы один шаг разгрузки.',
+        ];
 
-                $hasAny =
-                    (!empty($item['packages'])       && $item['packages'] > 0) ||
-                    (!empty($item['pallets'])        && $item['pallets'] > 0) ||
-                    (!empty($item['units'])          && $item['units'] > 0) ||
-                    (!empty($item['net_weight'])     && $item['net_weight'] > 0) ||
-                    (!empty($item['gross_weight'])   && $item['gross_weight'] > 0) ||
-                    (!empty($item['tonnes'])         && $item['tonnes'] > 0) ||
-                    (!empty($item['volume'])         && $item['volume'] > 0) ||
-                    (!empty($item['loading_meters']) && $item['loading_meters'] > 0);
+        $data = [
+            'expeditor_id' => $this->expeditor_id,
+            'bank_index'   => $this->bank_index,
+            'driver_id'    => $this->driver_id,
+            'truck_id'     => $this->truck_id,
+            'start_date'   => $this->start_date,
+            'end_date'     => $this->end_date,
+            'currency'     => $this->currency,
+            'cont_nr'      => $this->cont_nr,
+            'seal_nr'      => $this->seal_nr,
+            'steps'        => $this->steps,
+            'cargos'       => $this->cargos,
+        ];
 
-                if (!$hasAny) {
-                    $validator->errors()->add(
-                        "cargos.$cargoIndex.items.$itemIndex.measurements",
-                        'В позиции #' . ($itemIndex + 1) . ' необходимо указать хотя бы одну единицу измерения.'
-                    );
+        $validator = Validator::make($data, $rules, $messages);
+
+        // container -> require cont/seal
+        $validator->sometimes('cont_nr', 'required', fn () => $this->isContainerTrailer);
+        $validator->sometimes('seal_nr', 'required', fn () => $this->isContainerTrailer);
+
+        // items -> must have at least one measurement
+        $validator->after(function ($validator) {
+            foreach ($this->cargos as $cargoIndex => $cargo) {
+                foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
+
+                    $hasAny =
+                        (!empty($item['packages'])       && $item['packages'] > 0) ||
+                        (!empty($item['pallets'])        && $item['pallets'] > 0) ||
+                        (!empty($item['units'])          && $item['units'] > 0) ||
+                        (!empty($item['net_weight'])     && $item['net_weight'] > 0) ||
+                        (!empty($item['gross_weight'])   && $item['gross_weight'] > 0) ||
+                        (!empty($item['tonnes'])         && $item['tonnes'] > 0) ||
+                        (!empty($item['volume'])         && $item['volume'] > 0) ||
+                        (!empty($item['loading_meters']) && $item['loading_meters'] > 0);
+
+                    if (!$hasAny) {
+                        $validator->errors()->add(
+                            "cargos.$cargoIndex.items.$itemIndex.measurements",
+                            'В позиции #' . ($itemIndex + 1) . ' необходимо указать хотя бы одну единицу измерения.'
+                        );
+                    }
                 }
-            }
-        }
-    });
-
-    if ($validator->fails()) {
-        $this->setErrorBag($validator->errors());
-        return;
-    }
-
-    // unloading после loading (по индексам steps массива) + запрет пересечения
-    foreach ($this->cargos as $ci => $c) {
-        $loading = array_unique($c['loading_step_ids'] ?? []);
-        $unload  = array_unique($c['unloading_step_ids'] ?? []);
-
-        $intersect = array_intersect($loading, $unload);
-        if (!empty($intersect)) {
-            $this->addError("cargos.$ci.unloading_step_ids", 'Один и тот же шаг не может быть и погрузкой, и разгрузкой.');
-            return;
-        }
-
-        foreach ($loading as $lIndex) {
-            foreach ($unload as $uIndex) {
-                if ($uIndex <= $lIndex) {
-                    $this->addError("cargos.$ci.unloading_step_ids", 'Разгрузки должны быть ПОСЛЕ всех погрузок.');
-                    return;
-                }
-            }
-        }
-    }
-
-    DB::beginTransaction();
-
-    try {
-        // ✅ обновляем trip (snapshot expeditor + транспорт + даты)
-        $this->trip->update([
-            'expeditor_id'        => $this->expeditor_id,
-            'expeditor_name'      => $this->expeditorData['name']      ?? null,
-            'expeditor_reg_nr'    => $this->expeditorData['reg_nr']    ?? null,
-            'expeditor_country'   => $this->expeditorData['country']   ?? null,
-            'expeditor_city'      => $this->expeditorData['city']      ?? null,
-            'expeditor_address'   => $this->expeditorData['address']   ?? null,
-            'expeditor_post_code' => $this->expeditorData['post_code'] ?? null,
-            'expeditor_email'     => $this->expeditorData['email']     ?? null,
-            'expeditor_phone'     => $this->expeditorData['phone']     ?? null,
-
-            'expeditor_bank_id' => $this->bank_index,
-            'expeditor_bank'    => $this->expeditorData['bank'] ?? null,
-            'expeditor_iban'    => $this->expeditorData['iban'] ?? null,
-            'expeditor_bic'     => $this->expeditorData['bic']  ?? null,
-
-            'driver_id'  => $this->driver_id,
-            'truck_id'   => $this->truck_id,
-            'trailer_id' => $this->trailer_id,
-            'cont_nr' => $this->isContainerTrailer ? $this->cont_nr : null,
-           'seal_nr' => $this->isContainerTrailer ? $this->seal_nr : null,
-
-            'start_date' => $this->start_date,
-            'end_date'   => $this->end_date,
-
-            'currency' => $this->currency,
-            'status'   => $this->status,
-        ]);
-
-        // ✅ грузим cargos ДО удаления, чтобы собрать пути файлов
-        $this->trip->load('cargos');
-
-        /**
-         * ✅ 1) Собираем пути сгенерированных документов (order/cmr/inv),
-         * ✅ 2) Обнуляем поля в trip_cargos (как ты просил),
-         * ✅ 3) Фактическое удаление файлов — ТОЛЬКО после commit.
-         *
-         * ВАЖНО: метод purgeGeneratedCargoDocs() должен быть в этом же компоненте.
-         */
-        $pathsToDelete = $this->purgeGeneratedCargoDocs();
-
-        DB::afterCommit(function () use ($pathsToDelete) {
-            try {
-                if (empty($pathsToDelete)) return;
-
-                // предполагаем, что в БД пути относительные для диска "public"
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($pathsToDelete);
-
-            } catch (\Throwable $e) {
-                Log::warning('Failed to delete cargo docs from storage afterCommit', [
-                    'msg' => $e->getMessage(),
-                ]);
             }
         });
 
-        // ✅ теперь можно удалять steps/cargos как раньше
-        $this->trip->steps()->delete();
-
-        foreach ($this->trip->cargos as $c) {
-            $c->steps()->detach();
-            $c->items()->delete();
-        }
-        $this->trip->cargos()->delete();
-
-        // =======================
-        // create steps
-        // =======================
-        $stepIdMap = [];
-
-        foreach ($this->steps as $i => $s) {
-            $dbStep = TripStep::create([
-                'trip_id'    => $this->trip->id,
-                'order'      => (int)($s['order'] ?? ($i + 1)),
-                'type'       => $s['type'],
-                'country_id' => $s['country_id'],
-                'city_id'    => $s['city_id'],
-                'address'    => $s['address'],
-                'date'       => $s['date'],
-                'time'       => $s['time'] ?? null,
-                'notes'      => $s['notes'] ?? null,
-            ]);
-
-            $stepIdMap[$i] = $dbStep->id;
+        if ($validator->fails()) {
+            $this->setErrorBag($validator->errors());
+            return;
         }
 
-        // =======================
-        // create cargos + items + pivot
-        // =======================
-        foreach ($this->cargos as $cargoData) {
+        // unloading after loading + no intersect
+        foreach ($this->cargos as $ci => $c) {
+            $loading = array_unique($c['loading_step_ids'] ?? []);
+            $unload  = array_unique($c['unloading_step_ids'] ?? []);
 
-            $cargo = TripCargo::create([
-                'trip_id'          => $this->trip->id,
-                'customer_id'      => $cargoData['customer_id'],
-                'shipper_id'       => $cargoData['shipper_id'],
-                'consignee_id'     => $cargoData['consignee_id'],
+            $intersect = array_intersect($loading, $unload);
+            if (!empty($intersect)) {
+                $this->addError("cargos.$ci.unloading_step_ids", 'Один и тот же шаг не может быть и погрузкой, и разгрузкой.');
+                return;
+            }
 
-                'price'            => $cargoData['price'] ?: 0,
-                'tax_percent'      => $cargoData['tax_percent'],
-                'total_tax_amount' => $cargoData['total_tax_amount'],
-                'price_with_tax'   => $cargoData['price_with_tax'],
+            foreach ($loading as $lIndex) {
+                foreach ($unload as $uIndex) {
+                    if ($uIndex <= $lIndex) {
+                        $this->addError("cargos.$ci.unloading_step_ids", 'Разгрузки должны быть ПОСЛЕ всех погрузок.');
+                        return;
+                    }
+                }
+            }
+        }
 
-                'currency'         => $cargoData['currency'],
-                'payment_terms'    => $cargoData['payment_terms'],
-                'payer_type_id'    => $cargoData['payer_type_id'],
+        DB::beginTransaction();
+
+        try {
+            // update trip snapshot
+            $this->trip->update([
+                'expeditor_id'        => $this->expeditor_id,
+                'expeditor_name'      => $this->expeditorData['name']      ?? null,
+                'expeditor_reg_nr'    => $this->expeditorData['reg_nr']    ?? null,
+                'expeditor_country'   => $this->expeditorData['country']   ?? null,
+                'expeditor_city'      => $this->expeditorData['city']      ?? null,
+                'expeditor_address'   => $this->expeditorData['address']   ?? null,
+                'expeditor_post_code' => $this->expeditorData['post_code'] ?? null,
+                'expeditor_email'     => $this->expeditorData['email']     ?? null,
+                'expeditor_phone'     => $this->expeditorData['phone']     ?? null,
+
+                'expeditor_bank_id' => $this->bank_index,
+                'expeditor_bank'    => $this->expeditorData['bank'] ?? null,
+                'expeditor_iban'    => $this->expeditorData['iban'] ?? null,
+                'expeditor_bic'     => $this->expeditorData['bic']  ?? null,
+
+                'driver_id'  => $this->driver_id,
+                'truck_id'   => $this->truck_id,
+                'trailer_id' => $this->trailer_id,
+
+                'cont_nr' => $this->isContainerTrailer ? $this->cont_nr : null,
+                'seal_nr' => $this->isContainerTrailer ? $this->seal_nr : null,
+
+                'start_date' => $this->start_date,
+                'end_date'   => $this->end_date,
+
+                'currency' => $this->currency,
+                'status'   => $this->status,
             ]);
 
-            foreach (($cargoData['items'] ?? []) as $item) {
-                $cargo->items()->create([
-                    'description'    => $item['description'] ?? '',
-                    'packages'       => $item['packages'] ?? 0,
-                    'pallets'        => $item['pallets'] ?? 0,
-                    'units'          => $item['units'] ?? 0,
-                    'net_weight'     => $item['net_weight'] ?? 0,
-                    'gross_weight'   => $item['gross_weight'] ?? 0,
-                    'tonnes'         => $item['tonnes'] ?? 0,
-                    'volume'         => $item['volume'] ?? 0,
-                    'loading_meters' => $item['loading_meters'] ?? 0,
-                    'hazmat'         => $item['hazmat'] ?? '',
-                    'temperature'    => $item['temperature'] ?? '',
-                    'stackable'      => (bool)($item['stackable'] ?? false),
-                    'instructions'   => $item['instructions'] ?? '',
-                    'remarks'        => $item['remarks'] ?? '',
+            // load cargos BEFORE purge
+            $this->trip->load('cargos');
+
+            $pathsToDelete = $this->purgeGeneratedCargoDocs();
+
+            DB::afterCommit(function () use ($pathsToDelete) {
+                try {
+                    if (!empty($pathsToDelete)) {
+                        Storage::disk('public')->delete($pathsToDelete);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Failed to delete cargo docs from storage afterCommit', [
+                        'msg' => $e->getMessage(),
+                    ]);
+                }
+            });
+
+            // delete old steps/cargos
+            $this->trip->steps()->delete();
+
+            foreach ($this->trip->cargos as $c) {
+                $c->steps()->detach();
+                $c->items()->delete();
+            }
+            $this->trip->cargos()->delete();
+
+            // create steps
+            $stepIdMap = [];
+            foreach ($this->steps as $i => $s) {
+                $dbStep = TripStep::create([
+                    'trip_id'    => $this->trip->id,
+                    'order'      => (int)($s['order'] ?? ($i + 1)),
+                    'type'       => $s['type'],
+                    'country_id' => $s['country_id'],
+                    'city_id'    => $s['city_id'],
+                    'address'    => $s['address'],
+                    'date'       => $s['date'],
+                    'time'       => $s['time'] ?? null,
+                    'notes'      => $s['notes'] ?? null,
                 ]);
+
+                $stepIdMap[$i] = $dbStep->id;
             }
 
-            $pivot = [];
+            // create cargos + items + pivot
+            foreach ($this->cargos as $cargoData) {
+                $cargo = TripCargo::create([
+                    'trip_id'          => $this->trip->id,
+                    'customer_id'      => $cargoData['customer_id'],
+                    'shipper_id'       => $cargoData['shipper_id'],
+                    'consignee_id'     => $cargoData['consignee_id'],
 
-            foreach (array_unique($cargoData['loading_step_ids'] ?? []) as $idx) {
-                if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'loading'];
-            }
-            foreach (array_unique($cargoData['unloading_step_ids'] ?? []) as $idx) {
-                if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'unloading'];
+                    'price'            => $cargoData['price'] ?: 0,
+                    'tax_percent'      => $cargoData['tax_percent'],
+                    'total_tax_amount' => $cargoData['total_tax_amount'],
+                    'price_with_tax'   => $cargoData['price_with_tax'],
+
+                    'currency'         => $cargoData['currency'],
+                    'payment_terms'    => $cargoData['payment_terms'],
+                    'payer_type_id'    => $cargoData['payer_type_id'],
+
+                    // ✅ NEW
+                    'supplier_invoice_nr'     => $cargoData['supplier_invoice_nr'] ?? null,
+                    'supplier_invoice_amount' => $cargoData['supplier_invoice_amount'] ?? null,
+                ]);
+
+                foreach (($cargoData['items'] ?? []) as $item) {
+                    $cargo->items()->create([
+                        'description'    => $item['description'] ?? '',
+                        'customs_code'   => $item['customs_code'] ?? null, // ✅ NEW
+
+                        'packages'       => $item['packages'] ?? 0,
+                        'pallets'        => $item['pallets'] ?? 0,
+                        'units'          => $item['units'] ?? 0,
+                        'net_weight'     => $item['net_weight'] ?? 0,
+                        'gross_weight'   => $item['gross_weight'] ?? 0,
+                        'tonnes'         => $item['tonnes'] ?? 0,
+                        'volume'         => $item['volume'] ?? 0,
+                        'loading_meters' => $item['loading_meters'] ?? 0,
+                        'hazmat'         => $item['hazmat'] ?? '',
+                        'temperature'    => $item['temperature'] ?? '',
+                        'stackable'      => (bool)($item['stackable'] ?? false),
+                        'instructions'   => $item['instructions'] ?? '',
+                        'remarks'        => $item['remarks'] ?? '',
+                    ]);
+                }
+
+                $pivot = [];
+
+                foreach (array_unique($cargoData['loading_step_ids'] ?? []) as $idx) {
+                    if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'loading'];
+                }
+                foreach (array_unique($cargoData['unloading_step_ids'] ?? []) as $idx) {
+                    if (isset($stepIdMap[$idx])) $pivot[$stepIdMap[$idx]] = ['role' => 'unloading'];
+                }
+
+                if ($pivot) $cargo->steps()->attach($pivot);
             }
 
-            if ($pivot) $cargo->steps()->attach($pivot);
+            DB::commit();
+
+            return redirect()->route('trips.show', $this->trip->id);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('EditTrip ERROR', [
+                'msg'  => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+
+            $this->addError('error', 'Ошибка при сохранении рейса.');
         }
-
-        DB::commit();
-
-        return redirect()->route('trips.show', $this->trip->id);
-
-    } catch (\Throwable $e) {
-        DB::rollBack();
-
-        Log::error('EditTrip ERROR', [
-            'msg'  => $e->getMessage(),
-            'line' => $e->getLine(),
-            'file' => $e->getFile(),
-        ]);
-
-        $this->addError('error', 'Ошибка при сохранении рейса.');
     }
-}
-
 
     /** ============================================================
      *  RENDER
@@ -789,51 +798,50 @@ $validator->sometimes('seal_nr', 'required', fn () => $this->isContainerTrailer)
         ])->layout('layouts.app');
     }
 
-   public function getIsContainerTrailerProperty(): bool
-{
-    // надежно: по key из конфига
-    return ($this->trailerTypeMeta['key'] ?? null) === 'container';
-}
+    /** ============================================================
+     *  TRAILER TYPE HELPERS
+     * ============================================================ */
+    public function getIsContainerTrailerProperty(): bool
+    {
+        return ($this->trailerTypeMeta['key'] ?? null) === 'container';
+    }
 
-public function getTrailerTypeMetaProperty(): ?array
-{
-    $id = (int)($this->selected_trailer_type_id ?? 0);
-    if ($id <= 0) return null;
+    public function getTrailerTypeMetaProperty(): ?array
+    {
+        $id = (int)($this->selected_trailer_type_id ?? 0);
+        if ($id <= 0) return null;
 
-    $types  = config('trailer-types.types', []);
-    $labels = config('trailer-types.labels', []);
-    $icons  = config('trailer-types.icons', []);
+        $types  = config('trailer-types.types', []);
+        $labels = config('trailer-types.labels', []);
+        $icons  = config('trailer-types.icons', []);
 
-    // у тебя types: [2 => 'container']
-    $key = $types[$id] ?? null;
-    if (!$key) {
+        $key = $types[$id] ?? null;
+        if (!$key) {
+            return [
+                'id'    => $id,
+                'key'   => null,
+                'label' => 'Type #'.$id,
+                'icon'  => '🚚',
+            ];
+        }
+
         return [
             'id'    => $id,
-            'key'   => null,
-            'label' => 'Type #'.$id,
-            'icon'  => '🚚',
+            'key'   => $key,
+            'label' => $labels[$key] ?? ucfirst($key),
+            'icon'  => $icons[$key] ?? '🚚',
         ];
     }
 
-    return [
-        'id'    => $id,
-        'key'   => $key,
-        'label' => $labels[$key] ?? ucfirst($key),
-        'icon'  => $icons[$key] ?? '🚚',
-    ];
-}
+    public function updatedTrailerId($value): void
+    {
+        $this->selected_trailer_type_id = $value
+            ? (int) Trailer::whereKey($value)->value('type_id')
+            : null;
 
-
-public function updatedTrailerId($value): void
-{
-    $this->selected_trailer_type_id = $value
-        ? (int) Trailer::whereKey($value)->value('type_id')
-        : null;
-
-    // если выбрали НЕ контейнер — чистим поля
-    if (!$this->isContainerTrailer) {
-        $this->cont_nr = null;
-        $this->seal_nr = null;
+        if (!$this->isContainerTrailer) {
+            $this->cont_nr = null;
+            $this->seal_nr = null;
+        }
     }
-}
 }

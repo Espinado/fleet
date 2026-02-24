@@ -33,6 +33,7 @@ class TripCargoItem extends Model
         'hazmat',            // ADR (e.g. 3, 4.1, 8)
         'temperature',       // "+2..+6"
         'stackable',         // bool (1/0)
+        'customs_code',
 
         // Notes
         'instructions',

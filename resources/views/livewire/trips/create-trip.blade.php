@@ -329,6 +329,7 @@
         </div>
     </div>
 </section>
+
         {{-- =========================
              STEPS (МАРШРУТ / TripStep)
         ========================== --}}
@@ -573,6 +574,14 @@
                             $to = $city ?: $country;
                             if ($to) $summaryParts[] = 'до ' . $to;
                         }
+                    }
+
+                    // ✅ NEW: invoice summary in header (safe / minimal)
+                    if (!empty($cargo['supplier_invoice_nr'] ?? null)) {
+                        $summaryParts[] = 'Inv: ' . $cargo['supplier_invoice_nr'];
+                    }
+                    if (!empty($cargo['supplier_invoice_amount'] ?? null)) {
+                        $summaryParts[] = 'Inv€ ' . $cargo['supplier_invoice_amount'];
                     }
                 @endphp
 
@@ -887,74 +896,149 @@
                             </div>
                         </div>
 
-                        {{-- Payment section --}}
-                        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 border-t border-gray-100 dark:border-gray-800 pt-3 mt-2">
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Цена (без НДС)</label>
-                                <input
-                                    type="text"
-                                    inputmode="decimal"
-                                    wire:model.live="cargos.{{ $index }}.price"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
-                                @error("cargos.$index.price")
-                                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
+                       {{-- Payment section --}}
+<div class="border-t border-gray-100 dark:border-gray-800 pt-3 mt-2 space-y-3">
 
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">НДС, %</label>
-                                <select
-                                    wire:model.live="cargos.{{ $index }}.tax_percent"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
-                                    @foreach($taxRates as $rate)
-                                        <option value="{{ $rate }}">{{ $rate }}</option>
-                                    @endforeach
-                                </select>
-                                @error("cargos.$index.tax_percent")
-                                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
+    {{-- =========================
+        Supplier invoice (costs)
+    ========================== --}}
+    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-900/40 p-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                🧾 Supplier invoice (costs)
+            </div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                Инвойс поставщика / расход по грузу
+            </div>
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Сумма НДС</label>
-                                <input
-                                    type="number"
-                                    wire:model.defer="cargos.{{ $index }}.total_tax_amount"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs"
-                                    readonly>
-                            </div>
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="sm:col-span-2">
+                <label class="block text-xs font-medium text-gray-500 mb-1">Supplier invoice №</label>
+                <input
+                    type="text"
+                    wire:model.defer="cargos.{{ $index }}.supplier_invoice_nr"
+                    placeholder="INV-..."
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                @error("cargos.$index.supplier_invoice_nr")
+                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
 
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Итого с НДС</label>
-                                <input
-                                    type="number"
-                                    wire:model.defer="cargos.{{ $index }}.price_with_tax"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs"
-                                    readonly>
-                            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Supplier invoice amount</label>
+                <input
+                    type="text"
+                    inputmode="decimal"
+                    wire:model.defer="cargos.{{ $index }}.supplier_invoice_amount"
+                    placeholder="0.00"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                @error("cargos.$index.supplier_invoice_amount")
+                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
 
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Оплата до</label>
-                                <input
-                                    type="date"
-                                    wire:model.defer="cargos.{{ $index }}.payment_terms"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
-                            </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">Валюта (опц.)</label>
+                <input
+                    type="text"
+                    wire:model.defer="cargos.{{ $index }}.supplier_invoice_currency"
+                    placeholder="{{ $currency ?? 'EUR' }}"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                @error("cargos.$index.supplier_invoice_currency")
+                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
 
-                            <div>
-                                <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик (тип)</label>
-                                <select
-                                    wire:model.live="cargos.{{ $index }}.payer_type_id"
-                                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-xs">
-                                    <option value="">— не выбрано —</option>
-                                    @foreach($payers as $payerId => $payer)
-                                        <option value="{{ $payerId }}">
-                                            {{ $payer['label'] ?? $payerId }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
+        <div class="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
+            Если валюту не используешь — можешь убрать поле <span class="font-semibold">supplier_invoice_currency</span>.
+        </div>
+    </div>
+
+    {{-- =========================
+        Client freight (revenue)
+    ========================== --}}
+    <div class="rounded-2xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/60 dark:bg-blue-900/10 p-3">
+        <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="text-xs font-semibold text-gray-800 dark:text-gray-100">
+                💶 Client freight (revenue)
+            </div>
+            <div class="text-[10px] text-gray-500 dark:text-gray-400">
+                Стоимость фрахта для клиента / доход
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3">
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Фрахт (без НДС)</label>
+                <input
+                    type="text"
+                    inputmode="decimal"
+                    wire:model.live="cargos.{{ $index }}.price"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                @error("cargos.$index.price")
+                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">НДС, %</label>
+                <select
+                    wire:model.live="cargos.{{ $index }}.tax_percent"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                    @foreach($taxRates as $rate)
+                        <option value="{{ $rate }}">{{ $rate }}</option>
+                    @endforeach
+                </select>
+                @error("cargos.$index.tax_percent")
+                    <div class="text-[11px] text-red-500 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Сумма НДС</label>
+                <input
+                    type="number"
+                    wire:model.defer="cargos.{{ $index }}.total_tax_amount"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm"
+                    readonly>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Итого с НДС</label>
+                <input
+                    type="number"
+                    wire:model.defer="cargos.{{ $index }}.price_with_tax"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm"
+                    readonly>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Оплата до</label>
+                <input
+                    type="date"
+                    wire:model.defer="cargos.{{ $index }}.payment_terms"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">Плательщик (тип)</label>
+                <select
+                    wire:model.live="cargos.{{ $index }}.payer_type_id"
+                    class="w-full rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 text-sm">
+                    <option value="">— не выбрано —</option>
+                    @foreach($payers as $payerId => $payer)
+                        <option value="{{ $payerId }}">
+                            {{ $payer['label'] ?? $payerId }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+    </div>
+
+</div>
 
                         {{-- =========================
                              CARGO ITEMS (EU METRICS)
@@ -1011,14 +1095,27 @@
                                             @endif
                                         </div>
 
-                                        <div>
-                                            <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Описание</div>
-                                            <input type="text"
-                                                   placeholder="Например: мебель, техника, продуктовая группа…"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
-                                                   class="w-full rounded-xl border text-xs
-                                                          @if($itemError) border-red-500 input-error @else border-gray-300 dark:border-gray-700 @endif
-                                                          dark:bg-gray-800 dark:text-gray-100">
+                                        {{-- ✅ UPDATED: description + customs_code row --}}
+                                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                                            <div class="sm:col-span-3">
+                                                <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Описание</div>
+                                                <input type="text"
+                                                       placeholder="Например: мебель, техника, продуктовая группа…"
+                                                       wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
+                                                       class="w-full rounded-xl border text-xs
+                                                              @if($itemError) border-red-500 input-error @else border-gray-300 dark:border-gray-700 @endif
+                                                              dark:bg-gray-800 dark:text-gray-100">
+                                            </div>
+
+                                            <div>
+                                                <div class="text-[10px] uppercase font-semibold text-gray-500 mb-1">Customs code</div>
+                                                <input type="text"
+                                                       placeholder="HS/CN"
+                                                       wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.customs_code"
+                                                       class="w-full rounded-xl border text-xs
+                                                              @if($itemError) border-red-500 @else border-gray-300 dark:border-gray-700 @endif
+                                                              dark:bg-gray-800 dark:text-gray-100">
+                                            </div>
                                         </div>
 
                                         <div>

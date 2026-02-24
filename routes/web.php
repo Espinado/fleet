@@ -96,6 +96,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])
         ->name('cmr.generate');
 
+        Route::post('/invoice/{cargo}/generate', [CmrController::class, 'generateInvoiceAndSave'])
+    ->name('invoice.generate');
+
     Route::post('/logout', function () {
         Auth::logout();
         return redirect('/login');

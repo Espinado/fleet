@@ -4,6 +4,7 @@ namespace App\Livewire\Trips;
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
+
 use App\Models\Trip;
 use App\Models\TripStepDocument;
 use App\Models\TripCargo;
@@ -15,14 +16,48 @@ class ViewTrip extends Component
 
     public Trip $trip;
 
-    // динамические поля для каждого шага
+    // step docs
     public array $stepDocType = [];
     public array $stepDocComment = [];
     public array $stepDocFile = [];
 
-    /* ============================================================
-     * UPLOAD DOCUMENT FOR A STEP
-     * ============================================================ */
+    // ✅ ручные номера документов по cargo_id
+    public array $cmrNr = [];   // cargo_id => string
+    public array $orderNr = []; // cargo_id => string
+    public array $invNr = [];   // cargo_id => string
+
+    public function mount($trip)
+    {
+        $this->trip = $trip instanceof Trip ? $trip : Trip::findOrFail($trip);
+
+        $this->reloadTrip();
+
+        // заполнить поля ввода номеров из БД
+        foreach ($this->trip->cargos as $cargo) {
+            $cid = (int) $cargo->id;
+            $this->cmrNr[$cid]   = (string)($cargo->cmr_nr ?? '');
+            $this->orderNr[$cid] = (string)($cargo->order_nr ?? '');
+            $this->invNr[$cid]   = (string)($cargo->inv_nr ?? '');
+        }
+    }
+
+    private function reloadTrip(): void
+    {
+        $this->trip->load([
+            'driver',
+            'truck',
+            'trailer',
+
+            'cargos.shipper',
+            'cargos.consignee',
+            'cargos.customer',
+            'cargos.items',
+            'cargos.steps.documents',
+
+            'steps.cargos',
+        ]);
+    }
+
     public function uploadStepDocument(int $stepId)
     {
         $this->validate([
@@ -32,14 +67,12 @@ class ViewTrip extends Component
         ]);
 
         $file = $this->stepDocFile[$stepId];
-
-        // Save
         $path = $file->store("trip_steps/$stepId", 'public');
 
         TripStepDocument::create([
             'trip_step_id'       => $stepId,
             'trip_id'            => $this->trip->id,
-            'cargo_id'           => null, // по желанию
+            'cargo_id'           => null,
             'uploader_user_id'   => auth()->id(),
             'uploader_driver_id' => null,
             'type'               => $this->stepDocType[$stepId] ?? null,
@@ -48,18 +81,12 @@ class ViewTrip extends Component
             'comment'            => $this->stepDocComment[$stepId] ?? null,
         ]);
 
-        // Clear
         unset($this->stepDocFile[$stepId], $this->stepDocComment[$stepId]);
 
-        // Reload only steps + documents (быстрее!)
         $this->trip->load(['cargos.steps.documents']);
-
         $this->dispatch('stepDocumentUploaded');
     }
 
-    /* ============================================================
-     * DELETE DOCUMENT
-     * ============================================================ */
     public function deleteStepDocument(int $docId)
     {
         $doc = TripStepDocument::findOrFail($docId);
@@ -67,72 +94,72 @@ class ViewTrip extends Component
         \Storage::disk('public')->delete($doc->file_path);
         $doc->delete();
 
-        // reload
         $this->trip->load(['cargos.steps.documents']);
-
         $this->dispatch('stepDocumentDeleted');
     }
 
-    /* ============================================================
-     * MOUNT
-     * ============================================================ */
-    public function mount($trip)
+    private function validateDocNr(string $field, int $cargoId): string
     {
-        $this->trip = $trip instanceof Trip
-            ? $trip
-            : Trip::findOrFail($trip);
-
-        // Загружаем всё сразу (включая documents)
-        $this->trip->load([
-            'driver',
-            'truck',
-            'trailer',
-            'cargos.shipper',
-            'cargos.consignee',
-            'cargos.customer',
-            'cargos.items',
-            'cargos.steps.documents', // ⭐ ВАЖНО
-             'steps.cargos',   // ← ВАЖНО!
+        $this->validate([
+            "{$field}.{$cargoId}" => 'required|string|max:191',
+        ], [
+            "{$field}.{$cargoId}.required" => 'Введите номер документа перед генерацией.',
         ]);
-    }
 
-    /* ============================================================
-     * GENERATE DOCUMENTS
-     * ============================================================ */
+        $val = trim((string) data_get($this->{$field}, $cargoId, ''));
+
+        if ($val === '') {
+            $this->addError("{$field}.{$cargoId}", 'Введите номер документа перед генерацией.');
+        }
+
+        return $val;
+    }
 
     public function generateCmr(int $cargoId): void
     {
+        $nr = $this->validateDocNr('cmrNr', $cargoId);
+
         $cargo = TripCargo::findOrFail($cargoId);
+        $cargo->update([
+            'cmr_nr' => $nr, // ✅ только cmr_nr
+        ]);
+
         $url = app(CmrController::class)->generateAndSave($cargo);
 
-        $this->trip->load(['cargos.items']);
-
+        $this->reloadTrip();
         $this->dispatch('cmrGenerated', url: $url);
     }
 
-    public function generateOrder(int $cargoId)
+    public function generateOrder(int $cargoId): void
     {
+        $nr = $this->validateDocNr('orderNr', $cargoId);
+
         $cargo = TripCargo::findOrFail($cargoId);
+        $cargo->update([
+            'order_nr' => $nr,
+        ]);
+
         $url = app(CmrController::class)->generateTransportOrder($cargo);
 
-        $this->trip->load(['cargos.items']);
-
+        $this->reloadTrip();
         $this->dispatch('orderGenerated', url: $url);
     }
 
-    public function generateInvoice(int $cargoId)
+    public function generateInvoice(int $cargoId): void
     {
+        $nr = $this->validateDocNr('invNr', $cargoId);
+
         $cargo = TripCargo::findOrFail($cargoId);
+        $cargo->update([
+            'inv_nr' => $nr, // ✅ только inv_nr
+        ]);
+
         $url = app(CmrController::class)->generateInvoice($cargo);
 
-        $this->trip->load(['cargos.items']);
-
+        $this->reloadTrip();
         $this->dispatch('invoiceGenerated', url: $url);
     }
 
-    /* ============================================================
-     * RENDER
-     * ============================================================ */
     public function render()
     {
         return view('livewire.trips.view-trip', [

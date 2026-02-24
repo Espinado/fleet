@@ -36,6 +36,8 @@ class TripCargo extends Model
         'currency',
         'payment_terms',
         'payer_type_id',
+        'supplier_invoice_nr',
+'supplier_invoice_amount',
     ];
 
     protected $casts = [
@@ -47,6 +49,7 @@ class TripCargo extends Model
         'tax_percent'      => 'float',
         'total_tax_amount' => 'float',
         'price_with_tax'   => 'float',
+        'supplier_invoice_amount' => 'decimal:2',
     ];
 
     protected $with = ['customer', 'shipper', 'consignee', 'items'];
@@ -83,7 +86,7 @@ class TripCargo extends Model
     /**
      * Шаги маршрута, к которым привязан этот груз (many-to-many через pivot trip_cargo_step)
      */
-   
+
 
  public function steps()
 {
