@@ -185,7 +185,7 @@ class CmrController extends Controller
 
         // ✅ payer: раз cargo = отдельный заказчик -> обычно shipper.
         // Если у тебя платит consignee — поменяй на $cargo->consignee.
-        $payerClient = $cargo->shipper;
+        $payerClient = $cargo->customer;
 
         // ✅ expeditor из trip (если где-то null — ставим пустые строки)
         $expeditor = [
