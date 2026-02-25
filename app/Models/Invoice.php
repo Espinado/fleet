@@ -66,5 +66,5 @@ class Invoice extends Model
         $total = (float) $this->total;
         return number_format($total - $paid, 2, '.', '');
     }
-  
+
 }
