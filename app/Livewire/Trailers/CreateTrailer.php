@@ -101,6 +101,8 @@ class CreateTrailer extends Component
 
     public function render()
     {
-        return view('livewire.trailers.create-trailer')->layout('layouts.app');
+        return view('livewire.trailers.create-trailer')->layout('layouts.app', [
+        'title' => 'New trailer'
+    ]);
     }
 }

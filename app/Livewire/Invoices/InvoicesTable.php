@@ -97,6 +97,8 @@ class InvoicesTable extends Component
 
         return view('livewire.invoices.invoices-table', [
             'rows' => $rows,
-        ])->layout('layouts.app');
+        ])->layout('layouts.app', [
+        'title' => 'Invoices'
+    ]);
     }
 }

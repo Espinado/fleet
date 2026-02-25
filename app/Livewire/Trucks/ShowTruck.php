@@ -172,6 +172,8 @@ public function loadMaponData(): void
     public function render()
     {
         return view('livewire.trucks.show-truck')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+        'title' => 'Truck info'
+    ]);
     }
 }

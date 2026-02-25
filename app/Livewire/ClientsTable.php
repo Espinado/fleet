@@ -49,6 +49,8 @@ class ClientsTable extends Component
 
         return view('livewire.clients-table', [
             'clients' => $clients,
-        ]) ->layout('layouts.app');
+        ]) ->layout('layouts.app', [
+        'title' => 'Clients'
+    ]);
     }
 }

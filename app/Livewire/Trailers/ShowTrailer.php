@@ -32,7 +32,9 @@ class ShowTrailer extends Component
 
     public function render()
     {
-        return view('livewire.trailers.show-trailer') ->layout('layouts.app');
+        return view('livewire.trailers.show-trailer') ->layout('layouts.app', [
+        'title' => 'Trailer info'
+    ]);
     }
 
        public function destroy()

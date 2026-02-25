@@ -795,7 +795,9 @@ class EditTrip extends Component
             'expeditors' => config('companies', []),
             'payers'     => $this->payers,
             'taxRates'   => $this->taxRates,
-        ])->layout('layouts.app');
+        ])->layout('layouts.app', [
+        'title' => 'Edit trip'
+    ]);
     }
 
     /** ============================================================

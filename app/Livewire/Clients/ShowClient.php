@@ -21,7 +21,8 @@ class ShowClient extends Component
     public function render()
     {
         return view('livewire.clients.show-client')
-            ->layout('layouts.app')
-            ->title($this->client->company_name);
+            ->layout('layouts.app', [
+        'title' => 'Client info'
+    ]);
     }
 }

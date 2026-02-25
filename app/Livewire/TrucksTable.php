@@ -69,6 +69,8 @@ class TrucksTable extends Component
             'items' => $trucks,
             'sortField' => $this->sortField,
             'sortDirection' => $this->sortDirection,
-        ])->layout('layouts.app');
+        ])->layout('layouts.app', [
+        'title' => 'Trucks'
+    ]);
     }
 }

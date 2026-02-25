@@ -100,7 +100,7 @@ class CreateTruck extends Component
              'license_number' => $this->license_number,
            'license_issued' => $this->license_issued,
           'license_expired' => $this->license_expired,
-            
+
         ]);
 
         session()->flash('success', 'Truck added successfully!');
@@ -110,7 +110,9 @@ class CreateTruck extends Component
 
     public function render()
     {
-        return view('livewire.trucks.create-truck')->layout('layouts.app');
+        return view('livewire.trucks.create-truck')->layout('layouts.app', [
+        'title' => 'Add truck'
+    ]);
     }
 
 

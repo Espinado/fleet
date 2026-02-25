@@ -21,7 +21,7 @@ class EditTruck extends Component
     public $existing_photo;      // старое фото (из базы)
     public $company;
     public $license_number, $license_issued, $license_expired;
-   
+
     public function mount(Truck $truck)
 {
     $this->truck = $truck;
@@ -96,7 +96,9 @@ class EditTruck extends Component
     public function render()
     {
         return view('livewire.trucks.edit-truck')
-            ->layout('layouts.app');
+            ->layout('layouts.app', [
+        'title' => 'Edit truck'
+    ]);
     }
 
 

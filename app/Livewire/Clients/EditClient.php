@@ -105,6 +105,8 @@ class EditClient extends Component
             'countries' => $countries,
             'jurCities' => $jurCities,
             'fizCities' => $fizCities,
-        ])->layout('layouts.app')->title('Edit Client');
+        ])->layout('layouts.app', [
+        'title' => 'Edit client'
+    ]);
     }
 }

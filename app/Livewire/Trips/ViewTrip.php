@@ -165,7 +165,8 @@ class ViewTrip extends Component
         return view('livewire.trips.view-trip', [
             'trip' => $this->trip,
         ])
-            ->layout('layouts.app')
-            ->title('View CMR Trip');
+            ->layout('layouts.app', [
+        'title' => 'Trip info'
+    ]);
     }
 }

@@ -38,8 +38,8 @@ class CreateTrip extends Component
     public $driver_id;
     public $truck_id;
 
-    public ?int $trailer_id = null;                 // выбранный trailer.id (FK в trips)
-    public ?int $selected_trailer_type_id = null;   // выбранный тип прицепа (trailers.type_id)
+    public ?int $trailer_id = null;
+    public ?int $selected_trailer_type_id = null;
     public ?string $cont_nr = null;
     public ?string $seal_nr = null;
 
@@ -54,7 +54,7 @@ class CreateTrip extends Component
     public $stepCities = [];
 
     /** ============================================================
-     *  CARGOS (multi)
+     *  CARGOS
      * ============================================================ */
     public $cargos = [];
 
@@ -78,7 +78,6 @@ class CreateTrip extends Component
 
         $this->payers = config('payers', []);
 
-        // если trailer_id уже стоит (редко, но ок)
         $this->updatedTrailerId($this->trailer_id);
 
         $this->addStep();
@@ -157,11 +156,7 @@ class CreateTrip extends Component
         if ($v === '') return null;
 
         $v = (string) $v;
-
-        // remove spaces + nbsp
         $v = str_replace(["\xc2\xa0", ' '], '', $v);
-
-        // comma -> dot
         $v = str_replace(',', '.', $v);
 
         return $v === '' ? null : $v;
@@ -189,11 +184,9 @@ class CreateTrip extends Component
         foreach ($this->cargos as $ci => $cargo) {
             $this->cargos[$ci]['price'] = $this->normNumString($cargo['price'] ?? null);
 
-            // tax_percent is select; but if you ever allow typing, keep safe:
             $this->cargos[$ci]['tax_percent'] =
                 $this->normNumString($cargo['tax_percent'] ?? null) ?? ($cargo['tax_percent'] ?? null);
 
-            // supplier invoice amount
             $this->cargos[$ci]['supplier_invoice_amount'] =
                 $this->normNumString($cargo['supplier_invoice_amount'] ?? null);
 
@@ -211,7 +204,7 @@ class CreateTrip extends Component
     public function addStep(): void
     {
         $this->steps[] = [
-            'uid'        => (string) Str::uuid(),   // ✅ стабильный ключ (и будем использовать его в привязках грузов)
+            'uid'        => (string) Str::uuid(),
             'type'       => 'loading',
             'country_id' => null,
             'city_id'    => null,
@@ -234,8 +227,6 @@ class CreateTrip extends Component
         $this->stepCities = array_values($this->stepCities);
 
         if ($removedUid) {
-            // ✅ Ключевая часть: мы храним привязки шагов как UID (а не индексы),
-            // поэтому удаление шага безопасно — просто выкидываем этот uid из выбранных.
             foreach ($this->cargos as $ci => $cargo) {
                 $this->cargos[$ci]['loading_step_ids'] = array_values(array_filter(
                     $cargo['loading_step_ids'] ?? [],
@@ -252,7 +243,6 @@ class CreateTrip extends Component
 
     public function updatedSteps($value, $key): void
     {
-        // ожидаем key в формате: "{index}.field"
         $parts = explode('.', $key);
         $stepIndex = (int)($parts[0] ?? 0);
         $field = $parts[1] ?? null;
@@ -265,11 +255,6 @@ class CreateTrip extends Component
         }
     }
 
-    /**
-     * Для совместимости:
-     * - если фронт ещё шлёт индексы шагов (0,1,2...), мы можем их конвертировать в uid
-     * - если фронт уже шлёт uid — оставляем как есть
-     */
     private function normalizeStepSelectionsToUids(): void
     {
         foreach ($this->cargos as $ci => $cargo) {
@@ -278,7 +263,6 @@ class CreateTrip extends Component
                 $out = [];
 
                 foreach ($vals as $v) {
-                    // numeric index -> uid
                     if (is_numeric($v)) {
                         $idx = (int)$v;
                         $uid = $this->steps[$idx]['uid'] ?? null;
@@ -286,15 +270,12 @@ class CreateTrip extends Component
                         continue;
                     }
 
-                    // already uid-like string
                     if ($v !== null && $v !== '') {
                         $out[] = (string)$v;
                     }
                 }
 
-                // unique + preserve order
                 $out = array_values(array_unique($out));
-
                 $this->cargos[$ci][$field] = $out;
             }
         }
@@ -302,7 +283,6 @@ class CreateTrip extends Component
 
     private function stepPositionByToken($token): ?int
     {
-        // token может быть uid или индексом
         if (is_numeric($token)) {
             return isset($this->steps[(int)$token]) ? (int)$token : null;
         }
@@ -326,11 +306,10 @@ class CreateTrip extends Component
             'shipper_id'         => null,
             'consignee_id'       => null,
 
-            // ✅ ВАЖНО: теперь это UID шагов, а не индексы. (Но компонент умеет принять и индексы.)
             'loading_step_ids'   => [],
             'unloading_step_ids' => [],
 
-            // Оплата (наш фрахт)
+            // client freight
             'price'            => '',
             'tax_percent'      => 21,
             'total_tax_amount' => 0,
@@ -339,15 +318,15 @@ class CreateTrip extends Component
             'payment_terms'    => null,
             'payer_type_id'    => null,
 
-            // Supplier invoice (для CMR/доков)
-            'supplier_invoice_nr'     => null,
-            'supplier_invoice_amount' => null,
+            // supplier invoice (cost)
+            'supplier_invoice_nr'       => null,
+            'supplier_invoice_amount'   => null,
+            'supplier_invoice_currency' => null, // ✅ поле есть в UI
 
             'items' => [
                 [
                     'uid'             => (string) Str::uuid(),
                     'description'     => '',
-
                     'customs_code'    => null,
 
                     'packages'        => null,
@@ -430,10 +409,7 @@ class CreateTrip extends Component
      * ============================================================ */
     public function save()
     {
-        // ✅ 1) нормализуем числа для numeric validation
         $this->normalizeInputsForValidation();
-
-        // ✅ 2) приводим выбранные шаги к UID (и поддерживаем старый фронт, где были индексы)
         $this->normalizeStepSelectionsToUids();
 
         $rules = [
@@ -448,7 +424,7 @@ class CreateTrip extends Component
             'cont_nr'      => 'nullable|string|max:50',
             'seal_nr'      => 'nullable|string|max:50',
 
-            // шаги маршрута
+            // steps
             'steps.*.type'       => 'required',
             'steps.*.country_id' => 'required|integer',
             'steps.*.city_id'    => 'required|integer',
@@ -457,12 +433,11 @@ class CreateTrip extends Component
             'steps.*.time'       => 'nullable',
             'steps.*.order'      => 'required|integer',
 
-            // грузы
+            // cargos
             'cargos.*.customer_id'        => 'required|integer',
             'cargos.*.shipper_id'         => 'required|integer',
             'cargos.*.consignee_id'       => 'required|integer',
 
-            // ✅ теперь здесь uid-ы, но валидация всё равно по массиву
             'cargos.*.loading_step_ids'   => 'required|array|min:1',
             'cargos.*.unloading_step_ids' => 'required|array|min:1',
 
@@ -471,10 +446,11 @@ class CreateTrip extends Component
             'cargos.*.currency'           => 'required|string|max:3',
 
             // supplier invoice
-            'cargos.*.supplier_invoice_nr'     => 'nullable|string|max:64',
-            'cargos.*.supplier_invoice_amount' => 'nullable|numeric|min:0',
+            'cargos.*.supplier_invoice_nr'       => 'nullable|string|max:64',
+            'cargos.*.supplier_invoice_amount'   => 'nullable|numeric|min:0',
+            'cargos.*.supplier_invoice_currency' => 'nullable|string|max:3',
 
-            // customs code per item
+            // customs
             'cargos.*.items.*.customs_code'    => 'nullable|string|max:32',
         ];
 
@@ -499,7 +475,6 @@ class CreateTrip extends Component
 
         $validator = Validator::make($data, $rules, $messages);
 
-        // Кастомная проверка: в каждой позиции должна быть хотя бы 1 "единица"
         $validator->after(function ($validator) {
             foreach ($this->cargos as $cargoIndex => $cargo) {
                 foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
@@ -529,24 +504,20 @@ class CreateTrip extends Component
             return;
         }
 
-        // ✅ unloading после loading (по позиции в массиве steps; работает и для uid, и для индексов)
+        // unloading after loading
         foreach ($this->cargos as $ci => $c) {
             foreach (($c['loading_step_ids'] ?? []) as $lToken) {
                 foreach (($c['unloading_step_ids'] ?? []) as $uToken) {
                     $lPos = $this->stepPositionByToken($lToken);
                     $uPos = $this->stepPositionByToken($uToken);
 
-                    // если не нашли — отловим как ошибку данных
                     if ($lPos === null || $uPos === null) {
                         $this->addError("cargos.$ci.unloading_step_ids", 'Выбраны некорректные шаги (обновите страницу и попробуйте снова).');
                         return;
                     }
 
                     if ($uPos <= $lPos) {
-                        $this->addError(
-                            "cargos.$ci.unloading_step_ids",
-                            'Разгрузки должны быть ПОСЛЕ всех погрузок.'
-                        );
+                        $this->addError("cargos.$ci.unloading_step_ids", 'Разгрузки должны быть ПОСЛЕ всех погрузок.');
                         return;
                     }
                 }
@@ -556,7 +527,6 @@ class CreateTrip extends Component
         DB::beginTransaction();
 
         try {
-            // ------ TRIP ------
             $trip = Trip::create([
                 'expeditor_id'        => $this->expeditor_id,
                 'expeditor_name'      => $this->expeditorData['name']      ?? null,
@@ -587,15 +557,10 @@ class CreateTrip extends Component
                 'seal_nr'    => $this->seal_nr,
             ]);
 
-            // ------ STEPS ------
             // uid -> db id
             $stepUidToId = [];
 
             foreach ($this->steps as $i => $s) {
-                if (empty($s['type']) || empty($s['country_id'])) {
-                    continue;
-                }
-
                 $dbStep = TripStep::create([
                     'trip_id'    => $trip->id,
                     'order'      => (int)($s['order'] ?? ($i + 1)),
@@ -613,13 +578,11 @@ class CreateTrip extends Component
                 }
             }
 
-            // ------ CARGOS ------
             foreach ($this->cargos as $cargoData) {
 
                 $price = $this->toFloat($cargoData['price'] ?? null, 0.0);
                 $taxPercent = $this->toFloat($cargoData['tax_percent'] ?? null, 0.0);
 
-                // пересчёт перед записью (чтобы не зависеть от фронта)
                 $tax = CalculateTax::calculate($price, $taxPercent);
 
                 $supplierInvoiceAmountRaw = $cargoData['supplier_invoice_amount'] ?? null;
@@ -646,7 +609,6 @@ class CreateTrip extends Component
                     'supplier_invoice_amount' => $supplierInvoiceAmount,
                 ]);
 
-                // cargo items
                 foreach (($cargoData['items'] ?? []) as $item) {
                     $cargo->items()->create([
                         'description'  => $item['description'] ?? '',
@@ -670,11 +632,10 @@ class CreateTrip extends Component
                     ]);
                 }
 
-                // pivot steps (uid -> db id)
+                // pivot steps
                 $pivot = [];
 
                 foreach (($cargoData['loading_step_ids'] ?? []) as $token) {
-                    // token должен быть uid (после normalizeStepSelectionsToUids), но оставим fallback
                     $uid = is_numeric($token) ? ($this->steps[(int)$token]['uid'] ?? null) : (string)$token;
                     if ($uid && isset($stepUidToId[$uid])) {
                         $pivot[$stepUidToId[$uid]] = ['role' => 'loading'];
@@ -721,7 +682,9 @@ class CreateTrip extends Component
             'expeditors' => config('companies', []),
             'payers'     => $this->payers,
             'taxRates'   => $this->taxRates,
-        ])->layout('layouts.app');
+        ])->layout('layouts.app', [
+        'title' => 'Create trip'
+    ]);
     }
 
     /** ============================================================
@@ -732,7 +695,7 @@ class CreateTrip extends Component
         $types = config('trailer-types.types', []);
         $id = array_search('container', $types, true);
 
-        return $id ?: 2; // fallback
+        return $id ?: 2;
     }
 
     public function getIsContainerTrailerProperty(): bool
@@ -742,15 +705,12 @@ class CreateTrip extends Component
 
     public function updatedTrailerId($value): void
     {
-        // trailer_id = trailers.id (FK)
         $this->trailer_id = $value ? (int)$value : null;
 
-        // selected_trailer_type_id = trailers.type_id
         $this->selected_trailer_type_id = $this->trailer_id
             ? (int) Trailer::whereKey($this->trailer_id)->value('type_id')
             : null;
 
-        // если НЕ контейнер — чистим поля
         if (!$this->isContainerTrailer) {
             $this->cont_nr = null;
             $this->seal_nr = null;
@@ -761,7 +721,7 @@ class CreateTrip extends Component
     {
         if (!$this->selected_trailer_type_id) return null;
 
-        $types  = config('trailer-types.types', []);   // [1=>'cargo',2=>'container',3=>'ref']
+        $types  = config('trailer-types.types', []);
         $labels = config('trailer-types.labels', []);
         $icons  = config('trailer-types.icons', []);
 

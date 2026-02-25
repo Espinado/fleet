@@ -35,17 +35,77 @@
             🚚 Fleet Manager
             <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl">✖</button>
         </div>
+@php
+    $navBase   = 'block px-3 py-2 rounded transition';
+    $navIdle   = 'text-gray-700 hover:bg-gray-200';
+    $navActive = 'bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-200';
+@endphp
 
-        <nav class="p-4 space-y-2">
-            <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Dashboard</a>
-            <a href="{{ route('drivers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">👨‍✈️ Drivers</a>
-            <a href="{{ route('trucks.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚛 Trucks</a>
-            <a href="{{ route('trailers.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🚚 Trailers</a>
-            <a href="{{ route('clients.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🏢 Clients</a>
-            <a href="{{ route('trips.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🧭 Trips</a>
-         <a href="{{ route('stats.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Stats</a>
-          <a href="{{ route('invoices.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">💶 Invoices</a>
-        </nav>
+<nav class="p-4 space-y-2">
+    <a href="{{ route('dashboard') }}"
+       @class([
+            $navBase,
+            request()->routeIs('dashboard') ? $navActive : $navIdle
+       ])>
+        📊 Dashboard
+    </a>
+
+    <a href="{{ route('drivers.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('drivers.*') ? $navActive : $navIdle
+       ])>
+        👨‍✈️ Drivers
+    </a>
+
+    <a href="{{ route('trucks.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('trucks.*') ? $navActive : $navIdle
+       ])>
+        🚛 Trucks
+    </a>
+
+    <a href="{{ route('trailers.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('trailers.*') ? $navActive : $navIdle
+       ])>
+        🚚 Trailers
+    </a>
+
+    <a href="{{ route('clients.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('clients.*') ? $navActive : $navIdle
+       ])>
+        🏢 Clients
+    </a>
+
+    <a href="{{ route('trips.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('trips.*') ? $navActive : $navIdle
+       ])>
+        🧭 Trips
+    </a>
+
+    <a href="{{ route('stats.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('stats.*') ? $navActive : $navIdle
+       ])>
+        📊 Stats
+    </a>
+
+    <a href="{{ route('invoices.index') }}"
+       @class([
+            $navBase,
+            request()->routeIs('invoices.*') ? $navActive : $navIdle
+       ])>
+        💶 Invoices
+    </a>
+</nav>
     </aside>
 
     {{-- ===== Main content ===== --}}
@@ -57,7 +117,7 @@
                 ☰
             </button>
 
-            <h1 class="text-lg font-semibold">@yield('title', 'Dashboard')</h1>
+           <h1 class="text-lg font-semibold"> {{ $title ?? 'Dashboard' }}</h1>
 
             <div class="relative group">
                 <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">

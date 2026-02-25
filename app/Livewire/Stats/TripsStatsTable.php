@@ -218,8 +218,8 @@ class TripsStatsTable extends Component
 
         $rows = $q->paginate(15);
 
-        return view('livewire.stats.trips-stats-table', compact('rows'))
-            ->title('Stats')
-            ->layout('layouts.app');
+        return view('livewire.stats.trips-stats-table', compact('rows'))->layout('layouts.app', [
+            'title' => 'Trips stats'
+        ]);
     }
 }

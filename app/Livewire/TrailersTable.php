@@ -68,6 +68,8 @@ class TrailersTable extends Component
 
         return view('livewire.trailers-table', [
             'items' => $trailers,
-        ])->layout('layouts.app');;
+        ])->layout('layouts.app', [
+        'title' => 'Trailers'
+    ]);
     }
 }

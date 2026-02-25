@@ -88,7 +88,8 @@ class TripsTable extends Component
             ->paginate($this->perPage);
 
         return view('livewire.trips-table', compact('trips'))
-            ->layout('layouts.app')
-            ->title('Trips');
+            ->layout('layouts.app', [
+        'title' => 'Trips'
+    ]);
     }
 }

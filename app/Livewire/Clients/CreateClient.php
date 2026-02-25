@@ -90,6 +90,8 @@ class CreateClient extends Component
             'countries' => $countries,
             'jurCities' => $jurCities,
             'fizCities' => $fizCities,
-        ])->layout('layouts.app')->title('Add Client');
+        ])->layout('layouts.app', [
+        'title' => 'New client'
+    ]);
     }
 }

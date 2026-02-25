@@ -131,6 +131,8 @@ $this->tech_passport_expired = $trailer->tech_passport_expired ? Carbon::parse($
 
     public function render()
     {
-        return view('livewire.trailers.edit-trailer')->layout('layouts.app');
+        return view('livewire.trailers.edit-trailer')->layout('layouts.app', [
+        'title' => 'Edit trailer'
+    ]);
     }
 }

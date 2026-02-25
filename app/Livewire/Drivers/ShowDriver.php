@@ -16,7 +16,9 @@ class ShowDriver extends Component
 
     public function render()
     {
-       return view('livewire.drivers.show-driver')->layout('layouts.app');
+       return view('livewire.drivers.show-driver')->layout('layouts.app', [
+        'title' => 'Driver info'
+    ]);
 
     }
 }
