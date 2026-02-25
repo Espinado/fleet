@@ -71,10 +71,10 @@
         </div>
     </div>
 
-    {{-- TABLE --}}
     <div class="max-w-7xl mx-auto px-4 py-4">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
 
+        {{-- ✅ DESKTOP TABLE --}}
+        <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50 text-gray-700">
@@ -142,25 +142,27 @@
                                         {{ $statusText }}
                                     </span>
                                 </td>
-<td class="px-4 py-3">
-    <div class="flex items-center gap-2">
-        <span class="font-semibold text-gray-900">
-            {{ $inv->invoice_no ?? '—' }}
-        </span>
 
-        @if(!empty($inv->pdf_file))
-            <a
-                href="{{ route('invoices.open', $inv->id) }}"
-                target="_blank"
-                rel="noopener"
-                class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold
-                       hover:bg-amber-300 transition"
-            >
-                👁 Open
-            </a>
-        @endif
-    </div>
-</td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-gray-900">
+                                            {{ $inv->invoice_no ?? '—' }}
+                                        </span>
+
+                                        @if(!empty($inv->pdf_file))
+                                            <a
+                                                href="{{ route('invoices.open', $inv->id) }}"
+                                                target="_blank"
+                                                rel="noopener"
+                                                class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold
+                                                       hover:bg-amber-300 transition"
+                                            >
+                                                👁 Open
+                                            </a>
+                                        @endif
+                                    </div>
+                                </td>
+
                                 <td class="px-4 py-3 text-gray-800">
                                     {{ $payerName }}<span class="text-gray-500">{{ $payerReg }}</span>
                                 </td>
@@ -195,8 +197,108 @@
             <div class="px-4 py-3">
                 {{ $rows->links() }}
             </div>
-
         </div>
-    </div>
 
+        {{-- ✅ MOBILE / PWA CARDS --}}
+        <div class="md:hidden space-y-3">
+            @forelse($rows as $inv)
+                @php
+                    $total = (float) $inv->total;
+                    $paid  = (float) ($inv->paid_total ?? 0);
+                    $currency = $inv->currency ?? 'EUR';
+
+                    if ($paid >= $total && $total > 0) {
+                        $statusText = 'Paid';
+                        $badge = 'bg-green-100 text-green-700 border-green-200';
+                    } elseif ($paid > 0 && $paid < $total) {
+                        $statusText = 'Partial';
+                        $badge = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+                    } else {
+                        $statusText = 'Unpaid';
+                        $badge = 'bg-red-100 text-red-700 border-red-200';
+                    }
+
+                    $issuedAt = $inv->issued_at ? \Carbon\Carbon::parse($inv->issued_at)->format('d.m.Y') : '—';
+                    $paidAt   = $inv->last_paid_at ? \Carbon\Carbon::parse($inv->last_paid_at)->format('d.m.Y') : '—';
+
+                    $payerName = $inv->payer?->company_name ?? '—';
+                    $payerReg  = $inv->payer?->reg_nr ? $inv->payer->reg_nr : null;
+                @endphp
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                    {{-- top row --}}
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold {{ $badge }}">
+                                    {{ $statusText }}
+                                </span>
+                                <span class="text-sm font-semibold text-gray-900 truncate">
+                                    {{ $inv->invoice_no ?? '—' }}
+                                </span>
+                            </div>
+
+                            <div class="mt-1 text-xs text-gray-700 truncate">
+                                {{ $payerName }}
+                                @if($payerReg)
+                                    <span class="text-gray-400">• {{ $payerReg }}</span>
+                                @endif
+                            </div>
+                        </div>
+
+                        @if(!empty($inv->pdf_file))
+                            <a
+                                href="{{ route('invoices.open', $inv->id) }}"
+                                target="_blank"
+                                rel="noopener"
+                                class="shrink-0 inline-flex items-center justify-center px-3 py-2 rounded-xl
+                                       bg-amber-200 text-amber-900 font-semibold text-sm hover:bg-amber-300 transition"
+                            >
+                                👁 Open
+                            </a>
+                        @endif
+                    </div>
+
+                    {{-- amounts --}}
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
+                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <div class="text-gray-500">Total</div>
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ number_format($total, 2, '.', ' ') }} {{ $currency }}
+                            </div>
+                        </div>
+
+                        <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <div class="text-gray-500">Paid</div>
+                            <div class="text-sm font-semibold text-gray-900">
+                                {{ number_format($paid, 2, '.', ' ') }} {{ $currency }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- dates --}}
+                    <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
+                        <div class="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <span class="text-gray-500">Issued</span>
+                            <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
+                        </div>
+
+                        <div class="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <span class="text-gray-500">Paid date</span>
+                            <span class="font-semibold text-gray-900">{{ $paidAt }}</span>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center text-gray-500">
+                    No invoices found.
+                </div>
+            @endforelse
+
+            <div class="pt-2">
+                {{ $rows->links() }}
+            </div>
+        </div>
+
+    </div>
 </div>
