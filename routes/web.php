@@ -20,6 +20,12 @@ use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
 use App\Livewire\TripsTable;
 use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
 
+use App\Livewire\Invoices\InvoicesTable;
+use App\Models\Invoice;
+use Illuminate\Support\Facades\Storage;
+
+
+
 use App\Notifications\TestPushNotification;
 
 // Главная страница
@@ -98,6 +104,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/invoice/{cargo}/generate', [CmrController::class, 'generateInvoiceAndSave'])
     ->name('invoice.generate');
+
+    Route::get('/invoices', InvoicesTable::class)
+    ->name('invoices.index');
+  Route::get('/invoices/{invoice}/open', function (Invoice $invoice) {
+
+    if (!$invoice->pdf_file) {
+        abort(404, 'Invoice PDF not found');
+    }
+
+    if (!Storage::disk('public')->exists($invoice->pdf_file)) {
+        abort(404, 'Invoice PDF file missing in storage');
+    }
+
+    return redirect()->away(asset('storage/' . $invoice->pdf_file));
+
+})->name('invoices.open');
+
+
 
     Route::post('/logout', function () {
         Auth::logout();

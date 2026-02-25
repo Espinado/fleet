@@ -93,5 +93,9 @@ class TripCargo extends Model
     return $this->belongsToMany(TripStep::class, 'trip_cargo_step')
         ->withPivot(['role']);
 }
+public function invoice()
+{
+    return $this->hasOne(\App\Models\Invoice::class, 'trip_cargo_id');
+}
 
 }

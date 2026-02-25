@@ -44,6 +44,7 @@
             <a href="{{ route('clients.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🏢 Clients</a>
             <a href="{{ route('trips.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">🧭 Trips</a>
          <a href="{{ route('stats.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">📊 Stats</a>
+          <a href="{{ route('invoices.index') }}" class="block px-3 py-2 rounded hover:bg-gray-200">💶 Invoices</a>
         </nav>
     </aside>
 

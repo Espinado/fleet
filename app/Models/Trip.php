@@ -134,5 +134,9 @@ public function scopeActiveForDriver($query, int $driverId)
             $q->where('status', 'open');
         });
 }
+public function invoices()
+{
+    return $this->hasMany(\App\Models\Invoice::class);
+}
 
 }
