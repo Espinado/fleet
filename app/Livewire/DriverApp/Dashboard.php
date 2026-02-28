@@ -23,21 +23,26 @@ class Dashboard extends Component
     public bool $canDepart = true;
     public bool $canReturn = false;
 
-    public function mount()
-    {
-       $user = Auth::guard('driver')->user();
+   public function mount()
+{
+    $user = Auth::guard('driver')->user(); // важно
 
-        if (!$user || $user->role !== 'driver' || !$user->driver) {
-            redirect()->route('driver.login')->send();
-            return;
-        }
+    \Log::info('DriverApp mount', [
+        'driver_guard_user_id' => optional($user)->id,
+        'role' => optional($user)->role,
+        'driver_id' => optional($user?->driver)->id,
+    ]);
 
-        $this->driver = $user->driver;
-
-        $this->loadCurrentTrip();
-
-        $this->syncGarageFlags();
+    if (!$user || $user->role !== 'driver' || !$user->driver) {
+        redirect()->route('driver.login')->send();
+        return;
     }
+
+    $this->driver = $user->driver;
+
+    $this->loadCurrentTrip();
+    $this->syncGarageFlags();
+}
 
     private function loadCurrentTrip(): void
     {
