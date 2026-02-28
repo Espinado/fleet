@@ -166,5 +166,38 @@ public function invoices()
 {
     return $this->hasMany(\App\Models\Invoice::class);
 }
+public function carrierCompany()
+{
+    return $this->belongsTo(\App\Models\Company::class, 'carrier_company_id');
+}
 
+public function expeditorCompany()
+{
+    return $this->belongsTo(\App\Models\Company::class, 'expeditor_id');
+}
+public function getSchemeKeyAttribute(): string
+{
+    $carrier = $this->carrierCompany;
+
+    if ($this->driver_id) return 'own';
+    if ($carrier?->is_third_party) return 'third_party';
+    return 'resell';
+}
+public function getSchemeLabelAttribute(): string
+{
+    return match ($this->scheme_key) {
+        'own' => 'СВОИ',
+        'third_party' => '3RD PARTY',
+        default => 'ПЕРЕПРОДАЖА',
+    };
+}
+
+public function getSchemeBadgeClassAttribute(): string
+{
+    return match ($this->scheme_key) {
+        'own' => 'bg-green-100 text-green-800',
+        'third_party' => 'bg-red-100 text-red-800',
+        default => 'bg-amber-100 text-amber-900',
+    };
+}
 }

@@ -40,6 +40,14 @@ class TrucksTable extends Component
     public function render()
     {
         $trucks = Truck::query()
+            // ✅ ОТСЕКАЕМ third-party грузовики
+            ->whereHas('company', function ($q) {
+                $q->where(function ($qq) {
+                    $qq->where('is_third_party', 0)
+                       ->orWhereNull('is_third_party');
+                });
+            })
+
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('brand', 'like', "%{$this->search}%")
@@ -55,6 +63,7 @@ class TrucksTable extends Component
                       ->orWhere('insurance_company', 'like', "%{$this->search}%");
                 });
             })
+
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
@@ -70,7 +79,6 @@ class TrucksTable extends Component
             ->pluck('name', 'id'); // [id => name]
 
         $trucks->getCollection()->transform(function ($truck) use ($companiesById) {
-            // ✅ совместимость: если где-то ещё осталось поле "company"
             $companyId = (int) ($truck->company_id ?? $truck->company ?? 0);
 
             $truck->company_name = $companyId
@@ -81,11 +89,12 @@ class TrucksTable extends Component
         });
 
         return view('livewire.trucks-table', [
-            'items' => $trucks,
-            'sortField' => $this->sortField,
-            'sortDirection' => $this->sortDirection,
-        ])->layout('layouts.app', [
-            'title' => 'Trucks'
-        ]);
+        'items' => $trucks,
+        'sortField' => $this->sortField,
+        'sortDirection' => $this->sortDirection,
+        'title' => 'Trucks',
+    ])->layout('layouts.app', [
+        'title' => 'Trucks',
+    ]);
     }
 }

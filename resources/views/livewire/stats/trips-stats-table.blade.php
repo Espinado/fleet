@@ -327,7 +327,7 @@
                                         <div class="text-xs text-gray-600">
                                             👤 {{ $trip->driver?->full_name ?? '—' }}
                                             @if($trip->driver?->pers_code)
-                                                <span class="text-gray-400">• {{ $trip->driver->pers_code }}</span>
+                                                <span class="text-gray-400">• {{ $trip->driver?->pers_code }}</span>
                                             @endif
                                         </div>
                                     </td>

@@ -5,6 +5,7 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Trip;
+use App\Models\Client;
 
 class TripsTable extends Component
 {
@@ -56,7 +57,7 @@ class TripsTable extends Component
                 (SELECT last_name FROM drivers d WHERE d.id = trips.driver_id LIMIT 1) {$this->sortDirection}
             "),
 
-            'route' => $query->orderBy('id', $this->sortDirection), // упрощённо
+            'route' => $query->orderBy('id', $this->sortDirection),
 
             'status' => $query->orderBy('status', $this->sortDirection),
 
@@ -73,6 +74,7 @@ class TripsTable extends Component
                 'truck',
                 'trailer',
                 'cargos',
+                'carrierCompany:id,name,is_third_party',
             ])
             ->when($this->search, function ($q) {
                 $q->where('expeditor_name', 'like', "%{$this->search}%")
@@ -80,16 +82,52 @@ class TripsTable extends Component
                       $c->where('company_name', 'like', "%{$this->search}%")
                   );
             })
-            ->when($this->status, fn($q) =>
-                $q->where('status', $this->status)
-            );
+            ->when($this->status, fn($q) => $q->where('status', $this->status));
 
-        $trips = $this->applySorting($query)
-            ->paginate($this->perPage);
+        $trips = $this->applySorting($query)->paginate($this->perPage);
+
+        /**
+         * ✅ Build clients list from cargos for the current page (stable for 3rd party too)
+         * - Collect all customer/shipper/consignee ids across trips on page
+         * - 1 query to clients table
+         * - Attach computed array $trip->clients_list to each trip
+         */
+        $clientIds = collect();
+
+        foreach ($trips->getCollection() as $trip) {
+            foreach (($trip->cargos ?? []) as $cargo) {
+                $clientIds->push($cargo->customer_id);
+                $clientIds->push($cargo->shipper_id);
+                $clientIds->push($cargo->consignee_id);
+            }
+        }
+
+        $clientIds = $clientIds->filter()->unique()->values();
+
+        $clientsById = $clientIds->isNotEmpty()
+            ? Client::query()->whereIn('id', $clientIds)->pluck('company_name', 'id')
+            : collect();
+
+        $trips->getCollection()->transform(function ($trip) use ($clientsById) {
+            $names = collect();
+
+            foreach (($trip->cargos ?? []) as $cargo) {
+                foreach (['customer_id', 'shipper_id', 'consignee_id'] as $field) {
+                    $id = (int)($cargo->{$field} ?? 0);
+                    if ($id && isset($clientsById[$id])) {
+                        $names->push($clientsById[$id]);
+                    }
+                }
+            }
+
+            $trip->clients_list = $names->filter()->unique()->values()->all();
+
+            return $trip;
+        });
 
         return view('livewire.trips-table', compact('trips'))
             ->layout('layouts.app', [
-        'title' => 'Trips'
-    ]);
+                'title' => 'Trips'
+            ]);
     }
 }

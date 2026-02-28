@@ -18,13 +18,13 @@ class TrailersTable extends Component
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'sortField' => ['except' => 'brand'],     // ✅ было last_name
+        'sortField' => ['except' => 'brand'],
         'sortDirection' => ['except' => 'asc'],
         'perPage' => ['except' => 10],
         'page' => ['except' => 1],
     ];
 
-    public function updatingSearch() { $this->resetPage(); }
+    public function updatingSearch()  { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
     public function sortBy($field): void
@@ -40,6 +40,14 @@ class TrailersTable extends Component
     public function render()
     {
         $trailers = Trailer::query()
+            // ✅ ОТСЕКАЕМ third-party трейлеры (companies.is_third_party = 1)
+            ->whereHas('company', function ($q) {
+                $q->where(function ($qq) {
+                    $qq->where('is_third_party', 0)
+                       ->orWhereNull('is_third_party');
+                });
+            })
+
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('brand', 'like', "%{$this->search}%")
@@ -85,6 +93,9 @@ class TrailersTable extends Component
 
         return view('livewire.trailers-table', [
             'items' => $trailers,
+            'sortField' => $this->sortField,
+            'sortDirection' => $this->sortDirection,
+            'title' => 'Trailers',
         ])->layout('layouts.app', [
             'title' => 'Trailers'
         ]);
