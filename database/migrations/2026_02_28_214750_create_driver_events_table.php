@@ -15,9 +15,9 @@ return new class extends Migration {
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('trip_id')->nullable();
 
-            $table->string('channel');  // http | livewire | client | auth
-            $table->string('event');    // request | method_call | input_update | click | login | logout...
-            $table->string('name')->nullable(); // route name / component / method / element
+            $table->string('channel', 50);
+$table->string('event', 100);
+$table->string('name', 150)->nullable();
             $table->string('path')->nullable();
             $table->string('method', 10)->nullable();
 
