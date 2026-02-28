@@ -23,17 +23,29 @@ class Dashboard extends Component
     public bool $canDepart = true;
     public bool $canReturn = false;
 
-   public function mount()
+ public function mount()
 {
-    $user = Auth::guard('driver')->user(); // важно
+    $userWeb    = Auth::guard('web')->user();
+    $userDriver = Auth::guard('driver')->user();
 
-    \Log::info('DriverApp mount', [
-        'driver_guard_user_id' => optional($user)->id,
-        'role' => optional($user)->role,
-        'driver_id' => optional($user?->driver)->id,
+    \Log::info('DriverApp mount AUTH', [
+        'url' => request()->fullUrl(),
+        'session_id' => session()->getId(),
+        'web_user_id' => optional($userWeb)->id,
+        'driver_user_id' => optional($userDriver)->id,
+        'driver_role' => optional($userDriver)->role,
+        'driver_model_id' => optional($userDriver?->driver)->id,
     ]);
 
+    $user = $userDriver; // ✅ используем driver-guard
+
     if (!$user || $user->role !== 'driver' || !$user->driver) {
+        \Log::warning('DriverApp mount BLOCKED', [
+            'reason' => 'not authed as driver or no driver relation',
+            'driver_user_id' => optional($userDriver)->id,
+            'driver_model_id' => optional($userDriver?->driver)->id,
+        ]);
+
         redirect()->route('driver.login')->send();
         return;
     }
@@ -46,11 +58,23 @@ class Dashboard extends Component
 
     private function loadCurrentTrip(): void
     {
-        $this->trip = Trip::query()
-            ->where('driver_id', $this->driver->id)
-            ->where('status', '!=', TripStatus::COMPLETED->value)
-            ->latest('id')
-            ->first();
+         \Log::info('DriverApp loadCurrentTrip BEFORE', [
+        'driver_id' => optional($this->driver)->id,
+        'completed_value' => TripStatus::COMPLETED->value,
+    ]);
+
+    $this->trip = Trip::withoutGlobalScopes()
+    ->where('driver_id', $this->driver->id)
+    ->where('status', '!=', TripStatus::COMPLETED->value)
+    ->latest('id')
+    ->first();
+
+    \Log::info('DriverApp loadCurrentTrip AFTER', [
+        'trip_id' => optional($this->trip)->id,
+        // status может быть enum, поэтому безопасно так:
+        'trip_status' => $this->trip?->status instanceof TripStatus ? $this->trip->status->value : $this->trip?->status,
+        'trip_driver_id' => optional($this->trip)->driver_id,
+    ]);
     }
 
     public function departFromGarage(): void
@@ -142,6 +166,11 @@ class Dashboard extends Component
         if (!$this->trip || !$this->trip->truck_id) {
             return;
         }
+        \Log::info('DriverApp syncGarageFlags', [
+    'trip_id' => $this->trip->id,
+    'truck_id' => $this->trip->truck_id,
+    'vehicle_run_id' => $this->trip->vehicle_run_id,
+]);
 
         // если рейс вдруг completed (на всякий) — блокируем всё
         if ($this->trip->status instanceof TripStatus && $this->trip->status === TripStatus::COMPLETED) {
