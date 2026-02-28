@@ -5,8 +5,8 @@ namespace App\Livewire\Trucks;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Truck;
+use App\Models\Company;
 use Illuminate\Validation\Rule;
-
 
 class CreateTruck extends Component
 {
@@ -16,9 +16,10 @@ class CreateTruck extends Component
     public $model;
     public $plate;
     public $year;
+
     public $license_number = null;
     public $license_issued = null;
-     public $license_expired = null;
+    public $license_expired = null;
 
     public $inspection_issued;
     public $inspection_expired;
@@ -31,11 +32,14 @@ class CreateTruck extends Component
     public $vin;
     public $status = 1;
     public $is_active = true;
-    public $company;
+
+    // ✅ было $company, стало $company_id
+    public ?int $company_id = null;
+
     public $tech_passport_nr;
     public $tech_passport_issued;
     public $tech_passport_expired;
-    public $tech_passport_photo; // <-- обязательно: свойство для файла
+    public $tech_passport_photo;
 
     protected function rules()
     {
@@ -43,14 +47,17 @@ class CreateTruck extends Component
             'brand' => 'required|string|max:255',
             'model' => 'required|string|max:255',
             'plate' => ['required','string','max:255', Rule::unique('trucks','plate')],
-            'year' => 'required|integer|min:1900|max:' . (date('Y') + 1),
-            'company' => 'required|',
-            'inspection_issued' => 'required|date',
+            'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
+
+            // ✅ company_id
+            'company_id' => 'required|integer|exists:companies,id',
+
+            'inspection_issued'  => 'required|date',
             'inspection_expired' => 'required|date|after_or_equal:inspection_issued',
 
             'insurance_company' => 'required|string|max:255',
-            'insurance_number' => 'required|string|max:255',
-            'insurance_issued' => 'required|date',
+            'insurance_number'  => 'required|string|max:255',
+            'insurance_issued'  => 'required|date',
             'insurance_expired' => 'required|date|after_or_equal:insurance_issued',
 
             'vin' => ['required','string', Rule::unique('trucks','vin')],
@@ -58,7 +65,8 @@ class CreateTruck extends Component
             'tech_passport_nr' => 'required|string|max:255',
             'tech_passport_issued' => 'required|date',
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
-            'tech_passport_photo' => 'nullable|image|max:24096', // up to 4MB
+            'tech_passport_photo' => 'nullable|image|max:24096',
+
             'license_number' => 'nullable|string|max:50',
             'license_issued' => 'nullable|date',
             'license_expired' => 'nullable|date|after_or_equal:license_issued',
@@ -69,23 +77,25 @@ class CreateTruck extends Component
     {
         $this->validate();
 
-        // Сохраняем фото на диск public
         $photoPath = null;
         if ($this->tech_passport_photo) {
             $photoPath = $this->tech_passport_photo->store('trucks/tech_passports', 'public');
         }
 
-        $truck = Truck::create([
+        Truck::create([
             'brand' => $this->brand,
             'model' => $this->model,
             'plate' => $this->plate,
-            'year' => $this->year,
-            'company' => $this->company,
-            'inspection_issued' => $this->inspection_issued,
+            'year'  => $this->year,
+
+            // ✅ company_id
+            'company_id' => $this->company_id,
+
+            'inspection_issued'  => $this->inspection_issued,
             'inspection_expired' => $this->inspection_expired,
 
-            'insurance_number' => $this->insurance_number,
-            'insurance_issued' => $this->insurance_issued,
+            'insurance_number'  => $this->insurance_number,
+            'insurance_issued'  => $this->insurance_issued,
             'insurance_expired' => $this->insurance_expired,
             'insurance_company' => $this->insurance_company,
 
@@ -97,23 +107,26 @@ class CreateTruck extends Component
             'tech_passport_issued' => $this->tech_passport_issued,
             'tech_passport_expired' => $this->tech_passport_expired,
             'tech_passport_photo' => $photoPath,
-             'license_number' => $this->license_number,
-           'license_issued' => $this->license_issued,
-          'license_expired' => $this->license_expired,
 
+            'license_number' => $this->license_number,
+            'license_issued' => $this->license_issued,
+            'license_expired' => $this->license_expired,
         ]);
 
         session()->flash('success', 'Truck added successfully!');
-
         return redirect()->route('trucks.index');
     }
 
     public function render()
     {
-        return view('livewire.trucks.create-truck')->layout('layouts.app', [
-        'title' => 'Add truck'
-    ]);
+        $companies = Company::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'slug']);
+
+        return view('livewire.trucks.create-truck', [
+            'companies' => $companies,
+        ])->layout('layouts.app', [
+            'title' => 'Add truck'
+        ]);
     }
-
-
 }

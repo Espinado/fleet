@@ -5,8 +5,9 @@ namespace App\Livewire\Drivers;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Driver;
+use App\Models\Company;
 use Illuminate\Support\Facades\Storage;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EditDriver extends Component
 {
@@ -15,7 +16,11 @@ class EditDriver extends Component
     public Driver $driver;
 
     // Personal info
-    public $first_name, $last_name, $pers_code, $phone, $email, $company;
+    public $first_name, $last_name, $pers_code, $phone, $email;
+
+    // ✅ было $company, стало $company_id
+    public ?int $company_id = null;
+
     public $declared_street, $declared_building, $declared_room, $declared_postcode;
     public $actual_street, $actual_building, $actual_room, $status, $is_active;
 
@@ -25,7 +30,9 @@ class EditDriver extends Component
     public ?int $declared_city_id = null;
     public ?int $actual_country_id = null;
     public ?int $actual_city_id = null;
-    public ?int $actual_postcode = null;
+
+    // (у тебя в таблице actual_postcode строкой, судя по дампу — оставляем string)
+    public $actual_postcode = null;
 
     // Documents
     public $license_number, $license_issued, $license_end;
@@ -43,9 +50,13 @@ class EditDriver extends Component
         'first_name' => 'required|string|max:255',
         'last_name' => 'required|string|max:255',
         'pers_code' => 'required|string|max:50',
-        'company' => 'required',
+
+        // ✅ company_id
+        'company_id' => 'required|integer|exists:companies,id',
+
         'email' => 'nullable|email',
         'phone' => 'nullable|string|max:50',
+
         'license_number' => 'nullable|string|max:50',
         'license_issued' => 'nullable|date',
         'license_end' => 'nullable|date',
@@ -59,6 +70,7 @@ class EditDriver extends Component
         'medical_exam_expired' => 'nullable|date',
         'declaration_issued' => 'nullable|date',
         'declaration_expired' => 'nullable|date',
+
         'photo' => 'nullable|image|max:22048',
         'license_photo' => 'nullable|image|max:22048',
         'medical_certificate_photo' => 'nullable|image|max:22048',
@@ -68,14 +80,15 @@ class EditDriver extends Component
     {
         $this->driver = $driver;
 
-        // Personal info
         $this->first_name = $driver->first_name;
         $this->last_name = $driver->last_name;
         $this->pers_code = $driver->pers_code;
         $this->citizenship_id = $driver->citizenship_id;
         $this->phone = $driver->phone;
         $this->email = $driver->email;
-        $this->company = $driver->company;
+
+        // ✅ company_id
+        $this->company_id = $driver->company_id;
 
         $this->declared_country_id = $driver->declared_country_id;
         $this->declared_city_id = $driver->declared_city_id;
@@ -89,7 +102,8 @@ class EditDriver extends Component
         $this->actual_street = $driver->actual_street;
         $this->actual_building = $driver->actual_building;
         $this->actual_room = $driver->actual_room;
-         $this->actual_postcode = $driver->actual_postcode;
+        $this->actual_postcode = $driver->actual_postcode;
+
         $this->status = $driver->status;
         $this->is_active = $driver->is_active;
         $this->license_number = $driver->license_number;
@@ -128,64 +142,81 @@ class EditDriver extends Component
     {
         $this->validate();
 
-        // Save photos (replace old if new uploaded)
-        if ($this->photo) {
-            if ($this->old_photo && Storage::disk('public')->exists($this->old_photo)) {
-                Storage::disk('public')->delete($this->old_photo);
+        DB::transaction(function () {
+            // Save photos (replace old if new uploaded)
+            if ($this->photo) {
+                if ($this->old_photo && Storage::disk('public')->exists($this->old_photo)) {
+                    Storage::disk('public')->delete($this->old_photo);
+                }
+                $this->driver->photo = $this->photo->store('drivers/photos', 'public');
             }
-            $this->driver->photo = $this->photo->store('drivers/photos', 'public');
-        }
 
-        if ($this->license_photo) {
-            if ($this->old_license_photo && Storage::disk('public')->exists($this->old_license_photo)) {
-                Storage::disk('public')->delete($this->old_license_photo);
+            if ($this->license_photo) {
+                if ($this->old_license_photo && Storage::disk('public')->exists($this->old_license_photo)) {
+                    Storage::disk('public')->delete($this->old_license_photo);
+                }
+                $this->driver->license_photo = $this->license_photo->store('drivers/licenses', 'public');
             }
-            $this->driver->license_photo = $this->license_photo->store('drivers/licenses', 'public');
-        }
 
-        if ($this->medical_certificate_photo) {
-            if ($this->old_medical_certificate_photo && Storage::disk('public')->exists($this->old_medical_certificate_photo)) {
-                Storage::disk('public')->delete($this->old_medical_certificate_photo);
+            if ($this->medical_certificate_photo) {
+                if ($this->old_medical_certificate_photo && Storage::disk('public')->exists($this->old_medical_certificate_photo)) {
+                    Storage::disk('public')->delete($this->old_medical_certificate_photo);
+                }
+                $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
             }
-            $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
-        }
 
-        // Update driver
-        $this->driver->update([
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'pers_code' => $this->pers_code,
-            'citizenship_id' => $this->citizenship_id,
-            'company' => $this->company,
-            'phone' => $this->phone,
-            'email' => $this->email,
-            'declared_country_id' => $this->declared_country_id,
-            'declared_city_id' => $this->declared_city_id,
-            'declared_street' => $this->declared_street,
-            'declared_building' => $this->declared_building,
-            'declared_room' => $this->declared_room,
-            'declared_postcode' => $this->declared_postcode,
-            'actual_country_id' => $this->actual_country_id,
-            'actual_city_id' => $this->actual_city_id,
-            'actual_street' => $this->actual_street,
-            'actual_building' => $this->actual_building,
-            'actual_room' => $this->actual_room,
-            'status' => $this->status,
-            'is_active' => $this->is_active,
-            'license_number' => $this->license_number,
-            'license_issued' => $this->license_issued,
-            'license_end' => $this->license_end,
-            'code95_issued' => $this->code95_issued,
-            'code95_end' => $this->code95_end,
-            'permit_issued' => $this->permit_issued,
-            'permit_expired' => $this->permit_expired,
-            'medical_issued' => $this->medical_issued,
-            'medical_expired' => $this->medical_expired,
-            'medical_exam_passed' => $this->medical_exam_passed,
-            'medical_exam_expired' => $this->medical_exam_expired,
-            'declaration_issued' => $this->declaration_issued,
-            'declaration_expired' => $this->declaration_expired,
-        ]);
+            // Update driver
+            $this->driver->update([
+                'first_name' => $this->first_name,
+                'last_name' => $this->last_name,
+                'pers_code' => $this->pers_code,
+                'citizenship_id' => $this->citizenship_id,
+
+                // ✅ company_id
+                'company_id' => $this->company_id,
+
+                'phone' => $this->phone,
+                'email' => $this->email,
+
+                'declared_country_id' => $this->declared_country_id,
+                'declared_city_id' => $this->declared_city_id,
+                'declared_street' => $this->declared_street,
+                'declared_building' => $this->declared_building,
+                'declared_room' => $this->declared_room,
+                'declared_postcode' => $this->declared_postcode,
+
+                'actual_country_id' => $this->actual_country_id,
+                'actual_city_id' => $this->actual_city_id,
+                'actual_street' => $this->actual_street,
+                'actual_building' => $this->actual_building,
+                'actual_room' => $this->actual_room,
+                'actual_postcode' => $this->actual_postcode,
+
+                'status' => $this->status,
+                'is_active' => $this->is_active,
+
+                'license_number' => $this->license_number,
+                'license_issued' => $this->license_issued,
+                'license_end' => $this->license_end,
+                'code95_issued' => $this->code95_issued,
+                'code95_end' => $this->code95_end,
+                'permit_issued' => $this->permit_issued,
+                'permit_expired' => $this->permit_expired,
+                'medical_issued' => $this->medical_issued,
+                'medical_expired' => $this->medical_expired,
+                'medical_exam_passed' => $this->medical_exam_passed,
+                'medical_exam_expired' => $this->medical_exam_expired,
+                'declaration_issued' => $this->declaration_issued,
+                'declaration_expired' => $this->declaration_expired,
+            ]);
+
+            // ✅ Синхронизируем users.company_id для связанного пользователя
+            if ($this->driver->user_id) {
+                \App\Models\User::where('id', $this->driver->user_id)
+                    ->where('role', 'driver')
+                    ->update(['company_id' => $this->company_id]);
+            }
+        });
 
         session()->flash('success', 'Driver updated successfully!');
         return redirect()->route('drivers.index');
@@ -193,10 +224,21 @@ class EditDriver extends Component
 
     public function render()
     {
-        $companies = config('companies');
         $countries = config('countries');
-      $declaredCities = getCitiesByCountryId($this->declared_country_id);
-$actualCities = getCitiesByCountryId($this->actual_country_id);
+
+        // ✅ компании из БД
+        $companies = Company::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'slug']);
+
+        $declaredCities = $this->declared_country_id
+            ? getCitiesByCountryId($this->declared_country_id)
+            : [];
+
+        $actualCities = $this->actual_country_id
+            ? getCitiesByCountryId($this->actual_country_id)
+            : [];
+
         return view('livewire.drivers.edit-driver', [
             'companies' => $companies,
             'countries' => $countries,

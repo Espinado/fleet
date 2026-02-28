@@ -17,7 +17,7 @@ class Truck extends Model
         'can_available',
         'plate',
         'year',
-        'company',
+        'company_id',
         'inspection_issued',
         'inspection_expired',
         'insurance_number',
@@ -63,5 +63,10 @@ class Truck extends Model
 public function odometerEvents(): HasMany
 {
     return $this->hasMany(\App\Models\OdometerEvent::class);
+}
+
+public function company()
+{
+    return $this->belongsTo(\App\Models\Company::class);
 }
 }

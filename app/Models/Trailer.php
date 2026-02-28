@@ -24,7 +24,7 @@ class Trailer extends Model
         'insurance_company',
         'tir_issued',
         'tir_expired',
-        'company',
+        'company_id',
         'vin',
         'status',
         'is_active',
@@ -59,5 +59,10 @@ public function getTypeIconAttribute(): ?string
 {
     $key = $this->type_key;
     return $key ? config("trailer-types.icons.$key") : null;
+}
+
+public function company()
+{
+    return $this->belongsTo(\App\Models\Company::class);
 }
 }

@@ -4,6 +4,7 @@ namespace App\Livewire\Trailers;
 
 use Livewire\Component;
 use App\Models\Trailer;
+use App\Models\Company;
 use Livewire\WithFileUploads;
 use Illuminate\Validation\Rule;
 
@@ -13,14 +14,20 @@ class CreateTrailer extends Component
 
     public $brand, $plate, $year;
 
-    // ✅ NEW: trailer type (default = 1)
+    // ✅ trailer type (default = 1)
     public $type_id = 1;
 
     public $inspection_issued, $inspection_expired;
     public $insurance_company, $insurance_number, $insurance_issued, $insurance_expired;
     public $tir_issued, $tir_expired;
+
     public $vin, $status = 1, $is_active = true;
-    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired, $company;
+
+    public $tech_passport_nr, $tech_passport_issued, $tech_passport_expired;
+
+    // ✅ было $company, стало $company_id
+    public ?int $company_id = null;
+
     public $tech_passport_photo;
 
     protected function rules()
@@ -28,14 +35,16 @@ class CreateTrailer extends Component
         return [
             'brand' => 'required|string|max:255',
             'plate' => ['required','string','max:255', Rule::unique('trailers','plate')],
-            'year'  => 'required|integer|min:1900|max:' . (date('Y')+1),
+            'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
 
-            // ✅ NEW: validate type_id from config
+            // ✅ validate type_id from config
             'type_id' => 'required|integer|in:' . implode(',', array_keys(config('trailer-types.types'))),
 
             'inspection_issued'  => 'required|date',
             'inspection_expired' => 'required|date|after_or_equal:inspection_issued',
-            'company' => 'required',
+
+            // ✅ company_id
+            'company_id' => 'required|integer|exists:companies,id',
 
             'insurance_company' => 'required|string|max:255',
             'insurance_number'  => 'required|string|max:255',
@@ -69,7 +78,6 @@ class CreateTrailer extends Component
             'plate' => $this->plate,
             'year'  => $this->year,
 
-            // ✅ NEW
             'type_id' => $this->type_id,
 
             'inspection_issued'  => $this->inspection_issued,
@@ -83,7 +91,8 @@ class CreateTrailer extends Component
             'tir_issued'  => $this->tir_issued,
             'tir_expired' => $this->tir_expired,
 
-            'company' => $this->company,
+            // ✅ новое поле
+            'company_id' => $this->company_id,
 
             'vin' => $this->vin,
             'status' => $this->status,
@@ -101,8 +110,15 @@ class CreateTrailer extends Component
 
     public function render()
     {
-        return view('livewire.trailers.create-trailer')->layout('layouts.app', [
-        'title' => 'New trailer'
-    ]);
+        // ✅ компании из БД (для dropdown)
+        $companies = Company::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'type', 'slug']);
+
+        return view('livewire.trailers.create-trailer', [
+            'companies' => $companies,
+        ])->layout('layouts.app', [
+            'title' => 'New trailer'
+        ]);
     }
 }

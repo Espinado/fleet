@@ -241,7 +241,7 @@
             {{-- Company --}}
             <div>
                 <label class="block mb-1 font-medium">Company *</label>
-                <select wire:model="company"
+                <select wire:model="company_id"
                         class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('company') border-red-500 @enderror">
                     <option value="">Select company</option>
                     @foreach(config('companies') as $id => $comp)

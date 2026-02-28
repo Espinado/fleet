@@ -4,6 +4,7 @@ return [
 
     1 => [
         'name'      => 'SIA Lakna',
+        'type'      => 'forwarder',
         'reg_nr'    => '40003935341',
         'country'   => 'Latvia',
         'city'      => 'Riga',
@@ -27,6 +28,7 @@ return [
 
     2 => [
         'name'      => 'SIA Padeks',
+        'type'      => 'forwarder',
         'reg_nr'    => 'LV40003385347',
         'country'   => 'Latvia',
         'city'      => 'Riga',
@@ -44,6 +46,24 @@ return [
                 'name' => 'Paysera LT',
                 'iban' => 'LT223500010014945494',
                 'bic'  => 'EVIULT2VXXX',
+            ],
+        ],
+    ],
+    3 => [
+        'name'      => 'SIA Rona Trans',
+        'type'      => 'expeditor',
+        'reg_nr'    => '40203451221',
+        'country'   => 'Latvia',
+        'city'      => 'Riga',
+        'address'   => 'Valerijas Seiles iela 7A-3',
+        'post_code' => 'LV-1019',
+        'email'     => 'ronatrans@inbox.lv',
+        'phone'     => '+372 5000000',
+        'bank' => [
+            1 => [
+                'name' => 'Swedbanka',
+                'iban' => 'LV40HABA0551045751481',
+                'bic'  => 'HABALV22',
             ],
         ],
     ],

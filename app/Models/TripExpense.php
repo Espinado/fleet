@@ -12,7 +12,8 @@ class TripExpense extends Model
     use HasFactory;
 
     protected $fillable = [
-        'trip_id',
+         'trip_id',
+        'supplier_company_id',
         'category',
         'description',
         'amount',
@@ -27,31 +28,34 @@ class TripExpense extends Model
         'category'     => TripExpenseCategory::class, // OK
     ];
 
-    /** ⭐ важнейший фикс — не даём enum'у сломать модель */
     public function setCategoryAttribute($value)
     {
         $this->attributes['category'] = trim((string)$value);
     }
 
-    /** URL к файлу */
     public function getFileUrlAttribute(): ?string
     {
-        if (!$this->file_path) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($this->file_path);
+        return $this->file_path ? Storage::disk('public')->url($this->file_path) : null;
     }
 
-    /** Удобный label */
     public function getLabelAttribute(): string
     {
-        return $this->category->label();
+        // защита, если вдруг category не распарсилась в enum
+        if ($this->category instanceof TripExpenseCategory) {
+            return $this->category->label();
+        }
+
+        return (string) $this->category;
     }
 
     public function trip()
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function supplierCompany()
+    {
+        return $this->belongsTo(Company::class, 'supplier_company_id');
     }
 
     public function creator()

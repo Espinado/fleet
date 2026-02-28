@@ -52,4 +52,12 @@ class User extends Authenticatable
 {
     return $this->hasOne(Driver::class);
 }
+public function company()
+{
+    return $this->belongsTo(\App\Models\Company::class);
+}
+public function isAdmin(): bool
+{
+    return ($this->role ?? null) === 'admin';
+}
 }

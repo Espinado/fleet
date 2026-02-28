@@ -51,7 +51,7 @@
             <h3 class="text-xl font-semibold border-b pb-2">🧭 Company</h3>
             <div>
                 <label class="block font-medium mb-1">Expeditor Company *</label>
-                <select wire:model="company"
+                <select wire:model="company_id"
                         class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                     <option value="">Select Company</option>
                     @foreach($companies as $id => $comp)
@@ -249,7 +249,7 @@
                 ] as [$field,$label])
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ $label }}</label>
-                        <input type="file" wire:model="{{ $field }}" accept="image/*,application/pdf" 
+                        <input type="file" wire:model="{{ $field }}" accept="image/*,application/pdf"
                                class="w-full border rounded-lg p-2 text-sm">
                         @if ($$field)
                             <img src="{{ $$field->temporaryUrl() }}"

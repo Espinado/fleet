@@ -129,7 +129,7 @@
 
                 <div>
     <label>Company</label>
-    <select wire:model="company" class="w-full border rounded p-2">
+    <select wire:model="company_id" class="w-full border rounded p-2">
         <option value="">Select company</option>
         @foreach(config('companies') as $id => $company)
             <option value="{{ $id }}">{{ $company['name'] }}</option>

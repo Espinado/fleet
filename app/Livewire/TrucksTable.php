@@ -5,13 +5,14 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Truck;
+use App\Models\Company;
 
 class TrucksTable extends Component
 {
     use WithPagination;
 
     public string $search = '';
-    public string $sortField = 'brand'; // сортировка по умолчанию
+    public string $sortField = 'brand';
     public string $sortDirection = 'asc';
     public int $perPage = 10;
 
@@ -23,11 +24,9 @@ class TrucksTable extends Component
         'page'          => ['except' => 1],
     ];
 
-    // 🔁 Автосброс страницы при изменении фильтров
     public function updatingSearch()  { $this->resetPage(); }
     public function updatingPerPage() { $this->resetPage(); }
 
-    // 🔽 Логика сортировки
     public function sortBy($field): void
     {
         if ($this->sortField === $field) {
@@ -59,9 +58,25 @@ class TrucksTable extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-        // 🔧 Подставляем название компании из конфига
-        $trucks->getCollection()->transform(function ($truck) {
-            $truck->company_name = config('companies')[$truck->company]['name'] ?? '-';
+        // ✅ 1 запрос: имена компаний для текущей страницы
+        $companyIds = $trucks->getCollection()
+            ->pluck('company_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $companiesById = Company::query()
+            ->whereIn('id', $companyIds)
+            ->pluck('name', 'id'); // [id => name]
+
+        $trucks->getCollection()->transform(function ($truck) use ($companiesById) {
+            // ✅ совместимость: если где-то ещё осталось поле "company"
+            $companyId = (int) ($truck->company_id ?? $truck->company ?? 0);
+
+            $truck->company_name = $companyId
+                ? ($companiesById[$companyId] ?? '—')
+                : '—';
+
             return $truck;
         });
 
@@ -70,7 +85,7 @@ class TrucksTable extends Component
             'sortField' => $this->sortField,
             'sortDirection' => $this->sortDirection,
         ])->layout('layouts.app', [
-        'title' => 'Trucks'
-    ]);
+            'title' => 'Trucks'
+        ]);
     }
 }

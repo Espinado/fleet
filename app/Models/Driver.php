@@ -16,7 +16,7 @@ class Driver extends Model
         'first_name',
         'last_name',
         'pers_code',
-        'company',
+        'company_id',
         'citizenship_id',
         'declared_country_id',
         'declared_city_id',
@@ -119,6 +119,9 @@ public function activeTrip()
         ->whereNull('end_date')        // ✅ активный = не завершён по дате
         ->latest('id');
 }
-
+public function company()
+{
+    return $this->belongsTo(\App\Models\Company::class, 'company_id');
+}
 
 }

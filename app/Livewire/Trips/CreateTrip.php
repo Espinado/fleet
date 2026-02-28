@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
+use App\Models\Company;
+use App\Models\TripExpense;
 use App\Models\{
     Trip,
     TripCargo,
@@ -22,12 +24,29 @@ use App\Models\{
 class CreateTrip extends Component
 {
     /** ============================================================
-     *  EXPEDITOR
+     *  EXPEDITOR + CARRIER LOGIC
      * ============================================================ */
-    public $expeditor_id = null;
-    public $expeditorData = [];
-    public $banks = [];
-    public $bank_index = null;
+    public ?int $expeditor_id = null;
+    public array $expeditorData = [];
+
+    /** Company.type of expeditor (forwarder / expeditor / carrier / mixed / etc.) */
+    public ?string $expeditor_type = null;
+
+    /**
+     * trips.carrier_company_id (кто выполняет рейс)
+     * - если expeditor не посредник => carrier = expeditor
+     * - если expeditor посредник => выбираем carrier (внутренний или third party)
+     */
+    public ?int $company_id = null;
+
+    public bool $needsCarrierSelect = false;
+
+    /** internal carriers list */
+    public $carrierCompanies = [];
+
+    /** banks decoded from companies.banks_json */
+    public array $banks = [];
+    public ?string $bank_index = null;
 
     public array $payers = [];
     public array $taxRates = [0, 5, 10, 21];
@@ -35,11 +54,12 @@ class CreateTrip extends Component
     /** ============================================================
      *  TRANSPORT
      * ============================================================ */
-    public $driver_id;
-    public $truck_id;
+    public ?int $driver_id = null;
+    public ?int $truck_id = null;
 
     public ?int $trailer_id = null;
     public ?int $selected_trailer_type_id = null;
+
     public ?string $cont_nr = null;
     public ?string $seal_nr = null;
 
@@ -47,36 +67,77 @@ class CreateTrip extends Component
     public $trucks = [];
     public $trailers = [];
 
+    /**
+     * Carrier UI select:
+     * '' | numeric string company id | '__third_party__'
+     */
+    public string $carrier_company_select = '';
+
+    /** ============================================================
+     *  THIRD PARTY INPUTS
+     * ============================================================ */
+    public ?string $third_party_name = null;
+    public ?string $third_party_country = null;
+    public ?string $third_party_reg_nr = null;
+
+    // third party truck (минимум plate)
+    public ?string $third_party_truck_plate = null;
+    public ?string $third_party_truck_brand = null;
+    public ?string $third_party_truck_model = null;
+    public ?int    $third_party_truck_year = null;
+
+    // third party trailer (опционально, но лучше plate)
+    public ?string $third_party_trailer_plate = null;
+    public ?string $third_party_trailer_brand = null;
+    public ?int    $third_party_trailer_type_id = null;
+    public ?int    $third_party_trailer_year = null;
+    public ?string $third_party_trailer_vin = null;
+
+    // фиксированная сумма, которую Рона платит third party
+    public ?string $third_party_price = null; // строка (нормализуем в float)
+
+    /** ============================================================
+     *  TRIP (currency можно не светить, но пусть будет всегда EUR)
+     * ============================================================ */
+    public string $currency = 'EUR';
+    public $start_date;
+    public $end_date;
+    public string $status = 'planned';
+
+    public bool $customs = false;
+    public ?string $customs_address = null;
+
     /** ============================================================
      *  STEPS
      * ============================================================ */
-    public $steps = [];
-    public $stepCities = [];
+    public array $steps = [];
+    public array $stepCities = [];
 
     /** ============================================================
      *  CARGOS
      * ============================================================ */
-    public $cargos = [];
-
-    /** ============================================================
-     *  TRIP
-     * ============================================================ */
-    public $currency = 'EUR';
-    public $start_date;
-    public $end_date;
-    public $status = 'planned';
-    public $successMessage = null;
+    public array $cargos = [];
 
     /** ============================================================
      *  MOUNT
      * ============================================================ */
-    public function mount()
+    public function mount(): void
     {
         $this->drivers  = Driver::where('is_active', 1)->get();
+
+        // показываем весь транспорт (как у тебя было).
+        // позже можно фильтровать по carrier_company_id.
         $this->trucks   = Truck::where('is_active', 1)->get();
         $this->trailers = Trailer::where('is_active', 1)->get();
 
         $this->payers = config('payers', []);
+
+        // внутренние компании-перевозчики (Lakna/Padex)
+        $this->carrierCompanies = Company::query()
+            ->where('is_active', 1)
+            ->whereIn('type', ['carrier', 'mixed', 'forwarder']) // безопасно (у тебя типы гуляли)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
 
         $this->updatedTrailerId($this->trailer_id);
 
@@ -85,66 +146,186 @@ class CreateTrip extends Component
     }
 
     /** ============================================================
-     *  EXPEDITOR
+     *  EXPEDITOR (DB + banks_json)
      * ============================================================ */
+    protected function decodeBanksJson(mixed $banksJson): array
+    {
+        if (empty($banksJson)) return [];
+        if (is_array($banksJson)) return $banksJson;
+
+        $str = (string) $banksJson;
+
+        $decoded = json_decode($str, true);
+        if (is_array($decoded)) return $decoded;
+
+        $decoded2 = json_decode(trim($str, "\""), true);
+
+        return is_array($decoded2) ? $decoded2 : [];
+    }
+
+    protected function resetExpeditorState(): void
+    {
+        $this->expeditorData = [];
+        $this->banks = [];
+        $this->bank_index = null;
+
+        $this->expeditor_type = null;
+        $this->needsCarrierSelect = false;
+    }
+
+    protected function resetThirdPartyState(): void
+    {
+        $this->third_party_name = null;
+        $this->third_party_country = null;
+        $this->third_party_reg_nr = null;
+
+        $this->third_party_truck_plate = null;
+        $this->third_party_truck_brand = null;
+        $this->third_party_truck_model = null;
+        $this->third_party_truck_year = null;
+
+        $this->third_party_trailer_plate = null;
+        $this->third_party_trailer_brand = null;
+        $this->third_party_trailer_type_id = null;
+        $this->third_party_trailer_year = null;
+        $this->third_party_trailer_vin = null;
+
+        $this->third_party_price = null;
+    }
+
     protected function hydrateExpeditor(): void
     {
-        $expeditors = config('companies', []);
-        $id = $this->expeditor_id;
+        $id = (int) ($this->expeditor_id ?? 0);
 
-        if (!$id || !isset($expeditors[$id])) {
-            $this->expeditorData = [];
-            $this->banks = [];
-            $this->bank_index = null;
+        $this->resetExpeditorState();
+
+        if (!$id) {
+            $this->company_id = null;
+            $this->carrier_company_select = '';
+            $this->resetThirdPartyState();
             return;
         }
 
-        $exp = $expeditors[$id];
+        $exp = Company::query()->find($id);
+        if (!$exp) return;
+
+        $this->expeditor_type = $exp->type ?? null;
+
+        $this->banks = $this->decodeBanksJson($exp->banks_json);
+        $this->bank_index = null;
 
         $this->expeditorData = [
-            'name'      => $exp['name']      ?? null,
-            'reg_nr'    => $exp['reg_nr']    ?? null,
-            'country'   => $exp['country']   ?? null,
-            'city'      => $exp['city']      ?? null,
-            'address'   => $exp['address']   ?? null,
-            'post_code' => $exp['post_code'] ?? null,
-            'email'     => $exp['email']     ?? null,
-            'phone'     => $exp['phone']     ?? null,
+            'name'      => $exp->name ?? null,
+            'reg_nr'    => $exp->reg_nr ?? null,
+            'country'   => $exp->country ?? null,
+            'city'      => $exp->city ?? null,
+            'address'   => $exp->address ?? null,
+            'post_code' => $exp->post_code ?? null,
+            'email'     => $exp->email ?? null,
+            'phone'     => $exp->phone ?? null,
             'bank'      => null,
             'iban'      => null,
             'bic'       => null,
         ];
 
-        $this->banks = $exp['bank'] ?? [];
-        $this->bank_index = $this->banks ? array_key_first($this->banks) : null;
+        // посредник: company.type == 'expeditor'
+        $this->needsCarrierSelect = ($this->expeditor_type === 'expeditor');
 
-        $this->hydrateBank();
+        if (!$this->needsCarrierSelect) {
+            // обычный кейс: expeditor = carrier
+            $this->company_id = (int) $exp->id;
+            $this->carrier_company_select = (string) $this->company_id;
+            $this->resetThirdPartyState();
+        } else {
+            // посредник: нужно выбрать перевозчика
+            $this->company_id = null;
+            $this->carrier_company_select = '';
+        }
     }
 
     protected function hydrateBank(): void
     {
-        if ($this->bank_index === null || !isset($this->banks[$this->bank_index])) {
+        if ($this->bank_index === null || $this->bank_index === '') {
             $this->expeditorData['bank'] = null;
             $this->expeditorData['iban'] = null;
             $this->expeditorData['bic']  = null;
             return;
         }
 
-        $bank = $this->banks[$this->bank_index];
+        $key = (string) $this->bank_index;
+
+        if (!array_key_exists($key, $this->banks)) {
+            $this->expeditorData['bank'] = null;
+            $this->expeditorData['iban'] = null;
+            $this->expeditorData['bic']  = null;
+            return;
+        }
+
+        $bank = $this->banks[$key];
 
         $this->expeditorData['bank'] = $bank['name'] ?? null;
         $this->expeditorData['iban'] = $bank['iban'] ?? null;
         $this->expeditorData['bic']  = $bank['bic']  ?? null;
     }
 
-    public function updatedExpeditorId(): void
+    public function updatedExpeditorId($value): void
     {
+        $this->expeditor_id = $value ? (int) $value : null;
         $this->hydrateExpeditor();
     }
 
-    public function updatedBankIndex(): void
+    public function updatedBankIndex($value = null): void
     {
+        $this->bank_index = ($value === '' || $value === null) ? null : (string) $value;
+
+        if (empty($this->expeditorData)) {
+            $this->expeditorData = [
+                'name' => null, 'reg_nr' => null, 'country' => null, 'city' => null,
+                'address' => null, 'post_code' => null, 'email' => null, 'phone' => null,
+                'bank' => null, 'iban' => null, 'bic' => null,
+            ];
+        }
+
         $this->hydrateBank();
+    }
+
+    /**
+     * Carrier select changed:
+     * - '' => company_id = null
+     * - '__third_party__' => company_id = null (создадим на save)
+     * - '123' => company_id = 123
+     */
+    public function updatedCarrierCompanySelect($value): void
+    {
+        $this->carrier_company_select = (string) ($value ?? '');
+
+        if (!$this->needsCarrierSelect) {
+            if ($this->expeditor_id) {
+                $this->company_id = (int) $this->expeditor_id;
+                $this->carrier_company_select = (string) $this->company_id;
+            }
+            return;
+        }
+
+        if ($this->carrier_company_select === '__third_party__') {
+            $this->company_id = null;
+            return;
+        }
+
+        if ($this->carrier_company_select === '') {
+            $this->company_id = null;
+            $this->resetThirdPartyState();
+            return;
+        }
+
+        if (ctype_digit($this->carrier_company_select)) {
+            $this->company_id = (int) $this->carrier_company_select;
+            $this->resetThirdPartyState();
+            return;
+        }
+
+        $this->company_id = null;
+        $this->carrier_company_select = '';
     }
 
     /** ============================================================
@@ -187,15 +368,17 @@ class CreateTrip extends Component
             $this->cargos[$ci]['tax_percent'] =
                 $this->normNumString($cargo['tax_percent'] ?? null) ?? ($cargo['tax_percent'] ?? null);
 
-            $this->cargos[$ci]['supplier_invoice_amount'] =
-                $this->normNumString($cargo['supplier_invoice_amount'] ?? null);
+            $this->cargos[$ci]['commercial_invoice_amount'] =
+                $this->normNumString($cargo['commercial_invoice_amount'] ?? null);
 
             foreach (($cargo['items'] ?? []) as $ii => $item) {
-                foreach (['packages','pallets','units','net_weight','gross_weight','tonnes','volume','loading_meters'] as $f) {
+                foreach (['packages','pallets','units','gross_weight','net_weight','tonnes','volume','loading_meters'] as $f) {
                     $this->cargos[$ci]['items'][$ii][$f] = $this->normNumString($item[$f] ?? null);
                 }
             }
         }
+
+        $this->third_party_price = $this->normNumString($this->third_party_price);
     }
 
     /** ============================================================
@@ -248,9 +431,7 @@ class CreateTrip extends Component
         $field = $parts[1] ?? null;
 
         if ($field === 'country_id') {
-            $this->stepCities[$stepIndex]['cities'] =
-                getCitiesByCountryId((int)$value) ?? [];
-
+            $this->stepCities[$stepIndex]['cities'] = getCitiesByCountryId((int)$value) ?? [];
             $this->steps[$stepIndex]['city_id'] = null;
         }
     }
@@ -269,7 +450,6 @@ class CreateTrip extends Component
                         if ($uid) $out[] = (string)$uid;
                         continue;
                     }
-
                     if ($v !== null && $v !== '') {
                         $out[] = (string)$v;
                     }
@@ -309,19 +489,16 @@ class CreateTrip extends Component
             'loading_step_ids'   => [],
             'unloading_step_ids' => [],
 
-            // client freight
             'price'            => '',
             'tax_percent'      => 21,
             'total_tax_amount' => 0,
             'price_with_tax'   => 0,
-            'currency'         => $this->currency,
+            'currency'         => 'EUR',
             'payment_terms'    => null,
             'payer_type_id'    => null,
 
-            // supplier invoice (cost)
-            'supplier_invoice_nr'       => null,
-            'supplier_invoice_amount'   => null,
-            'supplier_invoice_currency' => null, // ✅ поле есть в UI
+            'commercial_invoice_nr'     => null,
+            'commercial_invoice_amount' => null,
 
             'items' => [
                 [
@@ -337,6 +514,7 @@ class CreateTrip extends Component
                     'tonnes'          => null,
                     'volume'          => null,
                     'loading_meters'  => null,
+
                     'hazmat'          => '',
                     'temperature'     => '',
                     'stackable'       => false,
@@ -368,6 +546,7 @@ class CreateTrip extends Component
             'tonnes'          => null,
             'volume'          => null,
             'loading_meters'  => null,
+
             'hazmat'          => '',
             'temperature'     => '',
             'stackable'       => false,
@@ -380,6 +559,14 @@ class CreateTrip extends Component
     {
         unset($this->cargos[$cargoIndex]['items'][$itemIndex]);
         $this->cargos[$cargoIndex]['items'] = array_values($this->cargos[$cargoIndex]['items']);
+    }
+
+    public function updatedCustoms($value): void
+    {
+        $this->customs = (bool) $value;
+        if (!$this->customs) {
+            $this->customs_address = null;
+        }
     }
 
     /** ============================================================
@@ -405,27 +592,164 @@ class CreateTrip extends Component
     }
 
     /** ============================================================
+     *  THIRD PARTY CREATE (Company + Truck + Trailer + Expense)
+     * ============================================================ */
+    private function ensureThirdPartyCarrierCompany(): Company
+    {
+        $name = trim((string)($this->third_party_name ?? ''));
+
+        $existing = Company::query()
+            ->where('is_active', 1)
+            ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        $slug = Str::slug($name) ?: 'third-party';
+        $base = $slug;
+        $i = 2;
+
+        while (Company::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . $i;
+            $i++;
+        }
+
+        return Company::create([
+            'slug'       => $slug,
+            'name'       => $name,
+            'type'       => 'carrier', // ✅ third party это перевозчик
+            'reg_nr'     => $this->third_party_reg_nr,
+            'country'    => $this->third_party_country,
+
+            // если добавил флаг is_third_party миграцией — отлично:
+            'is_third_party' => true,
+
+            'is_system'  => 0,
+            'is_active'  => 1,
+        ]);
+    }
+
+    private function ensureThirdPartyTruck(int $companyId): Truck
+    {
+        $plate = trim((string)($this->third_party_truck_plate ?? ''));
+
+        $existing = Truck::query()
+            ->where('company_id', $companyId)
+            ->whereRaw('LOWER(plate) = ?', [mb_strtolower($plate)])
+            ->first();
+
+        if ($existing) return $existing;
+
+        return Truck::create([
+            'company_id'    => $companyId,
+            'plate'         => $plate,
+            'brand'         => $this->third_party_truck_brand,
+            'model'         => $this->third_party_truck_model,
+            'year'          => $this->third_party_truck_year ?? date('Y'),
+            'can_available' => 0,
+            'status'        => 1,
+            'is_active'     => 1,
+        ]);
+    }
+
+    private function ensureThirdPartyTrailer(int $companyId): ?Trailer
+    {
+        $plate = trim((string)($this->third_party_trailer_plate ?? ''));
+
+        if ($plate === '') {
+            return null; // прицеп можно не задавать
+        }
+
+        $existing = Trailer::query()
+            ->where('company_id', $companyId)
+            ->whereRaw('LOWER(plate) = ?', [mb_strtolower($plate)])
+            ->first();
+
+        if ($existing) return $existing;
+
+        return Trailer::create([
+            'company_id' => $companyId,
+            'plate'      => $plate,
+            'brand'      => $this->third_party_trailer_brand,
+            'type_id'    => $this->third_party_trailer_type_id ?? 1,
+            'year'       => $this->third_party_trailer_year ?? date('Y'),
+            'vin'        => $this->third_party_trailer_vin,
+            'status'     => 1,
+            'is_active'  => 1,
+        ]);
+    }
+
+    /** ============================================================
      *  SAVE
      * ============================================================ */
-    public function save()
+    public function save(): void
     {
         $this->normalizeInputsForValidation();
         $this->normalizeStepSelectionsToUids();
 
-        $rules = [
-            'expeditor_id' => 'required|integer',
-            'bank_index'   => 'required',
-            'driver_id'    => 'required|integer',
-            'truck_id'     => 'required|integer',
-            'start_date'   => 'required|date',
-            'end_date'     => 'required|date',
-            'currency'     => 'required|string|max:3',
+        // currency всегда EUR
+        $this->currency = 'EUR';
 
-            'cont_nr'      => 'nullable|string|max:50',
-            'seal_nr'      => 'nullable|string|max:50',
+        // expeditor != посредник => carrier = expeditor
+        if (!$this->needsCarrierSelect && $this->expeditor_id) {
+            $this->company_id = (int) $this->expeditor_id;
+            $this->carrier_company_select = (string) $this->company_id;
+        }
+
+        // посредник: синхронизируем company_id если выбран внутренний перевозчик
+        if ($this->needsCarrierSelect) {
+            if ($this->carrier_company_select === '__third_party__') {
+                $this->company_id = null; // создадим после валидации
+            } elseif (ctype_digit((string)$this->carrier_company_select)) {
+                $this->company_id = (int) $this->carrier_company_select;
+            } else {
+                $this->company_id = null;
+            }
+        }
+
+        $isThirdPartyFlow = $this->needsCarrierSelect && $this->carrier_company_select === '__third_party__';
+
+        $rules = [
+            'expeditor_id' => 'required|integer|exists:companies,id',
+            'bank_index'   => empty($this->banks) ? 'nullable' : 'required',
+
+            'carrier_company_select' => $this->needsCarrierSelect ? 'required' : 'nullable',
+
+            'company_id' => ($this->needsCarrierSelect && !$isThirdPartyFlow)
+                ? 'required|integer|exists:companies,id'
+                : 'nullable|integer|exists:companies,id',
+
+            // third party company
+            'third_party_name' => $isThirdPartyFlow ? 'required|string|max:255' : 'nullable|string|max:255',
+            'third_party_country' => 'nullable|string|max:191',
+            'third_party_reg_nr' => 'nullable|string|max:191',
+
+            // third party truck/trailer
+            'third_party_truck_plate' => $isThirdPartyFlow ? 'required|string|max:191' : 'nullable|string|max:191',
+            'third_party_trailer_plate' => 'nullable|string|max:191',
+
+            // third party price
+            'third_party_price' => $isThirdPartyFlow ? 'required|numeric|min:0' : 'nullable|numeric|min:0',
+
+            // transport (обычный)
+            'driver_id'  => 'required|integer|exists:drivers,id',
+            'truck_id'   => $isThirdPartyFlow ? 'nullable' : 'required|integer|exists:trucks,id',
+            'trailer_id' => 'nullable|integer|exists:trailers,id',
+
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date',
+
+            'cont_nr' => 'nullable|string|max:50',
+            'seal_nr' => 'nullable|string|max:50',
+
+            'customs'         => 'nullable|boolean',
+            'customs_address' => $this->customs ? 'required|string|max:255' : 'nullable|string|max:255',
 
             // steps
-            'steps.*.type'       => 'required',
+            'steps'              => 'required|array|min:1',
+            'steps.*.type'       => 'required|string|in:loading,unloading',
             'steps.*.country_id' => 'required|integer',
             'steps.*.city_id'    => 'required|integer',
             'steps.*.address'    => 'required|string',
@@ -434,27 +758,30 @@ class CreateTrip extends Component
             'steps.*.order'      => 'required|integer',
 
             // cargos
+            'cargos'                      => 'required|array|min:1',
             'cargos.*.customer_id'        => 'required|integer',
             'cargos.*.shipper_id'         => 'required|integer',
             'cargos.*.consignee_id'       => 'required|integer',
-
             'cargos.*.loading_step_ids'   => 'required|array|min:1',
             'cargos.*.unloading_step_ids' => 'required|array|min:1',
-
             'cargos.*.price'              => 'required|numeric',
             'cargos.*.tax_percent'        => 'required|numeric',
-            'cargos.*.currency'           => 'required|string|max:3',
 
-            // supplier invoice
-            'cargos.*.supplier_invoice_nr'       => 'nullable|string|max:64',
-            'cargos.*.supplier_invoice_amount'   => 'nullable|numeric|min:0',
-            'cargos.*.supplier_invoice_currency' => 'nullable|string|max:3',
+            'cargos.*.commercial_invoice_nr'     => 'nullable|string|max:64',
+            'cargos.*.commercial_invoice_amount' => 'nullable|numeric|min:0',
 
-            // customs
-            'cargos.*.items.*.customs_code'    => 'nullable|string|max:32',
+            'cargos.*.items'               => 'required|array|min:1',
+            'cargos.*.items.*.customs_code'=> 'nullable|string|max:32',
+            'cargos.*.items.*.description' => 'nullable|string|max:255',
         ];
 
         $messages = [
+            'bank_index.required'             => 'Выберите банковский счёт экспедитора.',
+            'carrier_company_select.required' => 'Выберите перевозчика (или “Третья сторона”).',
+            'company_id.required'             => 'Выберите перевозчика (внутреннюю компанию).',
+            'third_party_name.required'       => 'Введите название третьей стороны.',
+            'third_party_truck_plate.required'=> 'Введите номер тягача третьей стороны.',
+            'third_party_price.required'      => 'Введите сумму, которую платим третьей стороне.',
             'cargos.*.loading_step_ids.required'   => 'Выберите хотя бы один шаг погрузки.',
             'cargos.*.unloading_step_ids.required' => 'Выберите хотя бы один шаг разгрузки.',
         ];
@@ -462,23 +789,48 @@ class CreateTrip extends Component
         $data = [
             'expeditor_id' => $this->expeditor_id,
             'bank_index'   => $this->bank_index,
-            'driver_id'    => $this->driver_id,
-            'truck_id'     => $this->truck_id,
-            'start_date'   => $this->start_date,
-            'end_date'     => $this->end_date,
-            'currency'     => $this->currency,
-            'steps'        => $this->steps,
-            'cargos'       => $this->cargos,
-            'cont_nr'      => $this->cont_nr,
-            'seal_nr'      => $this->seal_nr,
+
+            'carrier_company_select' => $this->carrier_company_select,
+            'company_id'             => $this->company_id,
+
+            'third_party_name'    => $this->third_party_name,
+            'third_party_country' => $this->third_party_country,
+            'third_party_reg_nr'  => $this->third_party_reg_nr,
+
+            'third_party_truck_plate'  => $this->third_party_truck_plate,
+            'third_party_trailer_plate'=> $this->third_party_trailer_plate,
+            'third_party_price'        => $this->third_party_price,
+
+            'driver_id'  => $this->driver_id,
+            'truck_id'   => $this->truck_id,
+            'trailer_id' => $this->trailer_id,
+
+            'start_date' => $this->start_date,
+            'end_date'   => $this->end_date,
+
+            'customs'         => $this->customs,
+            'customs_address' => $this->customs_address,
+
+            'steps'  => $this->steps,
+            'cargos' => $this->cargos,
+
+            'cont_nr' => $this->cont_nr,
+            'seal_nr' => $this->seal_nr,
         ];
 
         $validator = Validator::make($data, $rules, $messages);
 
-        $validator->after(function ($validator) {
+        $validator->after(function ($validator) use ($isThirdPartyFlow) {
+            // если выбрали внутреннего перевозчика — можно ограничить типы
+            if ($this->needsCarrierSelect && !$isThirdPartyFlow && $this->company_id) {
+                $type = Company::whereKey($this->company_id)->value('type');
+                if (!in_array($type, ['carrier', 'mixed', 'forwarder'], true)) {
+                    $validator->errors()->add('company_id', 'Некорректный тип компании перевозчика.');
+                }
+            }
+
             foreach ($this->cargos as $cargoIndex => $cargo) {
                 foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
-
                     $hasAny =
                         ($this->toFloat($item['packages'] ?? null, 0) > 0) ||
                         ($this->toFloat($item['pallets'] ?? null, 0) > 0) ||
@@ -527,6 +879,25 @@ class CreateTrip extends Component
         DB::beginTransaction();
 
         try {
+            $thirdPartyCompany = null;
+            $thirdPartyTruck = null;
+            $thirdPartyTrailer = null;
+
+            // third party flow: create company + truck + trailer + set ids
+            if ($isThirdPartyFlow) {
+                $thirdPartyCompany = $this->ensureThirdPartyCarrierCompany();
+                $this->company_id = (int) $thirdPartyCompany->id;
+
+                $thirdPartyTruck = $this->ensureThirdPartyTruck($this->company_id);
+                $this->truck_id = (int) $thirdPartyTruck->id;
+
+                $thirdPartyTrailer = $this->ensureThirdPartyTrailer($this->company_id);
+                $this->trailer_id = $thirdPartyTrailer ? (int) $thirdPartyTrailer->id : null;
+
+                // чтобы контейнерные поля корректно повели себя
+                $this->updatedTrailerId($this->trailer_id);
+            }
+
             $trip = Trip::create([
                 'expeditor_id'        => $this->expeditor_id,
                 'expeditor_name'      => $this->expeditorData['name']      ?? null,
@@ -538,7 +909,12 @@ class CreateTrip extends Component
                 'expeditor_email'     => $this->expeditorData['email']     ?? null,
                 'expeditor_phone'     => $this->expeditorData['phone']     ?? null,
 
-                'expeditor_bank_id' => $this->bank_index,
+                'customs'         => (bool) $this->customs,
+                'customs_address' => $this->customs ? $this->customs_address : null,
+
+                'carrier_company_id' => $this->company_id,
+
+                'expeditor_bank_id' => $this->bank_index !== null ? (int) $this->bank_index : null,
                 'expeditor_bank'    => $this->expeditorData['bank'] ?? null,
                 'expeditor_iban'    => $this->expeditorData['iban'] ?? null,
                 'expeditor_bic'     => $this->expeditorData['bic']  ?? null,
@@ -550,12 +926,27 @@ class CreateTrip extends Component
                 'start_date' => $this->start_date,
                 'end_date'   => $this->end_date,
 
-                'currency'   => $this->currency,
+                'currency'   => 'EUR',
                 'status'     => $this->status,
 
                 'cont_nr'    => $this->cont_nr,
                 'seal_nr'    => $this->seal_nr,
             ]);
+
+            // Если third party — сохраняем фиксированную оплату как TripExpense
+            if ($isThirdPartyFlow) {
+                $amount = $this->toFloat($this->third_party_price, 0.0);
+
+                TripExpense::create([
+                    'trip_id'   => $trip->id,
+                    'category'  => 'subcontractor', // добавим в enum позже
+                    'description' => 'Оплата третьей стороне: ' . ($thirdPartyCompany->name ?? ''),
+                    'amount'    => $amount,
+                    'currency'  => 'EUR',
+                    'expense_date' => $this->start_date,
+                    // supplier_company_id => $thirdPartyCompany->id (если добавишь колонку)
+                ]);
+            }
 
             // uid -> db id
             $stepUidToId = [];
@@ -579,15 +970,14 @@ class CreateTrip extends Component
             }
 
             foreach ($this->cargos as $cargoData) {
-
                 $price = $this->toFloat($cargoData['price'] ?? null, 0.0);
                 $taxPercent = $this->toFloat($cargoData['tax_percent'] ?? null, 0.0);
 
                 $tax = CalculateTax::calculate($price, $taxPercent);
 
-                $supplierInvoiceAmountRaw = $cargoData['supplier_invoice_amount'] ?? null;
-                $supplierInvoiceAmount = ($supplierInvoiceAmountRaw !== null && $supplierInvoiceAmountRaw !== '')
-                    ? $this->toFloat($supplierInvoiceAmountRaw, 0.0)
+                $commercialInvoiceAmountRaw = $cargoData['commercial_invoice_amount'] ?? null;
+                $commercialInvoiceAmount = ($commercialInvoiceAmountRaw !== null && $commercialInvoiceAmountRaw !== '')
+                    ? $this->toFloat($commercialInvoiceAmountRaw, 0.0)
                     : null;
 
                 $cargo = TripCargo::create([
@@ -601,12 +991,12 @@ class CreateTrip extends Component
                     'total_tax_amount' => $tax['tax_amount'],
                     'price_with_tax'   => $tax['price_with_tax'],
 
-                    'currency'      => $cargoData['currency'] ?? $this->currency,
+                    'currency'      => 'EUR',
                     'payment_terms' => $cargoData['payment_terms'] ?? null,
                     'payer_type_id' => $cargoData['payer_type_id'] ?? null,
 
-                    'supplier_invoice_nr'     => $cargoData['supplier_invoice_nr'] ?? null,
-                    'supplier_invoice_amount' => $supplierInvoiceAmount,
+                    'commercial_invoice_nr'      => $cargoData['commercial_invoice_nr'] ?? null,
+                    'commercial_invoice_amount'  => $commercialInvoiceAmount,
                 ]);
 
                 foreach (($cargoData['items'] ?? []) as $item) {
@@ -656,8 +1046,7 @@ class CreateTrip extends Component
 
             DB::commit();
 
-            return redirect()->route('trips.show', $trip->id);
-
+            $this->redirectRoute('trips.show', $trip->id);
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -676,15 +1065,22 @@ class CreateTrip extends Component
      * ============================================================ */
     public function render()
     {
+        $expeditors = Company::query()
+            ->where('is_active', 1)
+            ->orderBy('name')
+            ->get(['id', 'name', 'type']);
+
         return view('livewire.trips.create-trip', [
-            'clients'    => Client::orderBy('company_name')->get(),
-            'countries'  => config('countries', []),
-            'expeditors' => config('companies', []),
-            'payers'     => $this->payers,
-            'taxRates'   => $this->taxRates,
+            'clients'            => Client::orderBy('company_name')->get(),
+            'countries'          => config('countries', []),
+            'expeditors'         => $expeditors,
+            'carrierCompanies'   => $this->carrierCompanies,
+            'needsCarrierSelect' => $this->needsCarrierSelect,
+            'payers'             => $this->payers,
+            'taxRates'           => $this->taxRates,
         ])->layout('layouts.app', [
-        'title' => 'Create trip'
-    ]);
+            'title' => 'Create trip',
+        ]);
     }
 
     /** ============================================================
@@ -694,7 +1090,6 @@ class CreateTrip extends Component
     {
         $types = config('trailer-types.types', []);
         $id = array_search('container', $types, true);
-
         return $id ?: 2;
     }
 

@@ -5,13 +5,14 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\WithPagination;
 use App\Models\Driver;
+use App\Models\Company;
 
 class DriversTable extends Component
 {
     use WithPagination;
 
     public string $search = '';
-    public string $sortField = 'last_name'; // сортировка по умолчанию
+    public string $sortField = 'last_name';
     public string $sortDirection = 'asc';
     public int $perPage = 10;
 
@@ -52,15 +53,30 @@ class DriversTable extends Component
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
 
-              $drivers->getCollection()->transform(function ($driver) {
-            $driver->company_name = config('companies')[$driver->company]['name'] ?? '-';
+        // ✅ 1 запрос: собрали имена компаний для текущей страницы
+        $companyIds = $drivers->getCollection()
+            ->pluck('company_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $companiesById = Company::query()
+            ->whereIn('id', $companyIds)
+            ->pluck('name', 'id'); // [id => name]
+
+        // ✅ доп. поле company_name для вывода в Blade
+        $drivers->getCollection()->transform(function ($driver) use ($companiesById) {
+            $driver->company_name = $driver->company_id
+                ? ($companiesById[$driver->company_id] ?? '—')
+                : '—';
+
             return $driver;
         });
 
         return view('livewire.drivers-table', [
             'items' => $drivers,
         ])->layout('layouts.app', [
-        'title' => 'Drivers'
-    ]);
+            'title' => 'Drivers'
+        ]);
     }
 }
