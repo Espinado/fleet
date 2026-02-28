@@ -200,4 +200,6 @@ public function getSchemeBadgeClassAttribute(): string
         default => 'bg-amber-100 text-amber-900',
     };
 }
+
+
 }

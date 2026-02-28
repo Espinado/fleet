@@ -76,7 +76,7 @@
         // supplier invoice (cargo-level)
         $totalSupplierInvoice = $allCargos->sum(fn($c) => (float)($c->supplier_invoice_amount ?? 0));
 
-        // goods value (item-level) - optional but useful
+        // goods value (item-level)
         $totalGoodsNoVat   = $allItems->sum(fn($i) => (float)($i->price ?? 0));
         $totalGoodsVat     = $allItems->sum(fn($i) => (float)($i->tax_amount ?? 0));
         $totalGoodsWithVat = $allItems->sum(fn($i) => (float)($i->price_with_tax ?? 0));
@@ -123,7 +123,6 @@
             </div>
         </div>
 
-        {{-- Mobile quick totals (compact) --}}
         <div class="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-200">
             <div class="rounded-xl bg-white/10 px-3 py-2">
                 <div class="text-gray-300">Freight (with VAT)</div>
@@ -291,13 +290,14 @@
          class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6">
 
         <button
+            type="button"
             @click="openRoute = !openRoute"
             class="w-full flex items-center justify-between mb-3 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-semibold text-gray-800 dark:text-gray-100">
             🛣️ Маршрут рейса (управление, Drag & Drop)
             <span x-text="openRoute ? '▲' : '▼'" class="text-xs"></span>
         </button>
 
-        <div x-show="openRoute" x-collapse class="mt-4">
+        <div x-cloak x-show="openRoute" x-collapse class="mt-4">
             <livewire:trips.trip-route-editor :tripId="$trip->id" />
         </div>
     </div>
@@ -315,7 +315,7 @@
                  class="bg-white dark:bg-gray-900 shadow rounded-xl border border-gray-200 dark:border-gray-700">
 
                 {{-- CLIENT HEADER --}}
-                <button @click="openClient = !openClient"
+                <button type="button" @click="openClient = !openClient"
                         class="w-full flex items-center justify-between p-4 text-left">
                     <div class="min-w-0">
                         <h3 class="text-lg font-semibold truncate">{{ $customer->company_name }}</h3>
@@ -328,7 +328,7 @@
                 </button>
 
                 {{-- CLIENT BODY --}}
-                <div x-show="openClient" x-collapse class="p-4 space-y-4">
+                <div x-cloak x-show="openClient" x-collapse class="p-4 space-y-4">
 
                     @foreach ($customerCargos as $cargo)
 
@@ -359,7 +359,7 @@
                              class="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg shadow border border-gray-300 dark:border-gray-700">
 
                             {{-- CARGO HEADER --}}
-                            <button @click="openCargo = !openCargo"
+                            <button type="button" @click="openCargo = !openCargo"
                                     class="w-full flex items-center justify-between text-left gap-3">
                                 <div class="min-w-0">
                                     <p class="font-semibold">📦 Krava #{{ $cargo->id }}</p>
@@ -400,17 +400,17 @@
                             </button>
 
                             {{-- CARGO BODY --}}
-                            <div x-show="openCargo" x-collapse class="mt-3 space-y-4">
+                            <div x-cloak x-show="openCargo" x-collapse class="mt-3 space-y-4">
 
                                 {{-- ROUTE ACCORDION --}}
                                 <div x-data="{ openRoute: false }">
-                                    <button @click="openRoute = !openRoute"
+                                    <button type="button" @click="openRoute = !openRoute"
                                             class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
                                         🗺 Maršruta punkti
-                                        <span :class="{ 'rotate-180': openRoute }">▼</span>
+                                        <span class="transition-transform" :class="{ 'rotate-180': openRoute }">▼</span>
                                     </button>
 
-                                    <div x-show="openRoute" x-collapse class="mt-3 space-y-3">
+                                    <div x-cloak x-show="openRoute" x-collapse class="mt-3 space-y-3">
                                         @foreach ($steps as $step)
                                             @php
                                                 $pivot = $step->cargos->firstWhere('id', $cargo->id)?->pivot;
@@ -451,13 +451,13 @@
 
                                 {{-- ITEMS ACCORDION --}}
                                 <div x-data="{ openItems: false }">
-                                    <button @click="openItems = !openItems"
+                                    <button type="button" @click="openItems = !openItems"
                                             class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
                                         📦 Preču vienības
-                                        <span :class="{ 'rotate-180': openItems }">▼</span>
+                                        <span class="transition-transform" :class="{ 'rotate-180': openItems }">▼</span>
                                     </button>
 
-                                    <div x-show="openItems" x-collapse class="mt-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg space-y-2">
+                                    <div x-cloak x-show="openItems" x-collapse class="mt-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg space-y-2">
                                         @foreach ($cargo->items as $item)
                                             <div class="flex items-center justify-between gap-3">
                                                 <div class="min-w-0">
@@ -483,215 +483,208 @@
                                     </div>
                                 </div>
 
-                                {{-- DOCS ACCORDION --}}
-                              {{-- DOCS ACCORDION (manual numbers before generate) --}}
-{{-- DOCS ACCORDION (manual numbers before generate) --}}
-<div x-data="{ openDocs: false }" class="space-y-2">
-    <button
-        type="button"
-        @click="openDocs = !openDocs"
-        class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold"
-    >
-        📄 Dokumenti
-        <span class="transition-transform" :class="{ 'rotate-180': openDocs }">▼</span>
-    </button>
+                                {{-- DOCS ACCORDION (manual numbers before generate) --}}
+                                <div x-data="{ openDocs: false }" class="space-y-2">
+                                    <button
+                                        type="button"
+                                        @click="openDocs = !openDocs"
+                                        class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold"
+                                    >
+                                        📄 Dokumenti
+                                        <span class="transition-transform" :class="{ 'rotate-180': openDocs }">▼</span>
+                                    </button>
 
-    <div x-cloak x-show="openDocs" x-collapse class="mt-3 space-y-3 text-xs">
+                                    <div x-cloak x-show="openDocs" x-collapse class="mt-3 space-y-3 text-xs">
 
-        {{-- ===================== --}}
-        {{-- CMR --}}
-        {{-- ===================== --}}
-        <div
-            x-data="{
-                loading: false,
-                nr: @entangle('cmrNr.' . $cargo->id).defer,
-                get isValid() { return String(this.nr ?? '').trim().length > 0; },
-                run() {
-                    if (this.loading || !this.isValid) return;
-                    this.loading = true;
+                                        {{-- CMR --}}
+                                        <div
+                                            x-data="{
+                                                loading: false,
+                                                nr: @entangle('cmrNr.' . $cargo->id).defer,
+                                                get isValid() { return String(this.nr ?? '').trim().length > 0; },
+                                                run() {
+                                                    if (this.loading || !this.isValid) return;
+                                                    this.loading = true;
 
-                    const id = {{ (int)$cargo->id }};
-                    const val = String(this.nr ?? '').trim();
+                                                    const id = {{ (int)$cargo->id }};
+                                                    const val = String(this.nr ?? '').trim();
 
-                    Promise.resolve($wire.set(`cmrNr.${id}`, val))
-                        .then(() => $wire.generateCmr(id))
-                        .finally(() => this.loading = false);
-                }
-            }"
-            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-        >
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="font-semibold text-gray-800 dark:text-gray-100">📘 CMR</div>
-                    @if(!empty($cargo->cmr_nr))
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                            Nr: <span class="font-medium">{{ $cargo->cmr_nr }}</span>
-                        </div>
-                    @endif
-                </div>
+                                                    Promise.resolve($wire.set(`cmrNr.${id}`, val))
+                                                        .then(() => $wire.generateCmr(id))
+                                                        .finally(() => this.loading = false);
+                                                }
+                                            }"
+                                            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                        >
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">📘 CMR</div>
+                                                    @if(!empty($cargo->cmr_nr))
+                                                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                                            Nr: <span class="font-medium">{{ $cargo->cmr_nr }}</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
 
-                @if ($cargo->cmr_file)
-                    <a href="{{ asset('storage/'.$cargo->cmr_file) }}" target="_blank"
-                       class="shrink-0 px-3 py-2 bg-blue-200 text-blue-900 rounded-lg font-semibold">
-                        👁 Open
-                    </a>
-                @endif
-            </div>
+                                                @if ($cargo->cmr_file)
+                                                    <a href="{{ asset('storage/'.$cargo->cmr_file) }}" target="_blank"
+                                                       class="shrink-0 px-3 py-2 bg-blue-200 text-blue-900 rounded-lg font-semibold">
+                                                        👁 Open
+                                                    </a>
+                                                @endif
+                                            </div>
 
-            @if (!$cargo->cmr_file)
-                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-                    <div>
-                        <input type="text"
-                               x-model.trim="nr"
-                               placeholder="CMR number (required)"
-                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
-                               @keydown.enter.prevent="run()" />
-                        @error('cmrNr.'.$cargo->id)
-                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
-                        @enderror
-                    </div>
+                                            @if (!$cargo->cmr_file)
+                                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                                                    <div>
+                                                        <input type="text"
+                                                               x-model.trim="nr"
+                                                               placeholder="CMR number (required)"
+                                                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
+                                                               @keydown.enter.prevent="run()" />
+                                                        @error('cmrNr.'.$cargo->id)
+                                                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
 
-                    <button type="button"
-                            @click="run()"
-                            :disabled="loading || !isValid"
-                            class="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-blue-600">
-                        <span x-show="!loading">Generate</span>
-                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                    </button>
-                </div>
-            @endif
-        </div>
+                                                    <button type="button"
+                                                            @click="run()"
+                                                            :disabled="loading || !isValid"
+                                                            class="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-blue-600">
+                                                        <span x-show="!loading">Generate</span>
+                                                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
 
-        {{-- ===================== --}}
-        {{-- ORDER --}}
-        {{-- ===================== --}}
-        <div
-            x-data="{
-                loading: false,
-                nr: @entangle('orderNr.' . $cargo->id).defer,
-                get isValid() { return String(this.nr ?? '').trim().length > 0; },
-                run() {
-                    if (this.loading || !this.isValid) return;
-                    this.loading = true;
+                                        {{-- ORDER --}}
+                                        <div
+                                            x-data="{
+                                                loading: false,
+                                                nr: @entangle('orderNr.' . $cargo->id).defer,
+                                                get isValid() { return String(this.nr ?? '').trim().length > 0; },
+                                                run() {
+                                                    if (this.loading || !this.isValid) return;
+                                                    this.loading = true;
 
-                    const id = {{ (int)$cargo->id }};
-                    const val = String(this.nr ?? '').trim();
+                                                    const id = {{ (int)$cargo->id }};
+                                                    const val = String(this.nr ?? '').trim();
 
-                    Promise.resolve($wire.set(`orderNr.${id}`, val))
-                        .then(() => $wire.generateOrder(id))
-                        .finally(() => this.loading = false);
-                }
-            }"
-            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-        >
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="font-semibold text-gray-800 dark:text-gray-100">📄 Order</div>
-                    @if(!empty($cargo->order_nr))
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                            Nr: <span class="font-medium">{{ $cargo->order_nr }}</span>
-                        </div>
-                    @endif
-                </div>
+                                                    Promise.resolve($wire.set(`orderNr.${id}`, val))
+                                                        .then(() => $wire.generateOrder(id))
+                                                        .finally(() => this.loading = false);
+                                                }
+                                            }"
+                                            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                        >
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">📄 Order</div>
+                                                    @if(!empty($cargo->order_nr))
+                                                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                                            Nr: <span class="font-medium">{{ $cargo->order_nr }}</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
 
-                @if ($cargo->order_file)
-                    <a href="{{ asset('storage/'.$cargo->order_file) }}" target="_blank"
-                       class="shrink-0 px-3 py-2 bg-indigo-200 text-indigo-900 rounded-lg font-semibold">
-                        👁 Open
-                    </a>
-                @endif
-            </div>
+                                                @if ($cargo->order_file)
+                                                    <a href="{{ asset('storage/'.$cargo->order_file) }}" target="_blank"
+                                                       class="shrink-0 px-3 py-2 bg-indigo-200 text-indigo-900 rounded-lg font-semibold">
+                                                        👁 Open
+                                                    </a>
+                                                @endif
+                                            </div>
 
-            @if (!$cargo->order_file)
-                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-                    <div>
-                        <input type="text"
-                               x-model.trim="nr"
-                               placeholder="Order number (required)"
-                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
-                               @keydown.enter.prevent="run()" />
-                        @error('orderNr.'.$cargo->id)
-                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
-                        @enderror
-                    </div>
+                                            @if (!$cargo->order_file)
+                                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                                                    <div>
+                                                        <input type="text"
+                                                               x-model.trim="nr"
+                                                               placeholder="Order number (required)"
+                                                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
+                                                               @keydown.enter.prevent="run()" />
+                                                        @error('orderNr.'.$cargo->id)
+                                                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
 
-                    <button type="button"
-                            @click="run()"
-                            :disabled="loading || !isValid"
-                            class="w-full sm:w-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-indigo-600">
-                        <span x-show="!loading">Generate</span>
-                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                    </button>
-                </div>
-            @endif
-        </div>
+                                                    <button type="button"
+                                                            @click="run()"
+                                                            :disabled="loading || !isValid"
+                                                            class="w-full sm:w-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-indigo-600">
+                                                        <span x-show="!loading">Generate</span>
+                                                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
 
-        {{-- ===================== --}}
-        {{-- INVOICE --}}
-        {{-- ===================== --}}
-        <div
-            x-data="{
-                loading: false,
-                nr: @entangle('invNr.' . $cargo->id).defer,
-                get isValid() { return String(this.nr ?? '').trim().length > 0; },
-                run() {
-                    if (this.loading || !this.isValid) return;
-                    this.loading = true;
+                                        {{-- INVOICE --}}
+                                        <div
+                                            x-data="{
+                                                loading: false,
+                                                nr: @entangle('invNr.' . $cargo->id).defer,
+                                                get isValid() { return String(this.nr ?? '').trim().length > 0; },
+                                                run() {
+                                                    if (this.loading || !this.isValid) return;
+                                                    this.loading = true;
 
-                    const id = {{ (int)$cargo->id }};
-                    const val = String(this.nr ?? '').trim();
+                                                    const id = {{ (int)$cargo->id }};
+                                                    const val = String(this.nr ?? '').trim();
 
-                    Promise.resolve($wire.set(`invNr.${id}`, val))
-                        .then(() => $wire.generateInvoice(id))
-                        .finally(() => this.loading = false);
-                }
-            }"
-            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-        >
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="font-semibold text-gray-800 dark:text-gray-100">💶 Invoice</div>
-                    @if(!empty($cargo->inv_nr))
-                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                            Nr: <span class="font-medium">{{ $cargo->inv_nr }}</span>
-                        </div>
-                    @endif
-                </div>
+                                                    Promise.resolve($wire.set(`invNr.${id}`, val))
+                                                        .then(() => $wire.generateInvoice(id))
+                                                        .finally(() => this.loading = false);
+                                                }
+                                            }"
+                                            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                        >
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">💶 Invoice</div>
+                                                    @if(!empty($cargo->inv_nr))
+                                                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                                            Nr: <span class="font-medium">{{ $cargo->inv_nr }}</span>
+                                                        </div>
+                                                    @endif
+                                                </div>
 
-                @if ($cargo->inv_file)
-                    <a href="{{ asset('storage/'.$cargo->inv_file) }}" target="_blank"
-                       class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold">
-                        👁 Open
-                    </a>
-                @endif
-            </div>
+                                                @if ($cargo->inv_file)
+                                                    <a href="{{ asset('storage/'.$cargo->inv_file) }}" target="_blank"
+                                                       class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold">
+                                                        👁 Open
+                                                    </a>
+                                                @endif
+                                            </div>
 
-            @if (!$cargo->inv_file)
-                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-                    <div>
-                        <input type="text"
-                               x-model.trim="nr"
-                               placeholder="Invoice number (required)"
-                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
-                               @keydown.enter.prevent="run()" />
-                        @error('invNr.'.$cargo->id)
-                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
-                        @enderror
-                    </div>
+                                            @if (!$cargo->inv_file)
+                                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                                                    <div>
+                                                        <input type="text"
+                                                               x-model.trim="nr"
+                                                               placeholder="Invoice number (required)"
+                                                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
+                                                               @keydown.enter.prevent="run()" />
+                                                        @error('invNr.'.$cargo->id)
+                                                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
 
-                    <button type="button"
-                            @click="run()"
-                            :disabled="loading || !isValid"
-                            class="w-full sm:w-auto px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-amber-600">
-                        <span x-show="!loading">Generate</span>
-                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                    </button>
-                </div>
-            @endif
-        </div>
+                                                    <button type="button"
+                                                            @click="run()"
+                                                            :disabled="loading || !isValid"
+                                                            class="w-full sm:w-auto px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-amber-600">
+                                                        <span x-show="!loading">Generate</span>
+                                                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        </div>
 
-    </div>
-</div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 
@@ -709,13 +702,13 @@
     <div x-data="{ openTripDocs: false }"
          class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
 
-        <button @click="openTripDocs = !openTripDocs"
+        <button type="button" @click="openTripDocs = !openTripDocs"
                 class="w-full flex items-center justify-between text-left">
             <h2 class="text-lg font-semibold">📄 Dokumenti par reisu</h2>
             <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripDocs }">▼</div>
         </button>
 
-        <div x-show="openTripDocs" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div x-cloak x-show="openTripDocs" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
             <livewire:trips.trip-documents-section :trip="$trip" />
         </div>
     </div>
@@ -727,13 +720,13 @@
     <div x-data="{ openTripExpenses: false }"
          class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
 
-        <button @click="openTripExpenses = !openTripExpenses"
+        <button type="button" @click="openTripExpenses = !openTripExpenses"
                 class="w-full flex items-center justify-between text-left">
             <h2 class="text-lg font-semibold">💶 Izdevumi par reisu</h2>
             <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripExpenses }">▼</div>
         </button>
 
-        <div x-show="openTripExpenses" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div x-cloak x-show="openTripExpenses" x-collapse class="pt-4 border-t border-gray-200 dark:border-gray-700">
             <livewire:trips.trip-expenses-section :trip="$trip" />
         </div>
     </div>

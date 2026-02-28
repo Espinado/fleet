@@ -25,7 +25,7 @@ class Dashboard extends Component
 
     public function mount()
     {
-        $user = Auth::user();
+       $user = Auth::guard('driver')->user();
 
         if (!$user || $user->role !== 'driver' || !$user->driver) {
             redirect()->route('driver.login')->send();
