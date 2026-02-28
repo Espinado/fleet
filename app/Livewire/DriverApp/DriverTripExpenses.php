@@ -5,6 +5,7 @@ namespace App\Livewire\DriverApp;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Enum as EnumRule;
 
 use App\Models\Trip;
@@ -12,7 +13,6 @@ use App\Models\TripExpense;
 use App\Models\TruckOdometerEvent;
 
 use App\Enums\TripExpenseCategory;
-use App\Services\Services\Odometer\MaponOdometerFetcher;
 
 class DriverTripExpenses extends Component
 {
@@ -27,12 +27,8 @@ class DriverTripExpenses extends Component
     public string $expense_date = '';
     public $file = null;
 
-    // Mapon snapshot (только для топлива)
-    public ?float $maponOdometerKm = null;
-    public ?string $maponOdometerSource = null; // can|mileage|null
-    public ?string $maponAt = null;
-    public ?bool $maponIsStale = null;
-    public ?int $maponStaleMinutes = null;
+    // ✅ ручной одометр (используем только для fuel)
+    public ?float $manualOdometerKm = null;
 
     public function mount(Trip $trip)
     {
@@ -52,141 +48,119 @@ class DriverTripExpenses extends Component
             'amount'       => 'required|numeric|min:0.01|max:99999',
             'expense_date' => 'required|date',
             'file'         => 'nullable|file|max:51200', // 50mb
+
+            // manual odometer (обязательность проверяем логикой ниже)
+            'manualOdometerKm' => ['nullable', 'numeric', 'min:0', 'max:3000000'],
         ];
     }
 
     public function updatedCategory(): void
     {
-        $this->resetMaponSnapshot();
-        $this->resetErrorBag('mapon');
+        $this->manualOdometerKm = null;
+        $this->resetErrorBag('manualOdometerKm');
     }
 
-    private function resetMaponSnapshot(): void
-    {
-        $this->maponOdometerKm = null;
-        $this->maponOdometerSource = null;
-        $this->maponAt = null;
-        $this->maponIsStale = null;
-        $this->maponStaleMinutes = null;
-    }
-
-    public function fetchOdometerFromMapon(): void
-    {
-        $this->resetErrorBag('mapon');
-        $this->resetMaponSnapshot();
-
-        $truck = $this->trip->truck;
-
-        if (!$truck) {
-            $this->addError('mapon', 'В рейсе не найден truck.');
-            return;
-        }
-
-        if (!$truck->mapon_unit_id) {
-            $this->addError('mapon', 'У трака не задан mapon_unit_id.');
-            return;
-        }
-
-        /** @var MaponOdometerFetcher $fetcher */
-        $fetcher = app(MaponOdometerFetcher::class);
-
-        $odo = $fetcher->fetchOdometer((int) $truck->mapon_unit_id, (int) $truck->company);
-
-        if (!$odo || !array_key_exists('km', $odo)) {
-            $this->addError('mapon', 'Не удалось получить данные из Mapon.');
-            return;
-        }
-
-        if ($odo['km'] === null) {
-            $this->addError('mapon', 'Mapon не вернул одометр (CAN и mileage пустые).');
-            return;
-        }
-
-        $this->maponOdometerKm = (float) $odo['km'];
-        $this->maponOdometerSource = $odo['source'] ?? null; // can|mileage
-        $this->maponAt = $odo['mapon_at'] ?? null;
-
-        $this->maponIsStale = (bool) ($odo['is_stale'] ?? false);
-        $this->maponStaleMinutes = $odo['stale_minutes'] ?? null;
-    }
-
-    public function saveExpense()
+    public function saveExpense(): void
     {
         $this->validate();
 
         $driver = Auth::user()?->driver;
         if (!$driver) {
-            return redirect()->route('driver.login');
+            redirect()->route('driver.login')->send();
+            return;
         }
 
         $isFuel = $this->category === TripExpenseCategory::FUEL->value;
 
-        // ✅ Для топлива обязательно получаем одометр из Mapon
+        // ✅ Fuel требует odometer + truck
         if ($isFuel) {
-            if ($this->maponOdometerKm === null) {
-                $this->fetchOdometerFromMapon();
+            if ($this->manualOdometerKm === null || $this->manualOdometerKm <= 0) {
+                $this->addError('manualOdometerKm', 'Ievadiet odometru (km).');
+                return;
             }
 
-            if ($this->getErrorBag()->has('mapon') || $this->maponOdometerKm === null) {
-                return; // покажем ошибку, не сохраняем
+            if (!$this->trip->truck) {
+                $this->addError('manualOdometerKm', 'В рейсе не найден truck.');
+                return;
             }
         }
 
-        $path = $this->file
-            ? $this->file->store("trip_expenses/{$this->trip->id}", 'public')
-            : null;
+        DB::transaction(function () use ($driver, $isFuel) {
 
-        $expense = TripExpense::create([
-            'trip_id'      => $this->trip->id,
-            'category'     => $this->category,
-            'description'  => $this->description,
-            'amount'       => $this->amount,
-            'currency'     => 'EUR',
-            'file_path'    => $path,
-            'expense_date' => $this->expense_date,
-            'created_by'   => Auth::id(),
-        ]);
+            // файл
+            $path = $this->file
+                ? $this->file->store("trip_expenses/{$this->trip->id}", 'public')
+                : null;
 
-        // ✅ Вариант A: одометр НЕ в TripExpense, а только в TruckOdometerEvent
-        if ($isFuel) {
-            $truck = $this->trip->truck;
+            // =========================================================
+            // 1) Создаём TripExpense (финансовая запись)
+            // =========================================================
+            $expenseData = [
+                'trip_id'      => $this->trip->id,
+                'category'     => $this->category,
+                'description'  => $this->description,
+                'amount'       => $this->amount,
+                'currency'     => 'EUR',
+                'file_path'    => $path,
+                'expense_date' => $this->expense_date,
+                'created_by'   => Auth::id(),
+            ];
 
-            $sourceInt = match ($this->maponOdometerSource) {
-                'can' => TruckOdometerEvent::SOURCE_CAN,
-                'mileage' => TruckOdometerEvent::SOURCE_MILEAGE,
-                default => TruckOdometerEvent::SOURCE_FALLBACK_LOCAL,
-            };
+            if ($isFuel) {
+                $expenseData['odometer_km'] = (float) $this->manualOdometerKm;
+                $expenseData['odometer_source'] = 'manual';
+            }
 
-            // антидубль на случай двойного клика
-            $duplicate = TruckOdometerEvent::query()
-                ->where('truck_id', $truck->id)
-                ->where('driver_id', $driver->id)
-                ->where('type', TruckOdometerEvent::TYPE_FUEL)
-                ->where('odometer_km', (float) $this->maponOdometerKm)
-                ->where('occurred_at', '>=', now()->subMinutes(2))
-                ->exists();
+            $expense = TripExpense::create($expenseData);
 
-            if (!$duplicate) {
-                TruckOdometerEvent::create([
+            // =========================================================
+            // 2) Для fuel создаём TruckOdometerEvent и связываем 1:1
+            // =========================================================
+            if ($isFuel) {
+                $truck = $this->trip->truck;
+                $odometerKm = (float) $this->manualOdometerKm;
+
+                // антидубль (на случай двойного клика) — берём существующий event если есть
+                $existingEventId = TruckOdometerEvent::query()
+                    ->where('truck_id', $truck->id)
+                    ->where('driver_id', $driver->id)
+                    ->where('type', TruckOdometerEvent::TYPE_FUEL)
+                    ->where('odometer_km', $odometerKm)
+                    ->where('occurred_at', '>=', now()->subMinutes(2))
+                    ->value('id');
+
+                if ($existingEventId) {
+                    $expense->update([
+                        'truck_odometer_event_id' => $existingEventId,
+                    ]);
+                    return;
+                }
+
+                $event = TruckOdometerEvent::create([
                     'truck_id'      => $truck->id,
                     'driver_id'     => $driver->id,
                     'type'          => TruckOdometerEvent::TYPE_FUEL,
-                    'odometer_km'   => (float) $this->maponOdometerKm,
-                    'source'        => $sourceInt,
+                    'odometer_km'   => $odometerKm,
 
-                    // момент действия + фактическое время в Mapon
+                    // ✅ ручной ввод — это SOURCE_MANUAL
+                    'source'        => TruckOdometerEvent::SOURCE_MANUAL,
+
                     'occurred_at'   => now(),
-                    'mapon_at'      => $this->maponAt,
-                    'is_stale'      => (bool) $this->maponIsStale,
-                    'stale_minutes' => $this->maponStaleMinutes,
+                    'mapon_at'      => null,
+                    'is_stale'      => false,
+                    'stale_minutes' => null,
                     'raw'           => null,
                     'note'          => "Fuel expense #{$expense->id}",
                 ]);
-            }
-        }
 
-        $this->reset(['description', 'amount', 'expense_date', 'file']);
-        $this->resetMaponSnapshot();
+                $expense->update([
+                    'truck_odometer_event_id' => $event->id,
+                ]);
+            }
+        });
+
+        $this->reset(['description', 'amount', 'expense_date', 'file', 'manualOdometerKm']);
+        $this->resetErrorBag();
 
         session()->flash('success', 'Izdevums pievienots!');
     }

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Truck extends Model
 {
@@ -32,23 +34,22 @@ class Truck extends Model
         'vin',
         'status',
         'is_active',
-           'tech_passport_nr',
-                'tech_passport_issued',
-                'tech_passport_expired',
-                'tech_passport_photo',
+        'tech_passport_nr',
+        'tech_passport_issued',
+        'tech_passport_expired',
+        'tech_passport_photo',
     ];
 
-   protected $casts = [
-    'inspection_issued' => 'date',
-    'inspection_expired' => 'date',
-    'insurance_issued' => 'date',
-    'insurance_expired' => 'date',
-    'tech_passport_issued' => 'date',
-    'tech_passport_expired' => 'date',
-     'license_issued'  => 'date',
-    'license_expired' => 'date',
-
-];
+    protected $casts = [
+        'inspection_issued' => 'date',
+        'inspection_expired' => 'date',
+        'insurance_issued' => 'date',
+        'insurance_expired' => 'date',
+        'tech_passport_issued' => 'date',
+        'tech_passport_expired' => 'date',
+        'license_issued'  => 'date',
+        'license_expired' => 'date',
+    ];
 
     public function getDisplayNameAttribute(): string
     {
@@ -56,17 +57,18 @@ class Truck extends Model
     }
 
     public function vehicleRuns(): HasMany
-{
-    return $this->hasMany(\App\Models\VehicleRun::class);
-}
+    {
+        return $this->hasMany(\App\Models\VehicleRun::class);
+    }
 
-public function odometerEvents(): HasMany
-{
-    return $this->hasMany(\App\Models\OdometerEvent::class);
-}
+    public function odometerEvents(): HasMany
+    {
+        // ⚠️ проверь название модели: если она TruckOdometerEvent — оставь так
+        return $this->hasMany(\App\Models\TruckOdometerEvent::class);
+    }
 
-public function company()
-{
-    return $this->belongsTo(\App\Models\Company::class);
-}
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Company::class);
+    }
 }

@@ -4,15 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
 use App\Enums\TripExpenseCategory;
-use Illuminate\Support\Facades\Storage;
 
 class TripExpense extends Model
 {
     use HasFactory;
 
+    protected $table = 'trip_expenses';
+
     protected $fillable = [
-         'trip_id',
+        'trip_id',
         'supplier_company_id',
         'category',
         'description',
@@ -21,45 +24,47 @@ class TripExpense extends Model
         'file_path',
         'expense_date',
         'created_by',
+
+        // ✅ NEW: fuel snapshot + 1:1 link
+        'odometer_km',
+        'odometer_source',
+        'truck_odometer_event_id',
     ];
 
     protected $casts = [
         'expense_date' => 'date',
-        'category'     => TripExpenseCategory::class, // OK
+        'amount' => 'decimal:2',
+        'odometer_km' => 'decimal:1',
+
+        // если category у тебя Enum — удобно кастить
+        'category' => TripExpenseCategory::class,
     ];
 
-    public function setCategoryAttribute($value)
-    {
-        $this->attributes['category'] = trim((string)$value);
-    }
+    /** ================= Relations ================= */
 
-    public function getFileUrlAttribute(): ?string
-    {
-        return $this->file_path ? Storage::disk('public')->url($this->file_path) : null;
-    }
-
-    public function getLabelAttribute(): string
-    {
-        // защита, если вдруг category не распарсилась в enum
-        if ($this->category instanceof TripExpenseCategory) {
-            return $this->category->label();
-        }
-
-        return (string) $this->category;
-    }
-
-    public function trip()
+    public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
     }
 
-    public function supplierCompany()
-    {
-        return $this->belongsTo(Company::class, 'supplier_company_id');
-    }
-
-    public function creator()
+    public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function truckOdometerEvent(): BelongsTo
+    {
+        return $this->belongsTo(TruckOdometerEvent::class, 'truck_odometer_event_id');
+    }
+
+    /** ================= Accessors ================= */
+
+    public function getFileUrlAttribute(): ?string
+    {
+        if (!$this->file_path) {
+            return null;
+        }
+
+        return \Storage::disk('public')->url($this->file_path);
     }
 }

@@ -56,38 +56,33 @@
                 >
             </div>
 
-            {{-- ✅ Mapon odometer (только Fuel) --}}
+            {{-- ✅ ОДОМЕТР (только Fuel): ручной ввод --}}
             <div x-show="$wire.category === 'fuel'" x-cloak class="space-y-2">
-                @error('mapon')
+
+                @error('manualOdometerKm')
                     <div class="bg-red-50 border border-red-300 text-red-700 px-3 py-2 rounded-lg text-xs">
                         {{ $message }}
                     </div>
                 @enderror
 
-                <button
-                    type="button"
-                    wire:click="fetchOdometerFromMapon"
-                    wire:target="fetchOdometerFromMapon"
-                    wire:loading.attr="disabled"
-                    class="w-full bg-gray-900 hover:bg-black text-white py-2 rounded-lg font-semibold text-sm
-                           disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <span wire:loading.remove wire:target="fetchOdometerFromMapon">📡 Взять одометр из Mapon</span>
-                    <span wire:loading wire:target="fetchOdometerFromMapon">⏳ Получаем одометр…</span>
-                </button>
-
-                @if($maponOdometerKm !== null)
-                    <div class="p-3 rounded-xl bg-gray-50 border text-sm">
-                        <div class="font-semibold">
-                            Odometrs: {{ number_format($maponOdometerKm, 1) }} km
-                        </div>
-                        <div class="text-xs text-gray-600">
-                            Source: {{ $maponOdometerSource ?? '—' }}
-                            @if($maponAt) • Mapon at: {{ $maponAt }} @endif
-                            @if($maponIsStale && $maponStaleMinutes) • ⚠️ stale {{ $maponStaleMinutes }} min @endif
-                        </div>
+                <div class="p-3 rounded-xl bg-yellow-50 border border-yellow-200">
+                    <div class="text-xs text-yellow-900 font-semibold mb-2">
+                        ⛽ Ievadiet odometru manuāli (km)
                     </div>
-                @endif
+
+                    <label class="text-xs font-semibold">Odometrs (km)</label>
+                    <input
+                        type="number"
+                        step="0.1"
+                        wire:model.live="manualOdometerKm"
+                        class="w-full border-gray-300 rounded-lg text-sm p-2 bg-white"
+                        placeholder="piem.: 123456.7"
+                    >
+
+                    <div class="text-[11px] text-gray-600 mt-1">
+                        Tiks saglabāts gan izdevumā, gan odometra notikumos (1:1).
+                    </div>
+                </div>
             </div>
 
             {{-- Дата --}}
@@ -148,6 +143,12 @@
                 $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
                 $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
                 $isPdf = $ext === 'pdf';
+
+                $isFuel = ($exp->category?->value ?? (string)$exp->category) === 'fuel';
+
+                // trip_expenses: odometer_km, odometer_source (будут добавлены миграцией)
+                $odoKm = $exp->odometer_km ?? null;
+                $odoSrc = $exp->odometer_source ?? null; // manual|can|mileage
             @endphp
 
             <div class="flex items-start justify-between gap-3 py-3 border-b last:border-b-0">
@@ -164,7 +165,15 @@
                         @endif
                     </div>
 
-                    {{-- Вариант A: odometer_km НЕ в trip_expenses — поэтому этот блок убран --}}
+                    {{-- ✅ Для fuel показываем odometer из trip_expenses --}}
+                    @if($isFuel && $odoKm !== null)
+                        <div class="text-xs text-gray-700 mt-1">
+                            ⛽ Odometrs: <span class="font-semibold">{{ number_format((float)$odoKm, 1) }}</span> km
+                            @if($odoSrc)
+                                <span class="text-gray-500">({{ $odoSrc }})</span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <div class="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden shrink-0">
