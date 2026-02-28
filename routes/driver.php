@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
+use App\Http\Middleware\LogDriverRequests;
+
 use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
 use App\Livewire\DriverApp\TripDetails;
@@ -37,10 +39,18 @@ Route::get('/driver/login', Login::class)
 
 /*
 |--------------------------------------------------------------------------
+| OFFLINE (public)
+|--------------------------------------------------------------------------
+*/
+Route::view('/driver/offline', 'driver-app.offline')
+    ->name('driver.offline');
+
+/*
+|--------------------------------------------------------------------------
 | AUTHENTICATED DRIVER APP (driver guard)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:driver'])->group(function () {
+Route::middleware(['auth:driver', LogDriverRequests::class])->group(function () {
 
     Route::get('/driver/dashboard', Dashboard::class)
         ->name('driver.dashboard');
@@ -59,7 +69,4 @@ Route::middleware(['auth:driver'])->group(function () {
 
         return redirect('/driver/login');
     })->name('driver.logout');
-
-
 });
-Route::view('/driver/offline', 'driver-app.offline');

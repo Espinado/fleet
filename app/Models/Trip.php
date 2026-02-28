@@ -51,13 +51,17 @@ class Trip extends Model
         return $this->belongsTo(Driver::class);
     }
 
- protected static function booted(): void
+ 
+
+protected static function booted(): void
 {
     static::addGlobalScope('company', function (Builder $builder) {
-        $user = Auth::user();
+
+        // Берём пользователя из web, если нет — из driver
+        $user = Auth::guard('web')->user() ?? Auth::guard('driver')->user();
 
         if (!$user) {
-            return; // console/seed/queue
+            return;
         }
 
         // ✅ админ видит всё
@@ -65,13 +69,18 @@ class Trip extends Model
             return;
         }
 
-        // если компания не задана — ничего не показываем
+        // ✅ driver видит только свои рейсы (по driver_id)
+        if (($user->role ?? null) === 'driver' && $user->driver) {
+            $builder->where('driver_id', (int) $user->driver->id);
+            return;
+        }
+
+        // ✅ остальные роли — по компании (как было)
         if (empty($user->company_id)) {
             $builder->whereRaw('1=0');
             return;
         }
 
-        // фильтр по компании перевозчика
         $builder->where('carrier_company_id', (int) $user->company_id);
     });
 }
