@@ -26,6 +26,11 @@ class DriverTripExpenses extends Component
     public float|string $amount = '';
     public string $expense_date = '';
     public $file = null;
+    public $maponOdometerKm = null;
+public $maponOdometerSource = null;
+public $maponAt = null;
+public $maponIsStale = null;
+public $maponStaleMinutes = null;
 
     // ✅ ручной одометр (используем только для fuel)
     public ?float $manualOdometerKm = null;
