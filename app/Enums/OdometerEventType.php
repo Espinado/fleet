@@ -13,7 +13,7 @@ enum OdometerEventType: int
     public function label(): string
     {
         return match ($this) {
-            self::RUN_START      => 'Run started',
+            self::RUN_START      => 'Garage departure',
             self::STEP_ARRIVED   => 'Step arrived',
             self::STEP_COMPLETED => 'Step completed',
             self::RUN_END        => 'Run ended',

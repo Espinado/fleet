@@ -124,109 +124,188 @@
     {{-- ============================================================ --}}
     {{-- Таблица расходов --}}
     {{-- ============================================================ --}}
-    <div class="overflow-x-auto -mx-2 sm:mx-0">
-        <table class="min-w-full border border-gray-200 dark:border-gray-700 text-sm">
+   <div class="overflow-x-auto -mx-2 sm:mx-0">
+    <table class="min-w-full border border-gray-200 dark:border-gray-700 text-sm">
 
-            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase text-xs">
-                <tr>
-                    {{-- SORTABLE HEADERS --}}
-                    <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('expense_date')">
-                        Datums
-                        @if($sortField === 'expense_date')
-                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                        @endif
-                    </th>
+        <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase text-xs">
+            <tr>
+                {{-- SORTABLE HEADERS --}}
+                <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('expense_date')">
+                    Datums
+                    @if($sortField === 'expense_date')
+                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                    @endif
+                </th>
 
-                    <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('category')">
-                        Kategorija
-                        @if($sortField === 'category')
-                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                        @endif
-                    </th>
+                <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('category')">
+                    Kategorija
+                    @if($sortField === 'category')
+                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                    @endif
+                </th>
 
-                    <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('description')">
-                        Apraksts
-                        @if($sortField === 'description')
-                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                        @endif
-                    </th>
+                {{-- вместо Apraksts: литры/одометр/описание --}}
+                <th class="px-3 py-2 cursor-pointer" wire:click="sortBy('description')">
+                    Detalizēti
+                    @if($sortField === 'description')
+                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                    @endif
+                </th>
 
-                    <th class="px-3 py-2 text-right cursor-pointer" wire:click="sortBy('amount')">
-                        Summa (€)
-                        @if($sortField === 'amount')
-                            {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                        @endif
-                    </th>
+                <th class="px-3 py-2 text-right cursor-pointer" wire:click="sortBy('amount')">
+                    Summa (€)
+                    @if($sortField === 'amount')
+                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
+                    @endif
+                </th>
 
-                    <th class="px-3 py-2">Fails</th>
-                    <th class="px-3 py-2 text-right">Darbības</th>
-                </tr>
-            </thead>
+                <th class="px-3 py-2">Fails</th>
+                <th class="px-3 py-2 text-right">Darbības</th>
+            </tr>
+        </thead>
 
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
 
-                @forelse($this->filteredExpenses as $exp)
+            @forelse($this->filteredExpenses as $exp)
 
-                    @php
-                        $url = $exp->file_url;
-                        $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
-                        $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
-                        $isPdf = $ext === 'pdf';
-                    @endphp
+                @php
+                    // file preview
+                    $url = $exp->file_url;
+                    $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
+                    $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp'], true);
+                    $isPdf = $ext === 'pdf';
 
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
+                    // category safe value (enum/string)
+                    $categoryValue = $exp->category instanceof \BackedEnum
+                        ? $exp->category->value
+                        : (string) $exp->category;
 
-                        <td class="px-3 py-2">
-                            {{ $exp->expense_date?->format('d.m.Y') ?? '—' }}
-                        </td>
+                    $categoryLabel = method_exists($exp->category, 'label')
+                        ? $exp->category->label()
+                        : $categoryValue;
 
-                        <td class="px-3 py-2">{{ $exp->category->label() }}</td>
+                    // flags
+                    $isFuelOrAdblue = in_array($categoryValue, ['fuel', 'adblue'], true);
 
-                        <td class="px-3 py-2">{{ $exp->description ?: '—' }}</td>
+                    // data
+                    $liters = $exp->liters ?? null;
+                    $odoKm  = $exp->odometer_km ?? null;
+                    $odoSrc = $exp->odometer_source ?? null;
 
-                        <td class="px-3 py-2 text-right">
-                            €{{ number_format($exp->amount, 2, ',', ' ') }}
-                        </td>
+                    // colors by category
+                    $catBadge = match ($categoryValue) {
+                        'fuel'         => 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800',
+                        'adblue'       => 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800',
+                        'washer_fluid' => 'bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-200 dark:border-blue-800',
+                        'parking'      => 'bg-purple-50 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-200 dark:border-purple-800',
+                        'toll'         => 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-200 dark:border-indigo-800',
+                        'hotel'        => 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800',
+                        'food'         => 'bg-lime-50 text-lime-800 border-lime-200 dark:bg-lime-900/20 dark:text-lime-200 dark:border-lime-800',
+                        default        => 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700',
+                    };
 
-                        {{-- FILE PREVIEW --}}
-                        <td class="px-3 py-2">
-                            @if($url)
-                                @if($isPdf)
-                                    <a href="{{ $url }}" target="_blank" class="text-red-600 font-semibold">PDF</a>
-                                @elseif($isImage)
-                                    <a href="{{ $url }}" target="_blank">
-                                        <img src="{{ $url }}" class="w-12 h-12 rounded-lg object-cover border dark:border-gray-700">
-                                    </a>
-                                @else
-                                    <a href="{{ $url }}" target="_blank" class="text-indigo-600 underline">Atvērt</a>
-                                @endif
-                            @else
-                                <span class="text-gray-400">—</span>
+                    $litersColor = match ($categoryValue) {
+                        'fuel'         => 'text-amber-700 dark:text-amber-200',
+                        'adblue'       => 'text-sky-700 dark:text-sky-200',
+                        'washer_fluid' => 'text-blue-700 dark:text-blue-200',
+                        default        => 'text-gray-700 dark:text-gray-200',
+                    };
+
+                    $odoColor = match ($categoryValue) {
+                        'fuel'   => 'text-amber-700 dark:text-amber-200',
+                        'adblue' => 'text-sky-700 dark:text-sky-200',
+                        default  => 'text-gray-700 dark:text-gray-200',
+                    };
+                @endphp
+
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
+
+                    <td class="px-3 py-2 whitespace-nowrap">
+                        {{ $exp->expense_date?->format('d.m.Y') ?? '—' }}
+                    </td>
+
+                    <td class="px-3 py-2">
+                        <span class="inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $catBadge }}">
+                            {{ $categoryLabel }}
+                        </span>
+                    </td>
+
+                    {{-- литры + одометр (только fuel/adblue) + fallback description --}}
+                    <td class="px-3 py-2">
+                        <div class="space-y-1">
+
+                            @if($liters !== null)
+                                <div class="text-xs font-semibold {{ $litersColor }}">
+                                    🧴 {{ number_format((float)$liters, 2, ',', ' ') }} L
+                                </div>
                             @endif
-                        </td>
 
-                        <td class="px-3 py-2 text-right">
-                            <button wire:click="delete({{ $exp->id }})"
-                                    class="text-red-600 hover:text-red-800 text-sm">
-                                Dzēst
-                            </button>
-                        </td>
+                            @if($isFuelOrAdblue && $odoKm !== null)
+                                <div class="text-xs font-semibold {{ $odoColor }}">
+                                    ⛽ {{ number_format((float)$odoKm, 1, ',', ' ') }} km
+                                    @if($odoSrc)
+                                        <span class="text-[11px] text-gray-500 dark:text-gray-400 font-normal">
+                                            ({{ $odoSrc }})
+                                        </span>
+                                    @endif
+                                </div>
+                            @endif
 
-                    </tr>
+                            @if($liters === null && (!$isFuelOrAdblue || $odoKm === null))
+                                <div class="text-gray-600 dark:text-gray-300">
+                                    {{ $exp->description ?: '—' }}
+                                </div>
+                            @endif
 
-                @empty
-                    <tr>
-                        <td colspan="6"
-                            class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
-                            Nav izdevumu
-                        </td>
-                    </tr>
-                @endforelse
+                        </div>
+                    </td>
 
-            </tbody>
+                    <td class="px-3 py-2 text-right whitespace-nowrap">
+                        €{{ number_format((float)$exp->amount, 2, ',', ' ') }}
+                    </td>
 
-        </table>
-    </div>
+                    {{-- FILE PREVIEW --}}
+                    <td class="px-3 py-2">
+                        @if($url)
+                            @if($isPdf)
+                                <a href="{{ $url }}" target="_blank" rel="noopener" class="text-red-600 dark:text-red-400 font-semibold">PDF</a>
+                            @elseif($isImage)
+                                <a href="{{ $url }}" target="_blank" rel="noopener">
+                                    <img src="{{ $url }}" class="w-12 h-12 rounded-lg object-cover border dark:border-gray-700" alt="Expense file">
+                                </a>
+                            @else
+                                <a href="{{ $url }}" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-300 underline">Atvērt</a>
+                            @endif
+                        @else
+                            <span class="text-gray-400">—</span>
+                        @endif
+                    </td>
+
+                    <td class="px-3 py-2 text-right whitespace-nowrap">
+                        <button
+                            type="button"
+                            wire:click="delete({{ $exp->id }})"
+                            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-semibold"
+                        >
+                            Dzēst
+                        </button>
+                    </td>
+
+                </tr>
+
+            @empty
+                <tr>
+                    <td colspan="6"
+                        class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
+                        Nav izdevumu
+                    </td>
+                </tr>
+            @endforelse
+
+        </tbody>
+
+    </table>
+</div>
 
 
     {{-- PAGINATION --}}
@@ -239,7 +318,7 @@
     @if($this->isFiltered)
         {{-- Когда поиск/фильтр активны --}}
         <div>
-            Kopā (pēc filtrēšanas): 
+            Kopā (pēc filtrēšanas):
             €{{ number_format($this->filteredTotal, 2, ',', ' ') }}
         </div>
         <div class="text-gray-500 text-xs">

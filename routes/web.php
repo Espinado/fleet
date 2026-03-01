@@ -23,6 +23,7 @@ use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
 use App\Livewire\Invoices\InvoicesTable;
 use App\Models\Invoice;
 use Illuminate\Support\Facades\Storage;
+use App\Livewire\Stats\EventsTable;
 
 
 
@@ -97,6 +98,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
      // Stats
     Route::get('/stats', TripsStatsTable::class)->name('stats.index');
+
+     Route::get('/stats/events', EventsTable::class)->name('stats.events');
 
     // CMR generate
     Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])

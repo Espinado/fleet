@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
     <title>{{ config('app.name', 'Fleet Manager') }} - @yield('title')</title>
 
@@ -35,77 +35,99 @@
             🚚 Fleet Manager
             <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl">✖</button>
         </div>
-@php
-    $navBase   = 'block px-3 py-2 rounded transition';
-    $navIdle   = 'text-gray-700 hover:bg-gray-200';
-    $navActive = 'bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-200';
-@endphp
 
-<nav class="p-4 space-y-2">
-    <a href="{{ route('dashboard') }}"
-       @class([
-            $navBase,
-            request()->routeIs('dashboard') ? $navActive : $navIdle
-       ])>
-        📊 Dashboard
-    </a>
+        @php
+            $navBase   = 'block px-3 py-2 rounded transition';
+            $navIdle   = 'text-gray-700 hover:bg-gray-200';
+            $navActive = 'bg-blue-50 text-blue-700 font-semibold ring-1 ring-blue-200';
 
-    <a href="{{ route('drivers.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('drivers.*') ? $navActive : $navIdle
-       ])>
-        👨‍✈️ Drivers
-    </a>
+            // Stats dropdown behavior + active states
+            $statsOpen          = request()->routeIs('stats.*');
+            $statsOverviewActive = request()->routeIs('stats.index');
+            $statsEventsActive   = request()->routeIs('stats.events') || request()->routeIs('stats.events.*');
+             $transportOpen = request()->routeIs('trucks.*') || request()->routeIs('trailers.*');
 
-    <a href="{{ route('trucks.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('trucks.*') ? $navActive : $navIdle
-       ])>
-        🚛 Trucks
-    </a>
+    $trucksActive = request()->routeIs('trucks.*');
+    $trailersActive = request()->routeIs('trailers.*');
+        @endphp
 
-    <a href="{{ route('trailers.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('trailers.*') ? $navActive : $navIdle
-       ])>
-        🚚 Trailers
-    </a>
+        <nav class="p-4 space-y-2">
+            <a href="{{ route('dashboard') }}"
+               @class([$navBase, request()->routeIs('dashboard') ? $navActive : $navIdle])>
+                📊 Dashboard
+            </a>
 
-    <a href="{{ route('clients.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('clients.*') ? $navActive : $navIdle
-       ])>
-        🏢 Clients
-    </a>
+            <a href="{{ route('drivers.index') }}"
+               @class([$navBase, request()->routeIs('drivers.*') ? $navActive : $navIdle])>
+                👨‍✈️ Drivers
+            </a>
 
-    <a href="{{ route('trips.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('trips.*') ? $navActive : $navIdle
-       ])>
-        🧭 Trips
-    </a>
+            <details class="rounded" @if($transportOpen) open @endif>
+    <summary
+        class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
+               {{ $transportOpen ? $navActive : $navIdle }}"
+    >
+        <span>🚚 Transport</span>
+        <span class="text-xs opacity-70">
+            @if($transportOpen) ▲ @else ▼ @endif
+        </span>
+    </summary>
 
-    <a href="{{ route('stats.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('stats.*') ? $navActive : $navIdle
-       ])>
-        📊 Stats
-    </a>
+    <div class="mt-1 ml-3 space-y-1">
 
-    <a href="{{ route('invoices.index') }}"
-       @class([
-            $navBase,
-            request()->routeIs('invoices.*') ? $navActive : $navIdle
-       ])>
-        💶 Invoices
-    </a>
-</nav>
+        <a href="{{ route('trucks.index') }}"
+           @class([$navBase, $trucksActive ? $navActive : $navIdle])>
+            🚛 Trucks
+        </a>
+
+        <a href="{{ route('trailers.index') }}"
+           @class([$navBase, $trailersActive ? $navActive : $navIdle])>
+            🚚 Trailers
+        </a>
+
+    </div>
+</details>
+
+            <a href="{{ route('clients.index') }}"
+               @class([$navBase, request()->routeIs('clients.*') ? $navActive : $navIdle])>
+                🏢 Clients
+            </a>
+
+            <a href="{{ route('trips.index') }}"
+               @class([$navBase, request()->routeIs('trips.*') ? $navActive : $navIdle])>
+                🧭 Trips
+            </a>
+
+            {{-- ✅ STATS (dropdown) --}}
+            <details class="rounded" @if($statsOpen) open @endif>
+                <summary
+                    class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
+                           {{ $statsOpen ? $navActive : $navIdle }}"
+                >
+                    <span>📊 Stats</span>
+                    <span class="text-xs opacity-70">@if($statsOpen) ▲ @else ▼ @endif</span>
+                </summary>
+
+                <div class="mt-1 ml-3 space-y-1">
+                    {{-- существующий stats.index -> внутрь как Overview --}}
+                    <a href="{{ route('stats.index') }}"
+                       @class([$navBase, $statsOverviewActive ? $navActive : $navIdle])>
+                        📈 Overview
+                    </a>
+
+                    {{-- новое подменю --}}
+                    <a href="{{ route('stats.events') }}"
+                       @class([$navBase, $statsEventsActive ? $navActive : $navIdle])>
+                        🧾 Events
+                    </a>
+                </div>
+            </details>
+
+            <a href="{{ route('invoices.index') }}"
+               @class([$navBase, request()->routeIs('invoices.*') ? $navActive : $navIdle])>
+                💶 Invoices
+            </a>
+        </nav>
     </aside>
 
     {{-- ===== Main content ===== --}}
@@ -117,7 +139,7 @@
                 ☰
             </button>
 
-           <h1 class="text-lg font-semibold"> {{ $title ?? 'Dashboard' }}</h1>
+            <h1 class="text-lg font-semibold">{{ $title ?? 'Dashboard' }}</h1>
 
             <div class="relative group">
                 <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
@@ -129,7 +151,7 @@
                 </button>
 
                 <div class="absolute right-0 mt-2 w-40 bg-white border rounded-xl shadow-xl
-                    opacity-0 group-hover:opacity-100 transition ease-out duration-200 z-50">
+                            opacity-0 group-hover:opacity-100 transition ease-out duration-200 z-50">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit"
@@ -173,7 +195,7 @@
     </script>
 
     {{-- Livewire scripts --}}
-  @livewireScripts
+    @livewireScripts
 
     {{-- Push notifications --}}
     <script src="/pwa/push.js"></script>
@@ -184,7 +206,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/admin/serviceworker.js', { scope: '/admin/' })
-                .then(r => console.log("Admin SW loaded"))
+                .then(() => console.log("Admin SW loaded"))
                 .catch(e => console.warn("Admin SW error:", e));
         }
     </script>
