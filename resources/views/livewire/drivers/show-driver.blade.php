@@ -57,11 +57,11 @@
         </p>
 
         <p>
-            <span class="font-semibold">Company:</span>
-            <span class="text-gray-700">
-                {{ config('companies')[$driver->company]['name'] ?? '-' }}
-            </span>
-        </p>
+    <span class="font-semibold">Company:</span>
+    <span class="text-gray-700">
+        {{ $driver->company?->name ?? '-' }}
+    </span>
+</p>
     </div>
 
     {{-- RIGHT: PIN --}}
