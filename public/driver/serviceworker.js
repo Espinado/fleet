@@ -1,5 +1,5 @@
 // Driver PWA SW (safe for Livewire/Vite)
-const CACHE = "driver-pwa-v2";
+const CACHE = "driver-pwa-v4";
 
 const OFFLINE_URL = "/driver/offline";
 const PRECACHE = [
@@ -10,13 +10,17 @@ const PRECACHE = [
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(PRECACHE))
+  );
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil((async () => {
     const keys = await caches.keys();
-    await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
+    await Promise.all(
+      keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))
+    );
     await self.clients.claim();
   })());
 });
@@ -37,23 +41,27 @@ self.addEventListener("fetch", (event) => {
     url.pathname.includes("livewire.js") ||
     url.pathname.startsWith("/api/")
   ) {
-    return;
+    return; // network only
   }
 
   // ✅ HTML navigation
   if (req.mode === "navigate") {
-    event.respondWith(
-      fetch(req).catch(() => caches.match(OFFLINE_URL))
-    );
+    event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
     return;
   }
 
   // ✅ Assets cache-first
   event.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-      const copy = res.clone();
-      caches.open(CACHE).then((cache) => cache.put(req, copy));
-      return res;
-    }).catch(() => cached))
+    caches.match(req).then((cached) => {
+      if (cached) return cached;
+
+      return fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => cached);
+    })
   );
 });
