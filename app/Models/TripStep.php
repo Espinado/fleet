@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\TripStepStatus;
 use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TripStep extends Model
 {
@@ -55,7 +57,7 @@ class TripStep extends Model
     /**
      * Грузы, которые связаны с этим шагом (many-to-many через pivot trip_cargo_step)
      */
-   
+
 
   public function cargos()
 {
@@ -111,7 +113,9 @@ public function shortLabel(): string
 
 public function odometerEvents(): HasMany
 {
-    return $this->hasMany(\App\Models\OdometerEvent::class, 'trip_step_id');
+    return $this->hasMany(\App\Models\TruckOdometerEvent::class, 'trip_step_id');
 }
+
+
 
 }

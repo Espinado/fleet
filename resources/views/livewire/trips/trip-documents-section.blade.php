@@ -1,17 +1,40 @@
-<div class="bg-white dark:bg-gray-900 shadow rounded-2xl p-4 sm:p-6 space-y-6 transition-colors">
+{{-- resources/views/livewire/driver-app/trip-documents.blade.php --}}
+<div class="bg-white dark:bg-gray-900 shadow rounded-2xl p-4 sm:p-6 space-y-6 transition-colors
+            lg:pb-6 pb-24">
 
     {{-- Заголовок --}}
-    <div class="flex items-center justify-between">
-        <h2 class="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            📁 Dokumenti par reisu
-        </h2>
-        <span class="text-sm text-gray-500 dark:text-gray-400">ID: {{ $trip->id }}</span>
+    <div class="flex items-start justify-between gap-3">
+        <div>
+            <h2 class="text-lg sm:text-xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                📁 Dokumenti par reisu
+            </h2>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                ID: {{ $trip->id }}
+            </div>
+        </div>
+
+        {{-- Quick action (mobile) --}}
+        <button type="button"
+                class="lg:hidden inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium
+                       bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 active:scale-[0.98]"
+                x-data
+                @click="window.scrollTo({ top: 0, behavior: 'smooth' });">
+            ➕
+        </button>
     </div>
 
     {{-- Уведомления --}}
     @if (session('success'))
-        <div class="bg-green-50 dark:bg-green-900/30 border border-green-300 text-green-800 dark:text-green-200 px-4 py-2 rounded-lg text-sm">
+        <div class="bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-800
+                    text-green-800 dark:text-green-200 px-4 py-3 rounded-xl text-sm">
             {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-800
+                    text-red-800 dark:text-red-200 px-4 py-3 rounded-xl text-sm">
+            {{ session('error') }}
         </div>
     @endif
 
@@ -24,7 +47,9 @@
         <div class="flex justify-end">
             <button type="submit"
                     wire:loading.attr="disabled"
-                    class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white font-medium rounded-xl px-6 py-2 transition">
+                    class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]
+                           text-white font-medium rounded-xl px-6 py-2 transition
+                           disabled:opacity-60 disabled:cursor-not-allowed">
                 <span wire:loading.remove wire:target="documentFile,saveDocument">
                     Augšupielādēt
                 </span>
@@ -126,84 +151,191 @@
         </div>
     </form>
 
-    {{-- Таблица документов --}}
-    <div class="overflow-x-auto -mx-2 sm:mx-0">
-        <table class="min-w-full border border-gray-200 dark:border-gray-700 text-sm">
-            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase text-xs">
-                <tr>
-                    <th class="px-3 py-2 text-left">Tips</th>
-                    <th class="px-3 py-2 text-left">Nosaukums</th>
-                    <th class="px-3 py-2 text-left">Datums</th>
-                    <th class="px-3 py-2 text-left">Fails</th>
-                    <th class="px-3 py-2 text-right">Darbības</th>
-                </tr>
-            </thead>
+    {{-- ============================= --}}
+    {{-- LIST: cards on <lg, table on lg+ --}}
+    {{-- ============================= --}}
+    <div class="space-y-4">
 
-            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                @forelse($documents as $doc)
+        {{-- MOBILE / PWA: CARDS ( < lg ) --}}
+        <div class="lg:hidden space-y-3">
 
-                    @php
-                        $url = $doc->file_url;
-                        $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
-                        $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
-                        $isPdf = $ext === 'pdf';
-                    @endphp
+            @forelse($documents as $doc)
 
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
-                        <td class="px-3 py-2">{{ $doc->type->label() }}</td>
+                @php
+                    $url = $doc->file_url;
+                    $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
+                    $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
+                    $isPdf = $ext === 'pdf';
+                @endphp
 
-                        <td class="px-3 py-2">{{ $doc->name }}</td>
+                <div class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+                    <div class="p-4 flex items-start gap-3">
 
-                        <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
-                            {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
-                        </td>
+                        {{-- preview/icon --}}
+                        <div class="shrink-0">
+                            @if($url && $isImage)
+                                <a href="{{ $url }}" target="_blank" class="block">
+                                    <img src="{{ $url }}" alt="Document preview"
+                                         class="w-14 h-14 rounded-xl object-cover border border-gray-200 dark:border-gray-700">
+                                </a>
+                            @elseif($url && $isPdf)
+                                <a href="{{ $url }}" target="_blank"
+                                   class="w-14 h-14 rounded-xl flex items-center justify-center
+                                          bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800">
+                                    <span class="text-red-600 dark:text-red-300 font-semibold text-sm">PDF</span>
+                                </a>
+                            @else
+                                <div class="w-14 h-14 rounded-xl flex items-center justify-center
+                                            bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                                    <span class="text-gray-500 dark:text-gray-300 text-xs">FILE</span>
+                                </div>
+                            @endif
+                        </div>
 
-                        {{-- Превью --}}
-                        <td class="px-3 py-2">
-                            @if($url)
-                                @if($isPdf)
+                        {{-- info + actions --}}
+                        <div class="min-w-0 flex-1">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                                {{ $doc->name }}
+                            </div>
+
+                            <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                                <span class="inline-flex items-center rounded-full px-2 py-1
+                                             bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                                    {{ $doc->type->label() }}
+                                </span>
+                                <span class="text-gray-500 dark:text-gray-400">
+                                    {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
+                                </span>
+                            </div>
+
+                            <div class="mt-3 flex items-center gap-2">
+                                @if($url)
                                     <a href="{{ $url }}" target="_blank"
-                                       class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M6 2h7l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/>
-                                        </svg>
-                                        PDF
-                                    </a>
-                                @elseif($isImage)
-                                    <a href="{{ $url }}" target="_blank" class="group inline-block">
-                                        <img src="{{ $url }}" alt="Document preview"
-                                             class="w-12 h-12 object-cover rounded-lg border border-gray-300 dark:border-gray-700
-                                                    transition-transform group-hover:scale-105 shadow-sm">
-                                    </a>
-                                @else
-                                    <a href="{{ $url }}" target="_blank"
-                                       class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                       class="flex-1 inline-flex items-center justify-center rounded-xl px-3 py-2
+                                              text-sm font-medium bg-gray-100 dark:bg-gray-800
+                                              text-gray-800 dark:text-gray-100 active:scale-[0.98]">
                                         Atvērt
                                     </a>
+                                @else
+                                    <button type="button" disabled
+                                            class="flex-1 inline-flex items-center justify-center rounded-xl px-3 py-2
+                                                   text-sm font-medium bg-gray-100 dark:bg-gray-800
+                                                   text-gray-400 dark:text-gray-500 cursor-not-allowed">
+                                        —
+                                    </button>
                                 @endif
-                            @else
-                                <span class="text-gray-400">—</span>
-                            @endif
-                        </td>
 
-                        {{-- Delete --}}
-                        <td class="px-3 py-2 text-right">
-                            <button wire:click="delete({{ $doc->id }})"
-                                    wire:confirm="Vai tiešām dzēst šo dokumentu?"
-                                    class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm">
-                                Dzēst
-                            </button>
-                        </td>
-                    </tr>
+                                <button wire:click="delete({{ $doc->id }})"
+                                        wire:confirm="Vai tiešām dzēst šo dokumentu?"
+                                        class="inline-flex items-center justify-center rounded-xl px-3 py-2
+                                               text-sm font-semibold bg-red-50 dark:bg-red-900/30
+                                               text-red-700 dark:text-red-200 active:scale-[0.98]">
+                                    Dzēst
+                                </button>
+                            </div>
+                        </div>
 
-                @empty
+                    </div>
+                </div>
+
+            @empty
+                <div class="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/30 p-6 text-center">
+                    <div class="text-gray-600 dark:text-gray-300 font-medium">Nav dokumentu</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Augšupielādē pirmo dokumentu augšā.</div>
+                </div>
+            @endforelse
+        </div>
+
+        {{-- DESKTOP: TABLE ( lg+ ) --}}
+        <div class="hidden lg:block overflow-x-auto -mx-2 sm:mx-0">
+            <table class="min-w-full border border-gray-200 dark:border-gray-700 text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 uppercase text-xs">
                     <tr>
-                        <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
-                            Nav dokumentu
-                        </td>
+                        <th class="px-3 py-2 text-left">Tips</th>
+                        <th class="px-3 py-2 text-left">Nosaukums</th>
+                        <th class="px-3 py-2 text-left">Datums</th>
+                        <th class="px-3 py-2 text-left">Fails</th>
+                        <th class="px-3 py-2 text-right">Darbības</th>
                     </tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    @forelse($documents as $doc)
+
+                        @php
+                            $url = $doc->file_url;
+                            $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
+                            $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
+                            $isPdf = $ext === 'pdf';
+                        @endphp
+
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
+                            <td class="px-3 py-2">{{ $doc->type->label() }}</td>
+                            <td class="px-3 py-2">{{ $doc->name }}</td>
+                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
+                                {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
+                            </td>
+
+                            {{-- Превью --}}
+                            <td class="px-3 py-2">
+                                @if($url)
+                                    @if($isPdf)
+                                        <a href="{{ $url }}" target="_blank"
+                                           class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:underline">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                                                <path d="M6 2h7l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h4.5L13 3.5z"/>
+                                            </svg>
+                                            PDF
+                                        </a>
+                                    @elseif($isImage)
+                                        <a href="{{ $url }}" target="_blank" class="group inline-block">
+                                            <img src="{{ $url }}" alt="Document preview"
+                                                 class="w-12 h-12 object-cover rounded-lg border border-gray-300 dark:border-gray-700
+                                                        transition-transform group-hover:scale-105 shadow-sm">
+                                        </a>
+                                    @else
+                                        <a href="{{ $url }}" target="_blank"
+                                           class="text-indigo-600 dark:text-indigo-400 hover:underline">
+                                            Atvērt
+                                        </a>
+                                    @endif
+                                @else
+                                    <span class="text-gray-400">—</span>
+                                @endif
+                            </td>
+
+                            {{-- Delete --}}
+                            <td class="px-3 py-2 text-right">
+                                <button wire:click="delete({{ $doc->id }})"
+                                        wire:confirm="Vai tiešām dzēst šo dokumentu?"
+                                        class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm">
+                                    Dzēst
+                                </button>
+                            </td>
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
+                                Nav dokumentu
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
     </div>
+
+    {{-- ✅ PWA bottom upload shortcut (mobile only: < lg) --}}
+    <div class="lg:hidden fixed left-0 right-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom,0)+12px)]">
+        <button type="button"
+                class="w-full rounded-2xl py-3 font-semibold text-white bg-indigo-600 hover:bg-indigo-700
+                       shadow-lg active:scale-[0.99]"
+                x-data
+                @click="window.scrollTo({ top: 0, behavior: 'smooth' });">
+            ⬆️ Augšupielādēt dokumentu
+        </button>
+    </div>
+
 </div>

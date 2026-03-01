@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Enums\TripStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Trip extends Model
 {
@@ -51,7 +53,7 @@ class Trip extends Model
         return $this->belongsTo(Driver::class);
     }
 
- 
+
 
 protected static function booted(): void
 {
@@ -160,7 +162,7 @@ public function vehicleRun(): BelongsTo
 
 public function odometerEvents(): HasMany
 {
-    return $this->hasMany(\App\Models\TruckOdometerEvent::class);
+    return $this->hasMany(\App\Models\TruckOdometerEvent::class, 'trip_id');
 }
 
 public function scopeActiveForDriver($query, int $driverId)
