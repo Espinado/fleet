@@ -80,3 +80,12 @@ body {
 .driver-nav-link.active {
     color: var(--driver-primary);
 }
+@layer base {
+  /* Driver app: чуть крупнее по умолчанию */
+  html { font-size: 16.5px; }
+
+  /* На десктопе при тестах — ещё крупнее */
+  @media (min-width: 1024px) {
+    html { font-size: 18px; }
+  }
+}
