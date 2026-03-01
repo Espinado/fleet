@@ -24,6 +24,7 @@ class TripExpense extends Model
         'file_path',
         'expense_date',
         'created_by',
+        'liters',
 
         // ✅ NEW: fuel snapshot + 1:1 link
         'odometer_km',
@@ -35,6 +36,7 @@ class TripExpense extends Model
         'expense_date' => 'date',
         'amount' => 'decimal:2',
         'odometer_km' => 'decimal:1',
+        'liters' => 'decimal:2',
 
         // если category у тебя Enum — удобно кастить
         'category' => TripExpenseCategory::class,
