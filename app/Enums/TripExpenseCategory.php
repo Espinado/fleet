@@ -7,7 +7,8 @@ enum TripExpenseCategory: string
     case FUEL           = 'fuel';
     case ADBLUE         = 'adblue';          // ✅ новое
     case WASHER_FLUID   = 'washer_fluid';    // ✅ новое (logu mazgāšanas šķidrums)
-    case CAR_WASH       = 'car_wash';        // ✅ новое (automazgātava)
+    case CAR_WASH       = 'car_wash';
+    case SPARE_PARTS    = 'spare_parts';     // ✅ новое (automazgātava)
 
     case TOLL           = 'toll';
     case PARKING        = 'parking';
@@ -25,7 +26,7 @@ enum TripExpenseCategory: string
             self::ADBLUE         => 'AdBlue',
             self::WASHER_FLUID   => 'Logu mazgāšanas šķidrums',
             self::CAR_WASH       => 'Automazgātava',
-
+            self::SPARE_PARTS    => 'Rezerves daļas',
             self::TOLL           => 'Ceļa nodevas',
             self::PARKING        => 'Stāvvieta',
             self::FINE           => 'Sods',

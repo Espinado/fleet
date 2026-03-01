@@ -59,16 +59,21 @@
     </div>
 
     {{-- ============================
-         GARAGE → GARAGE (start/end)
+         GARAGE → GARAGE (INFO ONLY)
+         (start/end handled on Dashboard)
     ============================ --}}
     <div wire:key="garage-{{ $trip->id }}" class="bg-white shadow rounded-xl p-4 space-y-3 mt-3">
 
         <div class="flex items-center justify-between">
             <div class="text-sm font-semibold">🚪 Garāža → Garāža</div>
 
-            @php $can = (bool)($trip->truck?->can_available); @endphp
+            @php
+                // сейчас CAN не используем для гаража, но бейдж оставим как инфо по траку
+                $can = (bool)($trip->truck?->can_available);
+            @endphp
+
             <span class="text-[11px] px-2 py-1 rounded-full {{ $can ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
-                {{ $can ? 'CAN auto' : 'Manual odometrs' }}
+                {{ $can ? 'CAN auto (nav izmantots)' : 'Manual odometrs' }}
             </span>
         </div>
 
@@ -76,7 +81,7 @@
             <div><strong>Start:</strong> {{ $trip->started_at?->format('d.m.Y H:i') ?? '—' }}</div>
             <div><strong>End:</strong> {{ $trip->ended_at?->format('d.m.Y H:i') ?? '—' }}</div>
 
-            {{-- Odometer snapshot (show always if available) --}}
+            {{-- Odometer snapshot --}}
             <div class="pt-1 space-y-1">
                 <div>
                     <strong>Odo start:</strong>
@@ -95,82 +100,21 @@
                 @endif
             </div>
 
-            {{-- Hint for CAN vs manual --}}
-            <div class="text-[11px] text-gray-500">
-                @if($can)
-                    CAN režīmā odometrs tiek ņemts automātiski (pēdējais Mapon/CAN ieraksts).
-                @else
-                    Manuāli ievadītais odometrs.
-                @endif
+            <div class="text-[11px] text-gray-500 pt-1">
+                ℹ️ Izbraukšana / atgriešanās garāžā tiek veikta <strong>Dashboard</strong> sadaļā.
             </div>
         </div>
 
-        {{-- Buttons --}}
-        @if(!$trip->started_at)
-            <button
-                wire:click="startTrip"
-                wire:loading.attr="disabled"
-                class="w-full inline-flex justify-center items-center px-3 py-3 rounded-xl bg-blue-600 text-white text-sm font-semibold active:scale-95 disabled:opacity-60">
-                ▶️ Sākt reisu (izbraukšana)
-            </button>
+        {{-- Status hint --}}
+        <div class="text-xs text-gray-500 flex items-center justify-between">
+            <span>
+                Смена: <span class="font-medium">{{ $trip->vehicle_run_id ? 'открыта' : 'закрыта' }}</span>
+            </span>
+            <span>
+                {{ $trip->vehicle_run_id ? '🚚 В пути' : '🏠 В гараже' }}
+            </span>
+        </div>
 
-        @elseif($trip->started_at && !$trip->ended_at)
-            <button
-                wire:click="endTrip"
-                wire:loading.attr="disabled"
-                class="w-full inline-flex justify-center items-center px-3 py-3 rounded-xl bg-green-600 text-white text-sm font-semibold active:scale-95 disabled:opacity-60">
-                ✅ Pabeigt reisu (atgriešanās)
-            </button>
-
-        @else
-            <div class="text-sm font-semibold text-green-700">✅ Reiss pabeigts</div>
-        @endif
-
-        {{-- Manual start odo --}}
-        @if($showOdoStart)
-            <div class="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
-                <div class="text-sm font-semibold">🧭 Ievadi starta odometru (km)</div>
-
-                <input type="number"
-                       wire:model="odo_start_km"
-                       class="w-full rounded-lg border-gray-300"
-                       placeholder="km">
-
-                @error('odo_start_km')
-                    <div class="text-xs text-red-600">{{ $message }}</div>
-                @enderror
-
-                <button
-                    wire:click="saveOdoStart"
-                    wire:loading.attr="disabled"
-                    class="w-full inline-flex justify-center items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold disabled:opacity-60">
-                    Saglabāt un sākt
-                </button>
-            </div>
-        @endif
-
-        {{-- Manual end odo --}}
-        @if($showOdoEnd)
-            <div class="mt-3 p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
-                <div class="text-sm font-semibold">🧭 Ievadi beigu odometru (km)</div>
-
-                <input type="number"
-                       wire:model="odo_end_km"
-                       class="w-full rounded-lg border-gray-300"
-                       placeholder="km">
-
-                @error('odo_end_km')
-                    <div class="text-xs text-red-600">{{ $message }}</div>
-                @enderror
-
-                <button
-                    wire:click="saveOdoEnd"
-                    wire:loading.attr="disabled"
-                    class="w-full inline-flex justify-center items-center px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold disabled:opacity-60">
-                    Saglabāt un pabeigt
-                </button>
-            </div>
-        @endif
     </div>
 
     {{-- ============================
@@ -191,8 +135,7 @@
         <div
             wire:key="step-{{ $step->id }}"
             x-data="{ open: false }"
-            class="bg-white shadow rounded-xl mb-4 overflow-hidden border
-                   {{ $isErrorStep ? 'border-red-500 ring-2 ring-red-200' : '' }}"
+            class="bg-white shadow rounded-xl mb-4 overflow-hidden border {{ $isErrorStep ? 'border-red-500 ring-2 ring-red-200' : '' }}"
         >
 
             {{-- Header --}}
@@ -245,14 +188,16 @@
                 <div class="border-t pt-3 mt-3 space-y-2">
                     <div class="flex items-center justify-between text-xs">
                         <span class="text-gray-500">Status solim:</span>
-                        <span class="px-2 py-1 rounded-full text-[11px]
-                            @class([
-                                'bg-gray-100 text-gray-700'     => $stepStatus === $TS::NOT_STARTED,
-                                'bg-blue-100 text-blue-700'     => $stepStatus === $TS::ON_THE_WAY,
-                                'bg-yellow-100 text-yellow-700' => $stepStatus === $TS::ARRIVED,
-                                'bg-purple-100 text-purple-700' => $stepStatus === $TS::PROCESSING,
-                                'bg-green-100 text-green-700'   => $stepStatus === $TS::COMPLETED,
-                            ])">
+
+                        {{-- ✅ FIX: valid @class usage --}}
+                        <span @class([
+                            'px-2 py-1 rounded-full text-[11px]',
+                            'bg-gray-100 text-gray-700'     => $stepStatus === $TS::NOT_STARTED,
+                            'bg-blue-100 text-blue-700'     => $stepStatus === $TS::ON_THE_WAY,
+                            'bg-yellow-100 text-yellow-700' => $stepStatus === $TS::ARRIVED,
+                            'bg-purple-100 text-purple-700' => $stepStatus === $TS::PROCESSING,
+                            'bg-green-100 text-green-700'   => $stepStatus === $TS::COMPLETED,
+                        ])>
                             {{ $stepStatus?->label() ?? 'Nav uzsākts' }}
                         </span>
                     </div>
@@ -338,7 +283,7 @@
                                 $url = asset('storage/'.$doc->file_path);
                                 $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
                                 $isPdf = $ext === 'pdf';
-                                $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp']);
+                                $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp'], true);
                             @endphp
 
                             <div class="flex items-center gap-3 bg-white rounded-xl p-3 border shadow-sm mb-2">
@@ -357,13 +302,13 @@
 
                                 <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                                     @if ($isPdf)
-                                        <a href="{{ $url }}" target="_blank" class="font-bold text-red-600 text-sm">PDF</a>
+                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="font-bold text-red-600 text-sm">PDF</a>
                                     @elseif ($isImage)
-                                        <a href="{{ $url }}" target="_blank">
+                                        <a href="{{ $url }}" target="_blank" rel="noopener">
                                             <img src="{{ $url }}" class="w-14 h-14 object-cover" alt="">
                                         </a>
                                     @else
-                                        <a href="{{ $url }}" target="_blank" class="text-indigo-600 underline text-xs">Open</a>
+                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-indigo-600 underline text-xs">Open</a>
                                     @endif
                                 </div>
                             </div>

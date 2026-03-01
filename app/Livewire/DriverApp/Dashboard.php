@@ -4,13 +4,14 @@ namespace App\Livewire\DriverApp;
 
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\Trip;
 use App\Models\VehicleRun;
 use App\Models\TruckOdometerEvent;
-use App\Services\Services\Odometer\GarageDepartureService;
 
 use App\Enums\TripStatus;
+use App\Enums\TripStepStatus;
 
 class Dashboard extends Component
 {
@@ -23,59 +24,69 @@ class Dashboard extends Component
     public bool $canDepart = true;
     public bool $canReturn = false;
 
- public function mount()
-{
-    $userWeb    = Auth::guard('web')->user();
-    $userDriver = Auth::guard('driver')->user();
+    // ✅ Manual odometer modal
+    public bool $showManualOdo = false;
+    public string $manualOdoMode = 'departure'; // departure|return
+    public ?int $manualOdoKm = null;
 
-    \Log::info('DriverApp mount AUTH', [
-        'url' => request()->fullUrl(),
-        'session_id' => session()->getId(),
-        'web_user_id' => optional($userWeb)->id,
-        'driver_user_id' => optional($userDriver)->id,
-        'driver_role' => optional($userDriver)->role,
-        'driver_model_id' => optional($userDriver?->driver)->id,
-    ]);
+    public function mount()
+    {
+        $userWeb    = Auth::guard('web')->user();
+        $userDriver = Auth::guard('driver')->user();
 
-    $user = $userDriver; // ✅ используем driver-guard
-
-    if (!$user || $user->role !== 'driver' || !$user->driver) {
-        \Log::warning('DriverApp mount BLOCKED', [
-            'reason' => 'not authed as driver or no driver relation',
+        \Log::info('DriverApp mount AUTH', [
+            'url' => request()->fullUrl(),
+            'session_id' => session()->getId(),
+            'web_user_id' => optional($userWeb)->id,
             'driver_user_id' => optional($userDriver)->id,
+            'driver_role' => optional($userDriver)->role,
             'driver_model_id' => optional($userDriver?->driver)->id,
         ]);
 
-        redirect()->route('driver.login')->send();
-        return;
+        $user = $userDriver; // ✅ driver-guard
+
+        if (!$user || $user->role !== 'driver' || !$user->driver) {
+            \Log::warning('DriverApp mount BLOCKED', [
+                'reason' => 'not authed as driver or no driver relation',
+                'driver_user_id' => optional($userDriver)->id,
+                'driver_model_id' => optional($userDriver?->driver)->id,
+            ]);
+
+            redirect()->route('driver.login')->send();
+            return;
+        }
+
+        $this->driver = $user->driver;
+
+        $this->loadCurrentTrip();
+        $this->syncGarageFlags();
     }
-
-    $this->driver = $user->driver;
-
-    $this->loadCurrentTrip();
-    $this->syncGarageFlags();
-}
 
     private function loadCurrentTrip(): void
     {
-         \Log::info('DriverApp loadCurrentTrip BEFORE', [
-        'driver_id' => optional($this->driver)->id,
-        'completed_value' => TripStatus::COMPLETED->value,
-    ]);
+        \Log::info('DriverApp loadCurrentTrip BEFORE', [
+            'driver_id' => optional($this->driver)->id,
+            'completed_value' => TripStatus::COMPLETED->value,
+        ]);
 
-    $this->trip = Trip::withoutGlobalScopes()
-    ->where('driver_id', $this->driver->id)
-    ->where('status', '!=', TripStatus::COMPLETED->value)
-    ->latest('id')
-    ->first();
+        $this->trip = Trip::withoutGlobalScopes()
+            ->where('driver_id', $this->driver->id)
+            ->where('status', '!=', TripStatus::COMPLETED->value)
+            ->latest('id')
+            ->first();
 
-    \Log::info('DriverApp loadCurrentTrip AFTER', [
-        'trip_id' => optional($this->trip)->id,
-        // status может быть enum, поэтому безопасно так:
-        'trip_status' => $this->trip?->status instanceof TripStatus ? $this->trip->status->value : $this->trip?->status,
-        'trip_driver_id' => optional($this->trip)->driver_id,
-    ]);
+        \Log::info('DriverApp loadCurrentTrip AFTER', [
+            'trip_id' => optional($this->trip)->id,
+            'trip_status' => $this->trip?->status instanceof TripStatus
+                ? $this->trip->status->value
+                : $this->trip?->status,
+            'trip_driver_id' => optional($this->trip)->driver_id,
+        ]);
     }
+
+    /** ============================================================
+     *  ✅ MANUAL ODO FLOW (Dashboard only)
+     * ============================================================ */
 
     public function departFromGarage(): void
     {
@@ -88,33 +99,17 @@ class Dashboard extends Component
             return;
         }
 
-        $truck = $this->trip->truck;
-        if (!$truck) {
+        if (!$this->trip->truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
             $this->syncGarageFlags();
             return;
         }
 
-        try {
-            /** @var GarageDepartureService $svc */
-            $svc = app(GarageDepartureService::class);
+        $this->manualOdoMode = 'departure';
+        $this->manualOdoKm = $this->trip->odo_start_km ? (int) $this->trip->odo_start_km : null;
 
-            $event = $svc->recordDeparture($this->trip, $truck, $this->driver->id);
-
-            $msg = "✅ Выезд: {$event->odometer_km} км";
-            if ($event->is_stale && $event->stale_minutes) {
-                $msg .= " ⚠️ (данные {$event->stale_minutes} мин назад)";
-            }
-
-            $this->garageSuccess = $msg;
-
-        } catch (\Throwable $e) {
-            $this->garageError = $e->getMessage();
-        }
-
-        // ✅ берём актуальный рейс/статус/vehicle_run_id
-        $this->loadCurrentTrip();
-        $this->syncGarageFlags();
+        $this->resetErrorBag('manualOdoKm');
+        $this->showManualOdo = true;
     }
 
     public function backToGarage(): void
@@ -128,69 +123,216 @@ class Dashboard extends Component
             return;
         }
 
-        $truck = $this->trip->truck;
-        if (!$truck) {
+        if (!$this->trip->truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
             $this->syncGarageFlags();
             return;
         }
 
-        try {
-            /** @var GarageDepartureService $svc */
-            $svc = app(GarageDepartureService::class);
+        $this->manualOdoMode = 'return';
+        $this->manualOdoKm = $this->trip->odo_end_km ? (int) $this->trip->odo_end_km : null;
 
-            $event = $svc->recordReturn($this->trip, $truck, $this->driver->id);
+        $this->resetErrorBag('manualOdoKm');
+        $this->showManualOdo = true;
+    }
 
-            $msg = "✅ Возврат: {$event->odometer_km} км";
-            if ($event->is_stale && $event->stale_minutes) {
-                $msg .= " ⚠️ (данные {$event->stale_minutes} мин назад)";
-            }
+    public function cancelManualOdo(): void
+    {
+        $this->showManualOdo = false;
+        $this->manualOdoMode = 'departure';
+        $this->manualOdoKm = null;
+        $this->resetErrorBag('manualOdoKm');
+    }
 
-            $this->garageSuccess = $msg;
+    public function saveManualOdo(): void
+    {
+        $this->validate([
+            'manualOdoKm' => ['required', 'integer', 'min:0', 'max:10000000'],
+        ]);
 
-        } catch (\Throwable $e) {
-            $this->garageError = $e->getMessage();
+        if (!$this->trip || !$this->trip->truck_id) {
+            $this->garageError = 'Нет активного рейса.';
+            $this->cancelManualOdo();
+            $this->syncGarageFlags();
+            return;
         }
 
-        // ✅ после возврата рейс мог стать COMPLETED (если все шаги закрыты)
+        $odo = (int) $this->manualOdoKm;
+
+        try {
+            DB::transaction(function () use ($odo) {
+
+                /** @var Trip $trip */
+                $trip = Trip::query()->lockForUpdate()->findOrFail($this->trip->id);
+                $truckId = (int) $trip->truck_id;
+
+                // open VehicleRun по truck
+                $openRun = VehicleRun::query()
+                    ->where('truck_id', $truckId)
+                    ->where('status', 'open')
+                    ->latest('id')
+                    ->first();
+
+                if ($this->manualOdoMode === 'departure') {
+
+                    // если уже стартовали — не дублируем
+                    if ($trip->started_at) {
+                        return;
+                    }
+
+                    // 1) VehicleRun OPEN
+                    if (!$openRun) {
+                        $openRun = VehicleRun::create([
+                            'truck_id'          => $truckId,
+                            'driver_id'         => $this->driver->id,
+                            'started_at'        => now(),
+                            'status'            => 'open',
+                            'created_by'        => 'manual',
+                            'start_can_odom_km' => $odo, // кладём ручной в start_can_odom_km
+                        ]);
+                    } else {
+                        // подстрахуемся (если есть openRun, но без старта)
+                        $openRun->update([
+                            'driver_id'         => $openRun->driver_id ?? $this->driver->id,
+                            'started_at'        => $openRun->started_at ?? now(),
+                            'created_by'        => $openRun->created_by ?? 'manual',
+                            'start_can_odom_km' => $openRun->start_can_odom_km ?? $odo,
+                        ]);
+                    }
+
+                    // 2) Trip старт
+                    $trip->update([
+                        'vehicle_run_id' => $openRun->id,
+                        'started_at'     => now(),
+                        'status'         => TripStatus::IN_PROGRESS,
+                        'odo_start_km'   => $odo,
+                    ]);
+
+                    // 3) Odometer event departure
+                    TruckOdometerEvent::create([
+                        'truck_id'      => $truckId,
+                        'driver_id'     => $this->driver->id,
+                        'type'          => TruckOdometerEvent::TYPE_DEPARTURE,
+                        'odometer_km'   => $odo,
+                        'source'        => TruckOdometerEvent::SOURCE_MANUAL,
+                        'occurred_at'   => now(),
+                        'mapon_at'      => null,
+                        'is_stale'      => false,
+                        'stale_minutes' => null,
+                        'raw'           => null,
+                        'note'          => "Trip #{$trip->id} departure (manual)",
+                    ]);
+
+                } else {
+                    // ===== RETURN =====
+
+                    // защита: конец меньше старта
+                    if ($trip->odo_start_km !== null && $odo < (int) $trip->odo_start_km) {
+                        $this->addError('manualOdoKm', 'Beigu rādījums nevar būt mazāks par starta.');
+                        throw new \RuntimeException('odo_end_km < odo_start_km');
+                    }
+
+                    // 1) VehicleRun CLOSE (по trip->vehicle_run_id, иначе fallback на openRun)
+                    $runToClose = null;
+
+                    if (!empty($trip->vehicle_run_id)) {
+                        $runToClose = VehicleRun::query()->find($trip->vehicle_run_id);
+                    }
+                    if (!$runToClose) {
+                        $runToClose = $openRun;
+                    }
+
+                    if ($runToClose && $runToClose->status === 'open') {
+                        $runToClose->update([
+                            'ended_at'        => now(),
+                            'end_can_odom_km' => $odo,
+                            'status'          => 'closed',
+                            'close_reason'    => 'manual_return',
+                        ]);
+                    }
+
+                    // 2) Trip: end odo + vehicle_run_id null + возможно completed
+                    $updateTrip = [
+                        'odo_end_km'     => $odo,
+                        'vehicle_run_id' => null,
+                    ];
+
+                    // ✅ если все шаги завершены — закрываем рейс в COMPLETED прямо сейчас
+                    $allStepsDone = $trip->steps()
+                        ->where('status', '!=', TripStepStatus::COMPLETED->value)
+                        ->doesntExist();
+
+                    if ($allStepsDone) {
+                        $updateTrip['ended_at'] = now();
+                        $updateTrip['status']   = TripStatus::COMPLETED;
+                    }
+
+                    $trip->update($updateTrip);
+
+                    // 3) Odometer event return
+                    TruckOdometerEvent::create([
+                        'truck_id'      => $truckId,
+                        'driver_id'     => $this->driver->id,
+                        'type'          => TruckOdometerEvent::TYPE_RETURN,
+                        'odometer_km'   => $odo,
+                        'source'        => TruckOdometerEvent::SOURCE_MANUAL,
+                        'occurred_at'   => now(),
+                        'mapon_at'      => null,
+                        'is_stale'      => false,
+                        'stale_minutes' => null,
+                        'raw'           => null,
+                        'note'          => "Trip #{$trip->id} return (manual)",
+                    ]);
+                }
+            });
+
+        } catch (\Throwable $e) {
+            // если ошибка по полю — модалка остаётся открытой
+            if ($this->getErrorBag()->has('manualOdoKm')) {
+                return;
+            }
+
+            report($e);
+            $this->garageError = 'Neizdevās saglabāt odometru. Sazinieties ar dispečeru.';
+            return;
+        }
+
+        $this->garageSuccess = $this->manualOdoMode === 'departure'
+            ? "✅ Выезд (вручную): {$odo} км"
+            : "✅ Возврат (вручную): {$odo} км";
+
+        $this->cancelManualOdo();
+
         $this->loadCurrentTrip();
         $this->syncGarageFlags();
     }
 
     private function syncGarageFlags(): void
     {
-        // дефолты
         $this->canDepart = false;
         $this->canReturn = false;
 
         if (!$this->trip || !$this->trip->truck_id) {
             return;
         }
-        \Log::info('DriverApp syncGarageFlags', [
-    'trip_id' => $this->trip->id,
-    'truck_id' => $this->trip->truck_id,
-    'vehicle_run_id' => $this->trip->vehicle_run_id,
-]);
 
-        // если рейс вдруг completed (на всякий) — блокируем всё
+        \Log::info('DriverApp syncGarageFlags', [
+            'trip_id' => $this->trip->id,
+            'truck_id' => $this->trip->truck_id,
+            'vehicle_run_id' => $this->trip->vehicle_run_id,
+        ]);
+
+        // если completed — блокируем всё
         if ($this->trip->status instanceof TripStatus && $this->trip->status === TripStatus::COMPLETED) {
             return;
         }
 
         $truckId = (int) $this->trip->truck_id;
 
-        // 1) Основной индикатор — vehicle_run_id в Trip
+        // 1) основной индикатор — vehicle_run_id в Trip
         $runOpenByTrip = !empty($this->trip->vehicle_run_id);
 
-        // 2) Fallback по событиям одометра (если Trip не привязан)
-        $lastEvent = TruckOdometerEvent::query()
-            ->where('truck_id', $truckId)
-            ->latest('occurred_at')
-            ->first();
-
-        $runOpenByEvents = $lastEvent && (int) $lastEvent->type === TruckOdometerEvent::TYPE_DEPARTURE;
-
-        // 3) Fallback по VehicleRun (если есть открытая смена)
+        // 2) open VehicleRun по truck
         $openRun = VehicleRun::query()
             ->where('truck_id', $truckId)
             ->where('status', 'open')
@@ -199,12 +341,24 @@ class Dashboard extends Component
 
         $runOpenByRuns = (bool) $openRun;
 
-        $isOpen = $runOpenByTrip || $runOpenByEvents || $runOpenByRuns;
+        // 3) fallback по последнему событию (departure/return)
+        $lastEvent = TruckOdometerEvent::query()
+            ->where('truck_id', $truckId)
+            ->orderByDesc('occurred_at')
+            ->first();
+
+        $runOpenByEvents = false;
+        if ($lastEvent) {
+            if ((int) $lastEvent->type === TruckOdometerEvent::TYPE_DEPARTURE) $runOpenByEvents = true;
+            if ((int) $lastEvent->type === TruckOdometerEvent::TYPE_RETURN)    $runOpenByEvents = false;
+        }
+
+        $isOpen = $runOpenByTrip || $runOpenByRuns || $runOpenByEvents;
 
         $this->canDepart = !$isOpen;
         $this->canReturn = $isOpen;
 
-        // 4) Автовосстановление: если есть openRun, но Trip не привязан — привяжем
+        // 4) автовосстановление: если есть openRun, но Trip не привязан — привяжем
         if (!$runOpenByTrip && $openRun) {
             $this->trip->forceFill(['vehicle_run_id' => $openRun->id])->save();
             $this->trip = Trip::query()->find($this->trip->id);

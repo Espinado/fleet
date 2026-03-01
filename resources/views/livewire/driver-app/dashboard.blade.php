@@ -63,7 +63,7 @@
                     🚛 Текущий рейс #{{ $trip->id }}
                 </h2>
 
-                {{-- Бейдж статуса (из enum TripStatus::color()) --}}
+                {{-- Бейдж статуса --}}
                 <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $trip->status->color() }}">
                     {{ $trip->status->label() }}
                 </span>
@@ -112,7 +112,7 @@
                     </span>
 
                     <span wire:loading wire:target="departFromGarage">
-                        ⏳ Получаем одометр…
+                        ⏳ Открываем форму…
                     </span>
                 </button>
 
@@ -133,11 +133,11 @@
                     </span>
 
                     <span wire:loading wire:target="backToGarage">
-                        ⏳ Получаем одометр…
+                        ⏳ Открываем форму…
                     </span>
                 </button>
 
-                {{-- Мини-индикатор состояния (без дебага) --}}
+                {{-- Мини-индикатор состояния --}}
                 <div class="text-xs text-gray-500 flex items-center justify-between">
                     <span>
                         Смена: <span class="font-medium">{{ $trip->vehicle_run_id ? 'открыта' : 'закрыта' }}</span>
@@ -161,6 +161,82 @@
     @else
         <div class="bg-yellow-100 border border-yellow-300 rounded-xl p-4">
             Нет активного рейса
+        </div>
+    @endif
+
+
+    {{-- ✅ Manual odometer modal (Dashboard only) --}}
+    @if(!empty($showManualOdo) && $showManualOdo)
+        <div class="fixed inset-0 z-50 flex items-center justify-center">
+            <div class="absolute inset-0 bg-black/40"></div>
+
+            <div class="relative bg-white w-[92%] max-w-md rounded-2xl shadow-xl p-4 space-y-4">
+
+                <div class="flex items-start justify-between gap-3">
+                    <div class="text-lg font-bold">
+                        @if(($manualOdoMode ?? 'departure') === 'departure')
+                            🚛 Odometra ievade (izbraukšana)
+                        @else
+                            🏁 Odometra ievade (atgriešanās)
+                        @endif
+                    </div>
+
+                    <button
+                        type="button"
+                        wire:click="cancelManualOdo"
+                        class="text-gray-500 text-xl leading-none"
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
+                </div>
+
+                <div class="text-sm text-gray-600">
+                    Ievadiet odometra rādījumu (km).
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-gray-700">Odometrs (km)</label>
+                    <input
+                        type="number"
+                        inputmode="numeric"
+                        step="1"
+                        wire:model.defer="manualOdoKm"
+                        class="w-full border-gray-300 rounded-xl text-base p-3 mt-1"
+                        placeholder="piem.: 123456"
+                    >
+
+                    @error('manualOdoKm')
+                        <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="flex gap-2">
+                    <button
+                        type="button"
+                        wire:click="cancelManualOdo"
+                        class="w-1/2 bg-gray-100 hover:bg-gray-200 text-gray-900 py-3 rounded-xl font-semibold"
+                    >
+                        Atcelt
+                    </button>
+
+                    <button
+                        type="button"
+                        wire:click="saveManualOdo"
+                        wire:target="saveManualOdo"
+                        wire:loading.attr="disabled"
+                        class="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold
+                               disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span wire:loading.remove wire:target="saveManualOdo">💾 Saglabāt</span>
+                        <span wire:loading wire:target="saveManualOdo">⏳ Saglabā...</span>
+                    </button>
+                </div>
+
+                <div class="text-[11px] text-gray-500">
+                    Piezīme: odometrs tiek saglabāts manuāli (Mapon/CAN pagaidām netiek izmantots).
+                </div>
+            </div>
         </div>
     @endif
 

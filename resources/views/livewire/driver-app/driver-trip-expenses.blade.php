@@ -62,9 +62,7 @@
                 </select>
 
                 {{-- ✅ debug (Livewire variable) --}}
-                <div class="text-xs text-gray-500 mt-1">
-                    debug category: <span class="font-mono">{{ $category ?: '—' }}</span>
-                </div>
+                
 
                 @error('category')
                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
