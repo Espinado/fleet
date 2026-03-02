@@ -89,12 +89,12 @@ class TrucksTable extends Component
         });
 
         return view('livewire.trucks-table', [
-        'items' => $trucks,
-        'sortField' => $this->sortField,
-        'sortDirection' => $this->sortDirection,
-        'title' => 'Trucks',
-    ])->layout('layouts.app', [
-        'title' => 'Trucks',
-    ]);
+            'items'        => $trucks,
+            'sortField'    => $this->sortField,
+            'sortDirection'=> $this->sortDirection,
+            'title'        => __('app.trucks.title'),
+        ])->layout('layouts.app', [
+            'title' => __('app.trucks.title'),
+        ]);
     }
 }

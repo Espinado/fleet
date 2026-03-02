@@ -4,7 +4,7 @@
 
 <div class="p-4 sm:p-6 max-w-5xl mx-auto space-y-6 bg-gray-50 min-h-screen">
 
-    {{-- ✅ Уведомления --}}
+    {{-- ✅ Paziņojumi --}}
     @if (session('success'))
         <div class="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded-xl shadow-sm">
             {{ session('success') }}
@@ -17,10 +17,10 @@
         </div>
     @endif
 
-    {{-- ❗️ Общие ошибки --}}
+    {{-- ❗️ Kopējās kļūdas --}}
     @if ($errors->any())
         <div class="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-xl shadow-sm">
-            <strong>Validation errors:</strong>
+            <strong>{{ __('app.driver.create.validation') }}</strong>
             <ul class="list-disc ml-5 mt-1 space-y-1 text-sm">
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -29,7 +29,7 @@
         </div>
     @endif
 
-    {{-- 🧾 Форма --}}
+    {{-- 🧾 Forma --}}
     <form wire:submit.prevent="save"
           class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-10 relative">
 
@@ -37,23 +37,23 @@
         <div wire:loading.flex wire:target="save, photo, license_photo, medical_certificate_photo"
              class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl">
             <div class="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
-            <p class="text-blue-600 text-sm">Saving driver...</p>
+            <p class="text-blue-600 text-sm">{{ __('app.driver.create.saving_title') }}</p>
         </div>
 
-        {{-- Заголовок --}}
+        {{-- Virsraksts --}}
         <header>
-            <h2 class="text-2xl sm:text-3xl font-bold mb-1 text-gray-900">➕ Add New Driver</h2>
-            <p class="text-gray-600 text-sm sm:text-base">Fill in all required fields carefully.</p>
+            <h2 class="text-2xl sm:text-3xl font-bold mb-1 text-gray-900">➕ {{ __('app.driver.create.title') }}</h2>
+            <p class="text-gray-600 text-sm sm:text-base">{{ __('app.driver.create.subtitle') }}</p>
         </header>
 
-        {{-- ======================= 1️⃣ COMPANY ======================= --}}
+        {{-- ======================= 1️⃣ KOMPĀNIJA ======================= --}}
         <section class="space-y-4">
-            <h3 class="text-xl font-semibold border-b pb-2">🧭 Company</h3>
+            <h3 class="text-xl font-semibold border-b pb-2">🧭 {{ __('app.driver.create.company') }}</h3>
             <div>
-                <label class="block font-medium mb-1">Expeditor Company *</label>
+                <label class="block font-medium mb-1">{{ __('app.driver.create.company') }}</label>
                 <select wire:model="company_id"
-                        class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                    <option value="">Select Company</option>
+                        class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                    <option value="">{{ __('app.driver.create.company_choose') }}</option>
                     @foreach($companies as $id => $comp)
                         <option value="{{ $id }}">{{ is_array($comp) ? $comp['name'] : $comp }}</option>
                     @endforeach
@@ -62,19 +62,19 @@
             </div>
         </section>
 
-        {{-- ======================= 2️⃣ PERSONAL INFO ======================= --}}
+        {{-- ======================= 2️⃣ PERSONĪGĀ INFORMĀCIJA ======================= --}}
         <section class="space-y-4">
-            <h3 class="text-xl font-semibold border-b pb-2">👤 Personal Information</h3>
+            <h3 class="text-xl font-semibold border-b pb-2">👤 {{ __('app.driver.create.personal') }}</h3>
 
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block mb-1">First Name *</label>
+                    <label class="block mb-1">{{ __('app.driver.create.first_name') }}</label>
                     <input type="text" wire:model="first_name"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                     @error('first_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block mb-1">Last Name *</label>
+                    <label class="block mb-1">{{ __('app.driver.create.last_name') }}</label>
                     <input type="text" wire:model="last_name"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                     @error('last_name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -83,17 +83,17 @@
 
             <div class="grid sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block mb-1">Personal Code *</label>
+                    <label class="block mb-1">{{ __('app.driver.create.pers_code') }}</label>
                     <input type="text" wire:model="pers_code"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                     @error('pers_code') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label class="block mb-1">Citizenship *</label>
+                    <label class="block mb-1">{{ __('app.driver.create.citizenship') }}</label>
                     <select wire:model="citizenship_id"
-                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                        <option value="">Select Country</option>
+                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                        <option value="">{{ __('app.driver.create.country_choose') }}</option>
                         @foreach($countries as $id => $country)
                             <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
                         @endforeach
@@ -102,7 +102,7 @@
                 </div>
 
                 <div>
-                    <label class="block mb-1">Phone *</label>
+                    <label class="block mb-1">{{ __('app.driver.create.phone') }}</label>
                     <input type="text" wire:model="phone"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                     @error('phone') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
@@ -110,26 +110,26 @@
             </div>
 
             <div>
-                <label class="block mb-1">Email *</label>
+                <label class="block mb-1">{{ __('app.driver.create.email') }}</label>
                 <input type="email" wire:model="email"
                        class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                 @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
         </section>
 
-        {{-- ======================= 3️⃣ ADDRESSES ======================= --}}
+        {{-- ======================= 3️⃣ ADRESES ======================= --}}
         <section class="space-y-8">
-            <h3 class="text-xl font-semibold border-b pb-2">📍 Addresses</h3>
+            <h3 class="text-xl font-semibold border-b pb-2">📍 {{ __('app.driver.create.addresses') }}</h3>
 
             {{-- Declared --}}
             <div class="space-y-4">
-                <h4 class="font-semibold text-gray-700">Declared Address</h4>
+                <h4 class="font-semibold text-gray-700">{{ __('app.driver.create.declared') }}</h4>
 
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="relative">
                         <select wire:model.live="declared_country_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select Country</option>
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                            <option value="">{{ __('app.driver.create.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
                             @endforeach
@@ -142,8 +142,8 @@
 
                     <div class="relative">
                         <select wire:model="declared_city_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select City</option>
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                            <option value="">{{ __('app.driver.create.city_choose') }}</option>
                             @foreach($declaredCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? $city['name'] : $city }}</option>
                             @endforeach
@@ -156,27 +156,27 @@
                 </div>
 
                 <div class="grid sm:grid-cols-4 gap-4">
-                    <input type="text" wire:model="declared_street" placeholder="Street"
+                    <input type="text" wire:model="declared_street" placeholder="{{ __('app.driver.create.street') }}"
                            class="border rounded-lg px-4 py-3 col-span-2 text-sm focus:ring-2 focus:ring-blue-500">
-                    <input type="text" wire:model="declared_building" placeholder="Building"
+                    <input type="text" wire:model="declared_building" placeholder="{{ __('app.driver.create.building') }}"
                            class="border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                    <input type="text" wire:model="declared_room" placeholder="Room"
+                    <input type="text" wire:model="declared_room" placeholder="{{ __('app.driver.create.room') }}"
                            class="border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <input type="text" wire:model="declared_postcode" placeholder="Post code"
+                <input type="text" wire:model="declared_postcode" placeholder="{{ __('app.driver.create.postcode') }}"
                        class="border rounded-lg px-4 py-3 w-full sm:w-1/2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
 
             {{-- Actual --}}
             <div class="space-y-4 border-t pt-4">
-                <h4 class="font-semibold text-gray-700">Actual Address</h4>
+                <h4 class="font-semibold text-gray-700">{{ __('app.driver.create.actual') }}</h4>
 
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="relative">
                         <select wire:model.live="actual_country_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select Country</option>
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                            <option value="">{{ __('app.driver.create.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
                             @endforeach
@@ -189,8 +189,8 @@
 
                     <div class="relative">
                         <select wire:model="actual_city_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                            <option value="">Select City</option>
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                            <option value="">{{ __('app.driver.create.city_choose') }}</option>
                             @foreach($actualCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? $city['name'] : $city }}</option>
                             @endforeach
@@ -203,30 +203,30 @@
                 </div>
 
                 <div class="grid sm:grid-cols-4 gap-4">
-                    <input type="text" wire:model="actual_street" placeholder="Street"
+                    <input type="text" wire:model="actual_street" placeholder="{{ __('app.driver.create.street') }}"
                            class="border rounded-lg px-4 py-3 col-span-2 text-sm focus:ring-2 focus:ring-blue-500">
-                    <input type="text" wire:model="actual_building" placeholder="Building"
+                    <input type="text" wire:model="actual_building" placeholder="{{ __('app.driver.create.building') }}"
                            class="border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
-                    <input type="text" wire:model="actual_room" placeholder="Room"
+                    <input type="text" wire:model="actual_room" placeholder="{{ __('app.driver.create.room') }}"
                            class="border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <input type="text" wire:model="actual_postcode" placeholder="Post code"
+                <input type="text" wire:model="actual_postcode" placeholder="{{ __('app.driver.create.postcode') }}"
                        class="border rounded-lg px-4 py-3 w-full sm:w-1/2 text-sm focus:ring-2 focus:ring-blue-500">
             </div>
         </section>
 
-        {{-- ======================= 4️⃣ DOCUMENTS ======================= --}}
+        {{-- ======================= 4️⃣ DOKUMENTI ======================= --}}
       <section class="space-y-6">
-    <h3 class="text-xl font-semibold border-b pb-2">📑 Driver Documents</h3>
+    <h3 class="text-xl font-semibold border-b pb-2">📑 {{ __('app.driver.create.docs') }}</h3>
 
     @foreach([
-        ['Driver License', ['license_number','license_issued','license_end']],
-        ['Code 95 Certificate', ['code95_issued','code95_end']],
-        ['Work Permit', ['permit_issued','permit_expired']],
-        ['Medical Certificates CSDD', ['medical_issued','medical_expired']],
-        ['Medical Certificates OVP', ['medical_exam_passed','medical_exam_expired']],
-        ['Driver Declaration', ['declaration_issued','declaration_expired']]
+        [__('app.driver.docs.license'), ['license_number','license_issued','license_end']],
+        [__('app.driver.docs.code95'), ['code95_issued','code95_end']],
+        [__('app.driver.docs.permit'), ['permit_issued','permit_expired']],
+        [__('app.driver.docs.med_csdD'), ['medical_issued','medical_expired']],
+        [__('app.driver.docs.med_ovp'), ['medical_exam_passed','medical_exam_expired']],
+        [__('app.driver.docs.declaration'), ['declaration_issued','declaration_expired']]
     ] as [$title, $fields])
         <div class="border-t pt-4">
             <h4 class="font-semibold text-gray-700 mb-2">{{ $title }}</h4>
@@ -250,14 +250,14 @@
 </section>
 
 
-        {{-- ======================= 5️⃣ PHOTOS ======================= --}}
+        {{-- ======================= 5️⃣ FOTOGRĀFIJAS ======================= --}}
         <section class="space-y-4">
-            <h3 class="text-xl font-semibold border-b pb-2">📸 Driver Photos</h3>
+            <h3 class="text-xl font-semibold border-b pb-2">📸 {{ __('app.driver.create.photos') }}</h3>
             <div class="grid sm:grid-cols-3 gap-6">
                 @foreach([
-                    ['photo','Driver Photo'],
-                    ['license_photo','License Photo'],
-                    ['medical_certificate_photo','Medical Certificate'],
+                    ['photo', __('app.driver.create.photo_driver')],
+                    ['license_photo', __('app.driver.create.photo_license')],
+                    ['medical_certificate_photo', __('app.driver.create.photo_med')],
                 ] as [$field,$label])
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ $label }}</label>
@@ -272,19 +272,19 @@
             </div>
         </section>
 
-        {{-- ======================= 6️⃣ ACTIONS ======================= --}}
+        {{-- ======================= 6️⃣ DARBĪBAS ======================= --}}
         <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t sticky bottom-0 bg-white pb-4">
             <a href="{{ route('drivers.index') }}"
                class="px-4 py-3 bg-gray-200 rounded-lg hover:bg-gray-300 text-sm transition text-center active:scale-95">
-                Cancel
+                {{ __('app.driver.create.cancel') }}
             </a>
             <button type="submit"
                     class="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 text-sm transition flex items-center justify-center gap-2"
                     wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="save">💾 Save Driver</span>
+                <span wire:loading.remove wire:target="save">💾 {{ __('app.driver.create.save') }}</span>
                 <span wire:loading wire:target="save" class="inline-flex items-center gap-2">
                     <div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    Saving...
+                    {{ __('app.driver.create.saving') }}
                 </span>
             </button>
         </div>

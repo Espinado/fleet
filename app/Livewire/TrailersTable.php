@@ -92,12 +92,12 @@ class TrailersTable extends Component
         });
 
         return view('livewire.trailers-table', [
-            'items' => $trailers,
-            'sortField' => $this->sortField,
-            'sortDirection' => $this->sortDirection,
-            'title' => 'Trailers',
+            'items'        => $trailers,
+            'sortField'    => $this->sortField,
+            'sortDirection'=> $this->sortDirection,
+            'title'        => __('app.trailers.title'),
         ])->layout('layouts.app', [
-            'title' => 'Trailers'
+            'title' => __('app.trailers.title'),
         ]);
     }
 }

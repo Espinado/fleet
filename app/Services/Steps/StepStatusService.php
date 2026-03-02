@@ -35,6 +35,57 @@ class StepStatusService
                 ? $step->status
                 : TripStepStatus::from((int)$step->status);
 
+            // === MONOTONICITY GUARD FOR ODOMETER ===
+            // If odometer is provided for this status change, make sure it does not go backwards
+            // compared to any previously known odometer snapshot for this trip/truck.
+            if ($odometerKm !== null) {
+                $trip = $step->trip()->with('odometerEvents')->first();
+
+                $lastKm = null;
+
+                // 1) Trip-level snapshots (garage start/end)
+                if ($trip) {
+                    if ($trip->odo_start_km !== null) {
+                        $lastKm = max($lastKm ?? (float) $trip->odo_start_km, (float) $trip->odo_start_km);
+                    }
+                    if ($trip->odo_end_km !== null) {
+                        $lastKm = max($lastKm ?? (float) $trip->odo_end_km, (float) $trip->odo_end_km);
+                    }
+                }
+
+                // 2) Existing odometer snapshots on steps of this trip
+                $existingStepKm = [
+                    $step->odo_on_the_way_km,
+                    $step->odo_arrived_km,
+                    $step->odo_completed_km,
+                ];
+
+                foreach ($existingStepKm as $km) {
+                    if ($km !== null) {
+                        $lastKm = max($lastKm ?? (float) $km, (float) $km);
+                    }
+                }
+
+                // 3) TruckOdometerEvent history for this trip/truck
+                if ($trip && $trip->odometerEvents) {
+                    foreach ($trip->odometerEvents as $e) {
+                        if ($e->odometer_km !== null) {
+                            $lastKm = max($lastKm ?? (float) $e->odometer_km, (float) $e->odometer_km);
+                        }
+                    }
+                }
+
+                if ($lastKm !== null && $odometerKm < $lastKm) {
+                    throw new \InvalidArgumentException(
+                        sprintf(
+                            'Step odometer (%.1f) cannot be less than last known (%.1f).',
+                            $odometerKm,
+                            $lastKm
+                        )
+                    );
+                }
+            }
+
             // 1) Обновляем статус
             $step->status = $toStatus;
 

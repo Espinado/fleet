@@ -14,7 +14,7 @@ class ShowClient extends Component
     {
         $this->client->delete();
 
-        session()->flash('success', 'Client deleted successfully.');
+        session()->flash('success', __('app.client.show.deleted_success', [], 'lv'));
         return redirect()->route('clients.index');
     }
 
@@ -22,7 +22,7 @@ class ShowClient extends Component
     {
         return view('livewire.clients.show-client')
             ->layout('layouts.app', [
-        'title' => 'Client info'
-    ]);
+                'title' => __('app.clients.title'),
+            ]);
     }
 }

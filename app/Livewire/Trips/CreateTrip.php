@@ -1287,6 +1287,9 @@ class CreateTrip extends Component
     {
         $expeditors = Company::query()
             ->where('is_active', 1)
+            ->where(function ($q) {
+                $q->where('is_third_party', false)->orWhereNull('is_third_party');
+            })
             ->orderBy('name')
             ->get(['id', 'name', 'type']);
 

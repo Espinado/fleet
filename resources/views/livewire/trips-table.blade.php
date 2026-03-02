@@ -28,7 +28,7 @@
             <div class="flex items-center gap-2 w-full md:w-auto">
                 <input
                     type="text"
-                    placeholder="🔍 Search trips..."
+                    placeholder="🔍 {{ __('app.trips.search_placeholder') }}"
                     wire:model.live.debounce.300ms="search"
                     class="w-full border rounded-lg px-3 py-2 text-sm shadow-sm focus:ring focus:ring-blue-100"
                 >
@@ -37,7 +37,7 @@
                     <button
                         wire:click="$set('search','')"
                         class="px-2 py-1 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-600 text-sm"
-                        title="Clear search"
+                        title="{{ __('app.trips.clear_search') }}"
                     >
                         ✖
                     </button>
@@ -50,13 +50,13 @@
                     href="{{ route('trips.create') }}"
                     class="inline-flex items-center gap-1 bg-green-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg shadow hover:bg-green-700"
                 >
-                    ➕ Add Trip
+                    ➕ {{ __('app.trips.add') }}
                 </a>
 
                 {{-- Rows --}}
                 <div class="hidden md:flex items-center gap-2">
-                    <label class="text-sm text-gray-600">Rows:</label>
-                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm">
+                    <label class="text-sm text-gray-600">{{ __('app.trips.rows') }}</label>
+                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm js-select2">
                         <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
@@ -65,13 +65,13 @@
 
                 {{-- Status --}}
                 <div class="hidden md:flex items-center gap-2">
-                    <label class="text-sm text-gray-600">Status:</label>
-                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-36">
-                        <option value="">All</option>
-                        <option value="planned">Planned</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                    <label class="text-sm text-gray-600">{{ __('app.trips.status_label') }}</label>
+                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-36 js-select2">
+                        <option value="">{{ __('app.trips.status_all') }}</option>
+                        <option value="planned">{{ __('app.trips.status_planned') }}</option>
+                        <option value="in_progress">{{ __('app.trips.status_in_progress') }}</option>
+                        <option value="completed">{{ __('app.trips.status_completed') }}</option>
+                        <option value="cancelled">{{ __('app.trips.status_cancelled') }}</option>
                     </select>
                 </div>
 
@@ -87,35 +87,35 @@
                 <thead class="bg-gray-100 text-gray-700 border-b text-sm">
                     <tr>
                         <th class="px-3 py-2 cursor-pointer select-none" wire:click="sortBy('start')">
-                            Start/Stop
+                            {{ __('app.trips.col_start_stop') }}
                             @if($sortField === 'start') {{ $sortDirection === 'asc' ? '▲' : '▼' }} @endif
                         </th>
 
                         <th class="px-3 py-2 cursor-pointer select-none" wire:click="sortBy('expeditor')">
-                            Expeditor / Carrier
+                            {{ __('app.trips.col_expeditor_carrier') }}
                             @if($sortField === 'expeditor') {{ $sortDirection === 'asc' ? '▲' : '▼' }} @endif
                         </th>
 
                         <th class="px-3 py-2 cursor-pointer select-none" wire:click="sortBy('driver')">
-                            Transport
+                            {{ __('app.trips.col_transport') }}
                             @if($sortField === 'driver') {{ $sortDirection === 'asc' ? '▲' : '▼' }} @endif
                         </th>
 
                         <th class="px-3 py-2 cursor-pointer select-none" wire:click="sortBy('route')">
-                            Route
+                            {{ __('app.trips.col_route') }}
                             @if($sortField === 'route') {{ $sortDirection === 'asc' ? '▲' : '▼' }} @endif
                         </th>
 
                         <th class="px-3 py-2">
-                            Clients
+                            {{ __('app.trips.col_clients') }}
                         </th>
 
                         <th class="px-3 py-2 cursor-pointer select-none" wire:click="sortBy('status')">
-                            Status
+                            {{ __('app.trips.col_status') }}
                             @if($sortField === 'status') {{ $sortDirection === 'asc' ? '▲' : '▼' }} @endif
                         </th>
 
-                        <th class="px-3 py-2 text-right">Actions</th>
+                        <th class="px-3 py-2 text-right">{{ __('app.trips.col_actions') }}</th>
                     </tr>
                 </thead>
 
@@ -157,7 +157,7 @@
                         <td class="px-3 py-2 text-sm">
                             <div class="flex items-center gap-2">
                                 <span class="px-2 py-1 rounded text-[11px] font-semibold {{ $t->scheme_badge_class }}">
-                                    {{ $t->scheme_label }}
+                                    {{ __('app.trip.scheme.' . $t->scheme_key) }}
                                 </span>
 
                                 <span class="font-medium text-gray-900">
@@ -168,7 +168,7 @@
                             <div class="text-xs text-gray-600 mt-1">
                                 🚚 {{ $t->carrierCompany?->name ?? '—' }}
                                 @if($t->carrierCompany?->is_third_party)
-                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-semibold">3rd</span>
+                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-semibold">{{ __('app.trips.badge_3rd') }}</span>
                                 @endif
                             </div>
                         </td>
@@ -180,7 +180,7 @@
                                     {{ $t->driver?->full_name ?? '—' }}
                                 </div>
                             @else
-                                <div class="text-xs text-gray-500 font-medium mb-1">External</div>
+                                <div class="text-xs text-gray-500 font-medium mb-1">{{ __('app.trips.external') }}</div>
                             @endif
 
                             <div class="text-xs {{ $isOwn ? 'text-gray-600' : 'text-gray-700' }}">
@@ -206,14 +206,14 @@
                                 <div x-data="{ open:false }" class="min-w-[140px]">
                                     <div class="flex items-center gap-2">
                                         <span class="font-medium text-gray-900">
-                                            {{ $clientsCount }} clients
+                                            {{ trans_choice('app.trips.clients_count', $clientsCount, ['count' => $clientsCount]) }}
                                         </span>
                                         <button
                                             type="button"
                                             class="text-xs text-blue-600 hover:underline"
                                             @click="open = !open"
                                         >
-                                            <span x-text="open ? 'Hide' : 'Details'"></span>
+                                            <span x-text="open ? '{{ __('app.trips.hide') }}' : '{{ __('app.trips.details') }}'"></span>
                                         </button>
                                     </div>
 
@@ -231,13 +231,13 @@
                         {{-- Status --}}
                         <td class="px-3 py-2 text-sm">
                             <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
-                                {{ $t->status->label() }}
+                                {{ __('app.trip.status.' . $t->status->value) }}
                             </span>
                         </td>
 
                         {{-- Actions --}}
                         <td class="px-3 py-2 text-right">
-                            <a href="{{ route('trips.show', $t->id) }}" class="text-blue-600 hover:underline" title="Open">
+                            <a href="{{ route('trips.show', $t->id) }}" class="text-blue-600 hover:underline" title="{{ __('app.trips.open') }}">
                                 👁️
                             </a>
                         </td>
@@ -245,7 +245,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-gray-500">No trips found</td>
+                        <td colspan="7" class="text-center py-4 text-gray-500">{{ __('app.trips.no_trips') }}</td>
                     </tr>
                 @endforelse
                 </tbody>
@@ -286,7 +286,7 @@
                         <div class="flex flex-col gap-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
                                 <span class="px-2 py-1 rounded text-[11px] font-semibold {{ $t->scheme_badge_class }}">
-                                    {{ $t->scheme_label }}
+                                    {{ __('app.trip.scheme.' . $t->scheme_key) }}
                                 </span>
 
                                 <h3 class="text-lg font-semibold text-gray-800 truncate">
@@ -297,21 +297,21 @@
                             <div class="text-xs text-gray-600 truncate">
                                 🚚 {{ $t->carrierCompany?->name ?? '—' }}
                                 @if($t->carrierCompany?->is_third_party)
-                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-semibold">3rd</span>
+                                    <span class="ml-1 px-1.5 py-0.5 rounded bg-red-50 text-red-700 text-[10px] font-semibold">{{ __('app.trips.badge_3rd') }}</span>
                                 @endif
                             </div>
                         </div>
 
                         <a href="{{ route('trips.show', $t->id) }}"
                            class="text-blue-600 hover:text-blue-800 text-sm font-medium shrink-0"
-                           title="Open">
+                           title="{{ __('app.trips.open') }}">
                             👁️
                         </a>
                     </div>
 
                     {{-- Date --}}
                     <div class="text-sm text-gray-700">
-                        <b>Date:</b>
+                        <b>{{ __('app.trips.date') }}</b>
                         {{ $startDate ? \Carbon\Carbon::parse($startDate)->format('d.m.Y') : '—' }}
                         →
                         {{ $endDate ? \Carbon\Carbon::parse($endDate)->format('d.m.Y') : '—' }}
@@ -319,17 +319,17 @@
 
                     {{-- Route --}}
                     <div class="text-sm text-gray-700">
-                        <b>Route:</b> {{ $route ?: '—' }}
+                        <b>{{ __('app.trips.route') }}</b> {{ $route ?: '—' }}
                     </div>
 
                     {{-- Transport --}}
                     <div class="text-sm text-gray-700">
-                        <b>Transport:</b>
+                        <b>{{ __('app.trips.transport') }}</b>
                         <div class="mt-1 space-y-0.5">
                             @if($isOwn)
                                 <div class="text-xs text-gray-600">👤 {{ $t->driver?->full_name ?? '—' }}</div>
                             @else
-                                <div class="text-xs text-gray-500 font-medium">External</div>
+                                <div class="text-xs text-gray-500 font-medium">{{ __('app.trips.external') }}</div>
                             @endif
 
                             <div class="text-xs text-gray-600">🚛 {{ $t->truck?->plate ?? '—' }}</div>
@@ -340,18 +340,18 @@
                     {{-- Clients (ULTRA-COMPACT: N clients + Details) --}}
                     <div class="text-sm text-gray-700" x-data="{ open:false }">
                         <div class="flex items-center justify-between">
-                            <b>Clients:</b>
+                            <b>{{ __('app.trips.clients') }}</b>
 
                             @if($clientsCount > 0)
                                 <button type="button" class="text-xs text-blue-600 hover:underline" @click="open = !open">
-                                    <span x-text="open ? 'Hide' : 'Details'"></span>
+                                    <span x-text="open ? '{{ __('app.trips.hide') }}' : '{{ __('app.trips.details') }}'"></span>
                                 </button>
                             @endif
                         </div>
 
                         @if($clientsCount > 0)
                             <div class="mt-1">
-                                <span class="font-medium text-gray-900">{{ $clientsCount }} clients</span>
+                                <span class="font-medium text-gray-900">{{ trans_choice('app.trips.clients_count', $clientsCount, ['count' => $clientsCount]) }}</span>
                             </div>
 
                             <div x-show="open" x-transition.opacity.duration.150ms class="mt-2 space-y-1">
@@ -367,7 +367,7 @@
                     {{-- Status --}}
                     <div class="text-sm">
                         <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
-                            {{ $t->status->label() }}
+                            {{ __('app.trip.status.' . $t->status->value) }}
                         </span>
                     </div>
 
@@ -375,7 +375,7 @@
 
             @empty
                 <div class="text-center text-gray-500 py-10">
-                    🚚 No trips found
+                    🚚 {{ __('app.trips.no_trips') }}
                 </div>
             @endforelse
         </div>

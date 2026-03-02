@@ -2,9 +2,9 @@
 
 <div class="w-full bg-white shadow-md rounded-lg p-8 space-y-10 text-lg">
 
-    {{-- Основная информация --}}
+    {{-- Personīgā informācija --}}
     <div class="flex flex-col md:flex-row gap-8">
-        {{-- Фото --}}
+        {{-- Foto --}}
         <div class="w-full md:w-1/4 h-64">
             @if($driver->photo && file_exists(storage_path('app/public/' . $driver->photo)))
                 <a href="{{ asset('storage/' . $driver->photo) }}" target="_blank">
@@ -13,18 +13,18 @@
                 </a>
             @else
                 <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
-                    No Photo
+                    {{ __('app.driver.show.no_photo') }}
                 </div>
             @endif
         </div>
 
-        {{-- Личные данные --}}
+        {{-- Personīgie dati --}}
         <div class="flex-1 space-y-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-3xl font-bold">{{ $driver->first_name }} {{ $driver->last_name }}</h1>
                 <a href="{{ route('drivers.edit', $driver) }}"
                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold">
-                   ✏️ Edit
+                   {{ __('app.driver.show.edit') }}
                 </a>
             </div>
 
@@ -32,32 +32,32 @@
 
     {{-- LEFT: Personal Info --}}
     <div class="md:col-span-2">
-        <h2 class="text-xl font-semibold mb-2 border-b pb-1">👤 Personal Info</h2>
+        <h2 class="text-xl font-semibold mb-2 border-b pb-1">👤 {{ __('app.driver.show.personal_info') }}</h2>
 
         <p>
-            <span class="font-semibold">Personal Code:</span>
+            <span class="font-semibold">Personas kods:</span>
             <span class="text-gray-700">{{ $driver->pers_code ?? '-' }}</span>
         </p>
 
         <p>
-            <span class="font-semibold">Phone:</span>
+            <span class="font-semibold">Tālrunis:</span>
             <span class="text-gray-700">{{ $driver->phone ?? '-' }}</span>
         </p>
 
         <p>
-            <span class="font-semibold">Email:</span>
+            <span class="font-semibold">E-pasts:</span>
             <span class="text-gray-700">{{ $driver->email ?? '-' }}</span>
         </p>
 
         <p>
-            <span class="font-semibold">Citizenship:</span>
+            <span class="font-semibold">Pilsonība:</span>
             <span class="text-gray-700">
                 {{ config('countries')[$driver->citizenship_id]['name'] ?? '-' }}
             </span>
         </p>
 
         <p>
-    <span class="font-semibold">Company:</span>
+    <span class="font-semibold">Kompānija:</span>
     <span class="text-gray-700">
         {{ $driver->company?->name ?? '-' }}
     </span>
@@ -68,7 +68,7 @@
     <div class="flex items-center justify-center">
         <div class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-center shadow-sm">
             <div class="text-sm text-gray-500 uppercase tracking-wide mb-1">
-                Driver PIN
+                {{ __('app.driver.show.pin_title') }}
             </div>
 
             <div class="text-3xl font-bold tracking-widest text-gray-800">
@@ -76,7 +76,7 @@
             </div>
 
             <div class="text-xs text-gray-400 mt-2">
-                Used for driver login
+                {{ __('app.driver.show.pin_hint') }}
             </div>
         </div>
     </div>
@@ -85,9 +85,9 @@
 
 
           <div>
-    <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 Addresses</h2>
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">🏠 {{ __('app.driver.show.addresses') }}</h2>
     <p>
-        <span class="font-semibold">Declared:</span>
+        <span class="font-semibold">{{ __('app.driver.show.declared') }}:</span>
         <span class="text-gray-700">
             @php
                 $declaredCountry = config('countries')[$driver->declared_country_id]['name'] ?? '-';
@@ -104,7 +104,7 @@
     </p>
 
     <p>
-        <span class="font-semibold">Actual:</span>
+        <span class="font-semibold">{{ __('app.driver.show.actual') }}:</span>
         <span class="text-gray-700">
             @php
                 $actualCountry = config('countries')[$driver->actual_country_id]['name'] ?? '-';
@@ -135,10 +135,10 @@
 @endphp
 
 <div>
-    <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 Documents</h2>
+    <h2 class="text-xl font-semibold mb-2 border-b pb-1">📄 {{ __('app.driver.show.documents') }}</h2>
 
     <p>
-        <span class="font-semibold">License:</span>
+        <span class="font-semibold">{{ __('app.driver.docs.license') }}:</span>
         <span class="text-gray-700">
             {{ $driver->license_number ?? '-' }}
             ({{ $fmt($driver->license_issued) }} – {{ $fmt($driver->license_end) }})
@@ -146,21 +146,21 @@
     </p>
 
     <p>
-        <span class="font-semibold">95 Code:</span>
+        <span class="font-semibold">{{ __('app.driver.docs.code95') }}:</span>
         <span class="text-gray-700">
             {{ $fmt($driver->code95_issued) }} – {{ $fmt($driver->code95_end) }}
         </span>
     </p>
 
     <p>
-        <span class="font-semibold">Permit:</span>
+        <span class="font-semibold">{{ __('app.driver.docs.permit') }}:</span>
         <span class="text-gray-700">
             {{ $fmt($driver->permit_issued) }} – {{ $fmt($driver->permit_expired) }}
         </span>
     </p>
 
     <p>
-        <span class="font-semibold">Medical Exam:</span>
+        <span class="font-semibold">{{ __('app.driver.docs.med_csdD') }}:</span>
         <span class="text-gray-700">
             {{ $fmt($driver->medical_exam_passed ?? $driver->medical_issued) }}
             – {{ $fmt($driver->medical_exam_expired ?? $driver->medical_expired) }}
@@ -168,28 +168,28 @@
     </p>
 
     <p>
-        <span class="font-semibold">Declaration:</span>
+        <span class="font-semibold">{{ __('app.driver.docs.declaration') }}:</span>
         <span class="text-gray-700">
             {{ $fmt($driver->declaration_issued) }} – {{ $fmt($driver->declaration_expired) }}
         </span>
     </p>
 </div>
             <div>
-                <h2 class="text-xl font-semibold mb-2 border-b pb-1">📌 Status</h2>
-                <p><span class="font-semibold">Current Status:</span> <span class="text-gray-700">{{ $driver->status_label }}</span></p>
+                <h2 class="text-xl font-semibold mb-2 border-b pb-1">📌 {{ __('app.driver.show.status_block') }}</h2>
+                <p><span class="font-semibold">{{ __('app.driver.show.current_status') }}:</span> <span class="text-gray-700">{{ $driver->status_label }}</span></p>
             </div>
         </div>
     </div>
 
-    {{-- Фото документов --}}
+    {{-- Foto dokumentiem --}}
     <div>
-        <h2 class="text-2xl font-bold mb-4">📷 Documents</h2>
+        <h2 class="text-2xl font-bold mb-4">{{ __('app.driver.show.photo_block') }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @php
                 $photos = [
-                    'License Photo' => $driver->license_photo,
-                    'Medical Certificate' => $driver->medical_certificate_photo,
-                    'Driver Photo' => $driver->photo
+                    __('app.driver.show.photo_license') => $driver->license_photo,
+                    __('app.driver.show.photo_med')     => $driver->medical_certificate_photo,
+                    __('app.driver.show.photo_driver')  => $driver->photo,
                 ];
             @endphp
 
@@ -202,7 +202,7 @@
                         </a>
                     @else
                         <div class="w-full h-52 bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
-                            No {{ $title }}
+                            {{ __('app.driver.show.photo_missing', ['title' => $title]) }}
                         </div>
                     @endif
                 </div>
@@ -210,11 +210,11 @@
         </div>
     </div>
 
-    {{-- Кнопки --}}
+    {{-- Pogas --}}
     <div class="flex justify-between">
         <a href="{{ route('drivers.index') }}"
            class="px-5 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-lg font-semibold">
-            ⬅ Back to Drivers
+            {{ __('app.driver.show.back') }}
         </a>
 
     </div>

@@ -1020,7 +1020,7 @@ class EditTrip extends Component
             }
 
             if ($isThirdPartyFlow && (empty($this->start_date) || empty($this->end_date))) {
-                $validator->errors()->add('start_date', 'Не удалось определить даты рейса: заполните даты шагов.');
+                $validator->errors()->add('start_date', __('app.trip.edit.err_dates'));
             }
 
             if (!$isThirdPartyFlow && !$this->isContainerTrailer) {
@@ -1043,7 +1043,7 @@ class EditTrip extends Component
                     if (!$hasAny) {
                         $validator->errors()->add(
                             "cargos.$cargoIndex.items.$itemIndex.measurements",
-                            'В позиции #' . ($itemIndex + 1) . ' необходимо указать хотя бы одну единицу измерения.'
+                            __('app.trip.edit.err_item_measure', ['n' => $itemIndex + 1])
                         );
                     }
                 }
@@ -1062,7 +1062,7 @@ class EditTrip extends Component
         ));
 
         if (!empty($intersection)) {
-            $this->addError('trip_unloading_step_ids', 'Один и тот же шаг не может быть одновременно погрузкой и разгрузкой.');
+            $this->addError('trip_unloading_step_ids', __('app.trip.edit.err_same_step'));
             return;
         }
 
@@ -1136,7 +1136,7 @@ class EditTrip extends Component
                 if ($expense) {
                     $expense->update([
                         'category'     => 'other',
-                        'description'  => 'Оплата третьей стороне: ' . ($thirdPartyCompany->name ?? ''),
+                        'description'  => __('app.trip.edit.expense_third', ['name' => $thirdPartyCompany->name ?? '']),
                         'amount'       => $amount,
                         'currency'     => 'EUR',
                         'expense_date' => $this->start_date,
@@ -1146,7 +1146,7 @@ class EditTrip extends Component
                         'trip_id'             => $this->trip->id,
                         'supplier_company_id' => $thirdPartyCompany->id,
                         'category'            => 'other',
-                        'description'         => 'Оплата третьей стороне: ' . ($thirdPartyCompany->name ?? ''),
+                        'description'         => __('app.trip.edit.expense_third', ['name' => $thirdPartyCompany->name ?? '']),
                         'amount'              => $amount,
                         'currency'            => 'EUR',
                         'expense_date'        => $this->start_date,
@@ -1154,7 +1154,10 @@ class EditTrip extends Component
                 }
             } else {
                 TripExpense::where('trip_id', $this->trip->id)
-                    ->where('description', 'like', 'Оплата третьей стороне:%')
+                    ->where(function ($q) {
+                        $q->where('description', 'like', 'Оплата третьей стороне:%')
+                          ->orWhere('description', 'like', 'Maksa 3. pusei:%');
+                    })
                     ->delete();
             }
 
@@ -1278,7 +1281,7 @@ class EditTrip extends Component
                 'file' => $e->getFile(),
             ]);
 
-            $this->addError('error', 'Ошибка при сохранении рейса.');
+            $this->addError('error', __('app.trip.edit.err_save'));
         }
     }
 
@@ -1289,6 +1292,9 @@ class EditTrip extends Component
     {
         $expeditors = Company::query()
             ->where('is_active', 1)
+            ->where(function ($q) {
+                $q->where('is_third_party', false)->orWhereNull('is_third_party');
+            })
             ->orderBy('name')
             ->get(['id', 'name', 'type']);
 
@@ -1304,7 +1310,7 @@ class EditTrip extends Component
             'isContainerTrailer' => $this->isContainerTrailer,
             'trailerTypeMeta'    => $this->trailerTypeMeta,
         ])->layout('layouts.app', [
-            'title' => 'Edit trip',
+            'title' => __('app.trip.edit.title'),
         ]);
     }
 

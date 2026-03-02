@@ -4,8 +4,9 @@ namespace App\Livewire\Stats;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
+use App\Models\TripExpense;
 use App\Models\TruckOdometerEvent;
 use App\Models\Driver;
 use App\Models\Truck;
@@ -117,102 +118,195 @@ class EventsTable extends Component
         ];
     }
 
-    protected function query(): Builder
-{
-    $ownCompanyIds = [1, 2];
+    protected function query(): \Illuminate\Database\Query\Builder
+    {
+        $ownCompanyIds = $this->ownCompanyIds;
+        $search = trim($this->search);
+        $dir = $this->sortDirection === 'asc' ? 'asc' : 'desc';
 
-    $q = TruckOdometerEvent::query()
-        ->leftJoin('drivers as d', 'd.id', '=', 'truck_odometer_events.driver_id')
-        ->leftJoin('trucks as tr', 'tr.id', '=', 'truck_odometer_events.truck_id')
-        ->leftJoin('trip_expenses as te', 'te.id', '=', 'truck_odometer_events.trip_expense_id')
-        ->select([
-            'truck_odometer_events.*',
-            'd.first_name as d_first_name',
-            'd.last_name as d_last_name',
-            'tr.brand as tr_brand',
-            'tr.model as tr_model',
-            'tr.plate as tr_plate',
-            'te.liters as te_liters',
-            'te.currency as te_currency',
-            'te.description as te_description',
-            'te.category as te_category',
-            'te.odometer_km as te_odometer_km',
-        ]);
+        /**
+         * 1) Event-строки из TruckOdometerEvent (кроме TYPE_EXPENSE).
+         */
+        $events = DB::table('truck_odometer_events as toe')
+            ->leftJoin('drivers as d', 'd.id', '=', 'toe.driver_id')
+            ->leftJoin('trucks as tr', 'tr.id', '=', 'toe.truck_id')
+            ->leftJoin('trips as t', 't.id', '=', 'toe.trip_id')
+            ->select([
+                DB::raw("'event' as row_kind"),
+                'toe.id as id',
+                'toe.type as type',
 
-    /**
-     * ✅ Только свои водители (company_id 1 и 2)
-     * + исключаем события без driver_id
-     */
-    $q->whereNotNull('truck_odometer_events.driver_id')
-      ->whereIn('d.company_id', $ownCompanyIds);
+                // Trip linkage (for departure/return odo fallback)
+                't.id as trip_id',
+                't.odo_start_km as trip_odo_start_km',
+                't.odo_end_km as trip_odo_end_km',
 
-    // ✅ Исключаем subcontractor (только для expense)
-    $q->where(function (Builder $qq) {
-        $qq->where('truck_odometer_events.type', '!=', TruckOdometerEvent::TYPE_EXPENSE)
-           ->orWhereNull('truck_odometer_events.expense_category')
-           ->orWhere('truck_odometer_events.expense_category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
-    });
+                // Expense-only поля (всегда NULL для events)
+                DB::raw('NULL as expense_category'),
+                DB::raw('NULL as expense_date'),
+                DB::raw('NULL as amount'),
+                DB::raw('NULL as te_currency'),
+                DB::raw('NULL as te_liters'),
+                DB::raw('NULL as te_description'),
 
-    // Search
-    $search = trim($this->search);
-    if ($search !== '') {
-        $q->where(function (Builder $qq) use ($search) {
-            $qq->where('d.first_name', 'like', "%{$search}%")
-               ->orWhere('d.last_name', 'like', "%{$search}%")
-               ->orWhere('tr.brand', 'like', "%{$search}%")
-               ->orWhere('tr.model', 'like', "%{$search}%")
-               ->orWhere('tr.plate', 'like', "%{$search}%")
-               ->orWhere('truck_odometer_events.expense_category', 'like', "%{$search}%")
-               ->orWhere('te.description', 'like', "%{$search}%")
-               ->orWhere('truck_odometer_events.note', 'like', "%{$search}%");
-        });
+                // Odometer / timestamps / step
+                'toe.odometer_km as odometer_km',
+                'toe.occurred_at as occurred_at',
+                'toe.step_status as step_status',
+                'toe.note as note',
+
+                // Driver / truck
+                'd.first_name as d_first_name',
+                'd.last_name as d_last_name',
+                'tr.brand as tr_brand',
+                'tr.model as tr_model',
+                'tr.plate as tr_plate',
+            ])
+            ->whereNotNull('toe.driver_id')
+            ->whereIn('d.company_id', $ownCompanyIds)
+            // В этом списке не хотим TYPE_EXPENSE — расходы отдельными строками
+            ->where('toe.type', '!=', TruckOdometerEvent::TYPE_EXPENSE);
+
+        /**
+         * 2) Expense-строки из TripExpense.
+         */
+        $expenses = DB::table('trip_expenses as te')
+            ->leftJoin('trips as t', 't.id', '=', 'te.trip_id')
+            ->leftJoin('drivers as d', 'd.id', '=', 't.driver_id')
+            ->leftJoin('trucks as tr', 'tr.id', '=', 't.truck_id')
+            ->select([
+                DB::raw("'expense' as row_kind"),
+                'te.id as id',
+                DB::raw('NULL as type'),
+
+                // Trip linkage
+                't.id as trip_id',
+                't.odo_start_km as trip_odo_start_km',
+                't.odo_end_km as trip_odo_end_km',
+
+                // Категория расхода и money-поля
+                'te.category as expense_category',
+                'te.expense_date as expense_date',
+                'te.amount as amount',
+                'te.currency as te_currency',
+                'te.liters as te_liters',
+                'te.description as te_description',
+
+                // Odometer / timestamps / step
+                'te.odometer_km as odometer_km',
+                DB::raw('NULL as occurred_at'),
+                DB::raw('NULL as step_status'),
+                DB::raw('NULL as note'),
+
+                // Driver / truck
+                'd.first_name as d_first_name',
+                'd.last_name as d_last_name',
+                'tr.brand as tr_brand',
+                'tr.model as tr_model',
+                'tr.plate as tr_plate',
+            ])
+            ->whereNotNull('t.driver_id')
+            ->whereIn('d.company_id', $ownCompanyIds)
+            // Исключаем subcontractor-расходы
+            ->where(function ($qq) {
+                $qq->whereNull('te.category')
+                    ->orWhere('te.category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
+            });
+
+        /**
+         * Общие фильтры (search, driver, truck, dates, type) применяем к обоим подзапросам.
+         */
+
+        if ($search !== '') {
+            $events->where(function ($qq) use ($search) {
+                $qq->where('d.first_name', 'like', "%{$search}%")
+                    ->orWhere('d.last_name', 'like', "%{$search}%")
+                    ->orWhere('tr.brand', 'like', "%{$search}%")
+                    ->orWhere('tr.model', 'like', "%{$search}%")
+                    ->orWhere('tr.plate', 'like', "%{$search}%")
+                    ->orWhere('toe.note', 'like', "%{$search}%");
+            });
+
+            $expenses->where(function ($qq) use ($search) {
+                $qq->where('d.first_name', 'like', "%{$search}%")
+                    ->orWhere('d.last_name', 'like', "%{$search}%")
+                    ->orWhere('tr.brand', 'like', "%{$search}%")
+                    ->orWhere('tr.model', 'like', "%{$search}%")
+                    ->orWhere('tr.plate', 'like', "%{$search}%")
+                    ->orWhere('te.description', 'like', "%{$search}%")
+                    ->orWhere('te.category', 'like', "%{$search}%");
+            });
+        }
+
+        if (!empty($this->driverId)) {
+            $events->where('toe.driver_id', (int) $this->driverId);
+            $expenses->where('t.driver_id', (int) $this->driverId);
+        }
+
+        if (!empty($this->truckId)) {
+            $events->where('toe.truck_id', (int) $this->truckId);
+            $expenses->where('t.truck_id', (int) $this->truckId);
+        }
+
+        // Фильтр по типу: для events — по toe.type, для expenses — только TYPE_EXPENSE
+        if (!empty($this->type)) {
+            $type = (int) $this->type;
+
+            $events->where('toe.type', $type);
+
+            if ($type === TruckOdometerEvent::TYPE_EXPENSE) {
+                // показываем только expense-строки
+            } else {
+                // при других типах расходов не показываем
+                $expenses->whereRaw('1=0');
+            }
+        }
+
+        // Даты: для events по occurred_at, для expenses по expense_date
+        if ($this->dateFrom) {
+            $events->whereDate('toe.occurred_at', '>=', $this->dateFrom);
+            $expenses->whereDate('te.expense_date', '>=', $this->dateFrom);
+        }
+
+        if ($this->dateTo) {
+            $events->whereDate('toe.occurred_at', '<=', $this->dateTo);
+            $expenses->whereDate('te.expense_date', '<=', $this->dateTo);
+        }
+
+        /**
+         * Объединяем события и расходы в единый поток строк.
+         */
+        $base = $events->unionAll($expenses);
+
+        $q = DB::query()->fromSub($base, 'rows');
+
+        // Специальная сортировка по времени
+        if (in_array($this->sortField, ['timestamp', 'occurred_at'], true)) {
+            $q->orderByRaw('COALESCE(occurred_at, expense_date) ' . $dir);
+            return $q;
+        }
+
+        $fieldMap = [
+            'driver'      => 'd_first_name',
+            'truck'       => 'tr_plate',
+            'type'        => 'type',
+            'odometer_km' => 'odometer_km',
+            'amount'      => 'amount',
+        ];
+
+        $field = $fieldMap[$this->sortField] ?? 'expense_date';
+
+        // Для driver/truck сделаем сортировку стабильнее
+        if ($field === 'd_first_name') {
+            $q->orderBy('d_first_name', $dir)->orderBy('d_last_name', $dir);
+        } elseif ($field === 'tr_plate') {
+            $q->orderBy('tr_plate', $dir)->orderBy('tr_brand', $dir);
+        } else {
+            $q->orderBy($field, $dir);
+        }
+
+        return $q;
     }
-
-    if (!empty($this->type)) {
-        $q->where('truck_odometer_events.type', (int) $this->type);
-    }
-
-    if (!empty($this->driverId)) {
-        $q->where('truck_odometer_events.driver_id', (int) $this->driverId);
-    }
-
-    if (!empty($this->truckId)) {
-        $q->where('truck_odometer_events.truck_id', (int) $this->truckId);
-    }
-
-    if ($this->dateFrom) {
-        $q->whereDate('truck_odometer_events.occurred_at', '>=', $this->dateFrom);
-    }
-
-    if ($this->dateTo) {
-        $q->whereDate('truck_odometer_events.occurred_at', '<=', $this->dateTo);
-    }
-
-    $dir = $this->sortDirection === 'asc' ? 'asc' : 'desc';
-
-    $fieldMap = [
-        'timestamp'   => 'truck_odometer_events.occurred_at',
-        'occurred_at' => 'truck_odometer_events.occurred_at',
-        'driver'      => 'd_first_name',
-        'truck'       => 'tr_plate',
-        'type'        => 'truck_odometer_events.type',
-        'odometer_km' => 'truck_odometer_events.odometer_km',
-        'amount'      => 'truck_odometer_events.expense_amount',
-    ];
-
-    $field = $fieldMap[$this->sortField] ?? 'truck_odometer_events.occurred_at';
-
-    // Для driver/truck сделаем сортировку стабильнее
-    if ($field === 'd_first_name') {
-        $q->orderBy('d_first_name', $dir)->orderBy('d_last_name', $dir);
-    } elseif ($field === 'tr_plate') {
-        $q->orderBy('tr_plate', $dir)->orderBy('tr_brand', $dir);
-    } else {
-        $q->orderBy($field, $dir);
-    }
-
-    return $q;
-}
     public function getRowsProperty()
     {
         return $this->query()->paginate($this->perPage);

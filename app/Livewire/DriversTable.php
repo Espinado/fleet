@@ -76,7 +76,7 @@ class DriversTable extends Component
         return view('livewire.drivers-table', [
             'items' => $drivers,
         ])->layout('layouts.app', [
-            'title' => 'Drivers'
+            'title' => 'Vadītāji'
         ]);
     }
 }

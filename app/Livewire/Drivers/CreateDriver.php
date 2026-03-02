@@ -253,11 +253,13 @@ private function generateUniquePin(): string
 
 
 
-    return view('livewire.drivers.create-driver', [
-    'companies' => $companies,
-    'countries' => $countries,
-    'declaredCities' => $declaredCities,
-    'actualCities' => $actualCities,
-])->layout('layouts.app')->title('Add Driver');
+        return view('livewire.drivers.create-driver', [
+            'companies'      => $companies,
+            'countries'      => $countries,
+            'declaredCities' => $declaredCities,
+            'actualCities'   => $actualCities,
+        ])->layout('layouts.app', [
+            'title' => __('app.drivers.title'),
+        ]);
     }
 }

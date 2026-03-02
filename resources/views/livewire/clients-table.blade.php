@@ -1,14 +1,14 @@
 <div class="p-4 sm:p-6 max-w-7xl mx-auto">
 
-    {{-- 🔝 Верхняя панель --}}
+    {{-- 🔝 Augšējā josla --}}
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
 
-        {{-- 🔍 Поиск --}}
+        {{-- 🔍 Meklēšana --}}
         <div class="flex items-center gap-2 w-full md:w-auto">
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
-                placeholder="🔍 Search client..."
+                placeholder="{{ __('app.clients.search') }}"
                 class="flex-1 border rounded-lg px-3 py-2 text-sm shadow-sm focus:ring focus:ring-blue-100"
             />
             @if ($search)
@@ -18,20 +18,20 @@
             @endif
         </div>
 
-        {{-- ➕ Add + Sort + Rows --}}
+        {{-- ➕ Pievienot + Kārtot + Rindas --}}
         <div class="flex items-center justify-end gap-3 w-full md:w-auto">
 
-            {{-- ➕ Add --}}
+            {{-- ➕ Pievienot --}}
             <a href="{{ route('clients.create') }}"
                class="inline-flex items-center gap-1 bg-green-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg shadow hover:bg-green-700 transition">
-                ➕ Add Client
+                ➕ {{ __('app.clients.add') }}
             </a>
 
-            {{-- 🔽 Sort (mobile) --}}
+            {{-- 🔽 Kārtot (mobilais) --}}
             <div x-data="{ open: false }" class="relative block md:hidden">
                 <button @click="open = !open"
                         class="px-3 py-2 text-sm border rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1">
-                    ⬇️ Sort
+                    ⬇️ {{ __('app.clients.sort') }}
                     @if ($sortDirection === 'asc')
                         <span class="text-xs text-gray-500">▲</span>
                     @else
@@ -43,11 +43,11 @@
                      class="absolute left-0 mt-1 w-48 bg-white border rounded-lg shadow-lg z-50 text-sm overflow-hidden">
 
                     @foreach([
-                        'company_name' => 'Company',
-                        'email'        => 'Email',
-                        'reg_nr'       => 'Reg Nr',
-                        'phone'        => 'Phone',
-                        'representative' => 'Representative'
+                        'company_name' => __('app.clients.col_company'),
+                        'email'        => __('app.clients.col_email'),
+                        'reg_nr'       => __('app.clients.col_reg_nr'),
+                        'phone'        => __('app.clients.col_phone'),
+                        'representative' => __('app.clients.col_representative'),
                     ] as $field => $label)
 
                         <button wire:click="sortBy('{{ $field }}')" @click="open = false"
@@ -63,11 +63,11 @@
                 </div>
             </div>
 
-            {{-- 📄 Rows --}}
+            {{-- 📄 Rindas --}}
             <div class="hidden md:flex items-center justify-center gap-2 bg-white px-3 py-1.5 rounded-lg border shadow-sm">
-                <label class="text-sm text-gray-600">Rows:</label>
+                <label class="text-sm text-gray-600">{{ __('app.clients.rows') }}</label>
                 <select wire:model.live="perPage"
-                        class="border rounded-lg px-2 py-1 text-sm shadow-sm focus:ring focus:ring-blue-100">
+                        class="border rounded-lg px-2 py-1 text-sm shadow-sm focus:ring focus:ring-blue-100 js-select2">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
@@ -79,18 +79,18 @@
         </div>
     </div>
 
-    {{-- 💻 TABLE VERSION --}}
+    {{-- 💻 Tabulas versija --}}
     <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
         <table class="w-full border-collapse">
             <thead>
                 <tr class="bg-gray-100 text-left text-sm text-gray-700 select-none">
 
                     @foreach([
-                        'company_name'  => 'Company',
-                        'email'         => 'Email',
-                        'reg_nr'        => 'Reg Nr',
-                        'phone'         => 'Phone',
-                        'representative'=> 'Representative'
+                        'company_name'  => __('app.clients.col_company'),
+                        'email'         => __('app.clients.col_email'),
+                        'reg_nr'        => __('app.clients.col_reg_nr'),
+                        'phone'         => __('app.clients.col_phone'),
+                        'representative'=> __('app.clients.col_representative'),
                     ] as $field => $label)
 
                         <th class="px-4 py-2 cursor-pointer whitespace-nowrap" wire:click="sortBy('{{ $field }}')">
@@ -113,7 +113,7 @@
 
                     @endforeach
 
-                    <th class="p-3 text-left">Action</th>
+                    <th class="p-3 text-left">{{ __('app.clients.col_action') }}</th>
                 </tr>
             </thead>
 
@@ -132,14 +132,14 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-gray-500">No results</td>
+                        <td colspan="6" class="text-center py-4 text-gray-500">{{ __('app.clients.no_results') }}</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- 📱 MOBILE / PWA VERSION --}}
+    {{-- 📱 Mobilā / PWA versija --}}
     <div class="block md:hidden mt-3 space-y-3">
         @forelse($clients as $client)
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex justify-between items-start">
@@ -149,26 +149,26 @@
                         {{ $client->company_name }}
                     </p>
 
-                    <p class="text-xs text-gray-600"><b>Email:</b> {{ $client->email ?? '—' }}</p>
-                    <p class="text-xs text-gray-600"><b>Reg Nr:</b> {{ $client->reg_nr ?? '—' }}</p>
-                    <p class="text-xs text-gray-600"><b>Phone:</b> {{ $client->phone ?? '—' }}</p>
-                    <p class="text-xs text-gray-600"><b>Representative:</b> {{ $client->representative ?? '—' }}</p>
+                    <p class="text-xs text-gray-600"><b>{{ __('app.clients.col_email') }}:</b> {{ $client->email ?? '—' }}</p>
+                    <p class="text-xs text-gray-600"><b>{{ __('app.clients.col_reg_nr') }}:</b> {{ $client->reg_nr ?? '—' }}</p>
+                    <p class="text-xs text-gray-600"><b>{{ __('app.clients.col_phone') }}:</b> {{ $client->phone ?? '—' }}</p>
+                    <p class="text-xs text-gray-600"><b>{{ __('app.clients.col_representative') }}:</b> {{ $client->representative ?? '—' }}</p>
                 </div>
 
                 <a href="{{ route('clients.show', $client->id) }}" class="text-blue-600 text-lg">👁️</a>
             </div>
         @empty
             <div class="text-center text-gray-500 py-10">
-                👥 No clients found
+                👥 {{ __('app.clients.no_clients') }}
             </div>
         @endforelse
     </div>
 
 
-    {{-- 🔄 Loading + Pagination --}}
+    {{-- 🔄 Ielāde + lappošana --}}
     <div class="mt-6 flex justify-center">
         <div wire:loading.delay>
-            <span class="text-gray-500 text-sm animate-pulse">Loading...</span>
+            <span class="text-gray-500 text-sm animate-pulse">{{ __('app.clients.loading') }}</span>
         </div>
     </div>
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TripCargo;
 use App\Models\TripStep;
+use App\Models\TripExpense;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -370,6 +371,156 @@ class CmrController extends Controller
 
     return asset("storage/{$dir}/{$fileName}");
 }
+
+    /**
+     * ✅ Transport order (for third-party carrier)
+     *
+     * Генерируется, когда перевозку выполняет третья сторона:
+     *  - Pasūtītājs (заказчик) — экспедитор (snapshot из trip.*expeditor_*)
+     *  - Pārvadātājs — carrierCompany (третья сторона)
+     */
+    public function generateTransportOrder(TripCargo $cargo): string
+    {
+        $cargo->loadMissing([
+            'trip.carrierCompany',
+            'trip.truck',
+            'trip.trailer',
+            'customer',
+            'shipper',
+            'consignee',
+            'steps',
+        ]);
+
+        $trip = $cargo->trip;
+
+        $orderNr = trim((string)($cargo->order_nr ?? ''));
+        if ($orderNr === '') {
+            throw ValidationException::withMessages([
+                "orderNr.{$cargo->id}" => "Укажи Order номер перед генерацией.",
+            ]);
+        }
+
+        // 📌 Pasūtītājs (экспедитор) — берём snapshot из trip
+        $sender = [
+            'name'    => (string)($trip->expeditor_name ?? ''),
+            'reg_nr'  => (string)($trip->expeditor_reg_nr ?? ''),
+            'address' => (string)($trip->expeditor_address ?? ''),
+            'city'    => (string)($trip->expeditor_city ?? ''),
+            'country' => (string)($trip->expeditor_country ?? ''),
+        ];
+
+        // В шаблоне "customer" используется как визуальный заказчик — тоже экспедитор
+        $customer = [
+            'name'    => $sender['name'],
+            'address' => $sender['address'],
+            'city'    => $sender['city'],
+        ];
+
+        // 📌 Перевозчик — третья сторона carrierCompany
+        $carrierCompany = $trip->carrierCompany;
+        $carrier = [
+            'name'          => (string)($carrierCompany->name ?? ''),
+            'reg_nr'        => (string)($carrierCompany->reg_nr ?? ''),
+            'address'       => (string)($carrierCompany->jur_address ?? $carrierCompany->fiz_address ?? ''),
+            'city'          => '',
+            'country'       => '',
+            'truck'         => (string)($trip->truck?->brand . ' ' . $trip->truck?->model),
+            'truck_plate'   => (string)($trip->truck?->plate ?? ''),
+            'trailer'       => (string)($trip->trailer?->brand ?? ''),
+            'trailer_plate' => (string)($trip->trailer?->plate ?? ''),
+        ];
+
+        // Город/страна перевозчика (если заданы как юр. адрес)
+        $carrierCountryId = (int)($carrierCompany->jur_country_id ?? $carrierCompany->fiz_country_id ?? 0);
+        $carrierCityId    = (int)($carrierCompany->jur_city_id ?? $carrierCompany->fiz_city_id ?? 0);
+        if ($carrierCountryId) {
+            $carrier['country'] = (string)getCountryById($carrierCountryId);
+        }
+        if ($carrierCityId && $carrierCountryId) {
+            $carrier['city'] = (string)getCityById($carrierCityId, $carrierCountryId);
+        }
+
+        // 📌 Iekraušanas / izlādes vietas из steps для данного cargo
+        $loadingStep = $cargo->steps
+            ->where('type', 'loading')
+            ->sortBy(fn ($s) => $s->date?->timestamp ?? PHP_INT_MAX)
+            ->first();
+
+        $unloadingStep = $cargo->steps
+            ->where('type', 'unloading')
+            ->sortByDesc(fn ($s) => $s->date?->timestamp ?? 0)
+            ->first();
+
+        $loadingPlace = $loadingStep
+            ? getCityById($loadingStep->city_id, $loadingStep->country_id) . ', ' . getCountryById($loadingStep->country_id)
+            : null;
+        $loadingAddress = $loadingStep?->address ?? null;
+
+        $unloadingPlace = $unloadingStep
+            ? getCityById($unloadingStep->city_id, $unloadingStep->country_id) . ', ' . getCountryById($unloadingStep->country_id)
+            : null;
+        $unloadingAddress = $unloadingStep?->address ?? null;
+
+        // 💶 Frakts, ko maksā 3rd party pārvadātājam:
+        // берём сумму всех TripExpense, где supplier_company_id = carrierCompany->id
+        $thirdPartyFee = TripExpense::query()
+            ->where('trip_id', $trip->id)
+            ->where('supplier_company_id', $carrierCompany->id ?? 0)
+            ->sum('amount');
+
+        // fallback: если по какой-то причине расходов ещё нет, используем cargo->price_with_tax/price
+        $totalPriceWithTax = $thirdPartyFee > 0
+            ? (float)$thirdPartyFee
+            : (float)($cargo->price_with_tax ?? $cargo->price ?? 0);
+
+        $paymentTerms = $cargo->payment_terms;
+
+        $data = [
+            'order_nr'          => $orderNr,
+            'sender'            => $sender,
+            'customer'          => $customer,
+            'carrier'           => $carrier,
+            'loading_place'     => $loadingPlace,
+            'loading_address'   => $loadingAddress,
+            'unloading_place'   => $unloadingPlace,
+            'unloading_address' => $unloadingAddress,
+            'total_price_with_tax' => $totalPriceWithTax,
+            'payment_terms'        => $paymentTerms,
+            'cargo'                => $cargo,
+            'date'                 => now()->format('d.m.Y'),
+        ];
+
+        $dir = "order/trip_{$trip->id}";
+        $fileName = "order_cargo_{$cargo->id}.pdf";
+
+        Storage::disk('public')->makeDirectory($dir);
+
+        $pdf = Pdf::loadView('pdf.transport-order', $data)
+            ->setPaper('A4')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled'      => true,
+                'defaultFont'          => 'DejaVu Sans',
+            ]);
+
+        Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
+
+        $cargo->update([
+            'order_file'       => "{$dir}/{$fileName}",
+            'order_created_at' => now(),
+            'order_nr'         => $orderNr,
+        ]);
+
+        Log::info('✅ TRANSPORT ORDER PDF generated successfully (single cargo)', [
+            'trip'   => $trip->id,
+            'cargo'  => $cargo->id,
+            'path'   => "{$dir}/{$fileName}",
+            'order'  => $orderNr,
+            'amount' => $totalPriceWithTax,
+        ]);
+
+        return asset("storage/{$dir}/{$fileName}");
+    }
     private function moneyToWordsLv(float $amount): string
 {
     $amount = round($amount, 2);

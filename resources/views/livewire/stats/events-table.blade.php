@@ -2,16 +2,7 @@
     use App\Models\TruckOdometerEvent;
     use App\Enums\TripExpenseCategory;
     use App\Enums\TripStepStatus;
-
-    $badge = function (int $type) {
-        return match ($type) {
-            TruckOdometerEvent::TYPE_DEPARTURE => 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800',
-            TruckOdometerEvent::TYPE_RETURN    => 'bg-violet-50 text-violet-800 border-violet-200 dark:bg-violet-900/20 dark:text-violet-200 dark:border-violet-800',
-            TruckOdometerEvent::TYPE_EXPENSE   => 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800',
-            TruckOdometerEvent::TYPE_STEP      => 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800',
-            default => 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700',
-        };
-    };
+    use App\Enums\OdometerEventType;
 
     $expenseLabel = function (?string $category) {
         if (!$category) return null;
@@ -25,10 +16,10 @@
     };
 
     $isFuelLike = function (?string $category) {
+        // Оdometer для driver expenses показываем только для Degviela / AdBlue
         return in_array($category, [
             TripExpenseCategory::FUEL->value,
             TripExpenseCategory::ADBLUE->value,
-            TripExpenseCategory::WASHER_FLUID->value,
         ], true);
     };
 
@@ -42,6 +33,7 @@
             return null;
         }
     };
+
 @endphp
 
 <div class="space-y-4">
@@ -151,36 +143,81 @@
                 $truckModel = $row->tr_model ?? '';
                 $truck = trim(($row->tr_brand ?? '').' '.$truckModel.' '.$truckPlate) ?: '—';
 
+                $rowKind = $row->row_kind ?? 'event';
                 $typeVal = (int)($row->type ?? 0);
+                $isEventRow = $rowKind === 'event';
+                $isExpenseRow = $rowKind === 'expense';
+                // Маппинг типов TruckOdometerEvent -> OdometerEventType только для RUN-событий
+                $typeEnum = match ($typeVal) {
+                    TruckOdometerEvent::TYPE_DEPARTURE => OdometerEventType::RUN_START,
+                    TruckOdometerEvent::TYPE_RETURN    => OdometerEventType::RUN_END,
+                    default                            => null,
+                };
 
-                $ts = optional($row->occurred_at)->format('d.m.Y H:i') ?? '—';
-                $odoMain = $row->odometer_km !== null ? number_format((float)$row->odometer_km, 1, ',', ' ') . ' km' : null;
+                $rawOccurred = $row->occurred_at ?? null;
+                $rawExpenseDate = $row->expense_date ?? null;
 
+                if (!empty($rawOccurred)) {
+                    $ts = date('d.m.Y H:i', strtotime($rawOccurred));
+                } elseif (!empty($rawExpenseDate)) {
+                    $ts = date('d.m.Y', strtotime($rawExpenseDate));
+                } else {
+                    $ts = '—';
+                }
+
+                // Odo for mobile: for departure/return можем падать назад на trip.odo_start_km / odo_end_km
+                $odoMainValue = $row->odometer_km ?? null;
+                if ($rowKind === 'event' && $odoMainValue === null) {
+                    if ($typeVal === TruckOdometerEvent::TYPE_DEPARTURE && $row->trip_odo_start_km !== null) {
+                        $odoMainValue = $row->trip_odo_start_km;
+                    } elseif ($typeVal === TruckOdometerEvent::TYPE_RETURN && $row->trip_odo_end_km !== null) {
+                        $odoMainValue = $row->trip_odo_end_km;
+                    }
+                }
                 // expense
-                $cat = $row->expense_category ?: ($row->te_category ?? null);
-                $isExpenseRow = $typeVal === TruckOdometerEvent::TYPE_EXPENSE;
+                $cat = $isExpenseRow ? ($row->expense_category ?? null) : null;
                 $isHiddenSubcontractor = $isExpenseRow && ($cat === TripExpenseCategory::SUBCONTRACTOR->value);
 
-                $catLabel = $expenseLabel($cat);
-                $amount = $row->expense_amount ?? null;
-                $currency = $row->te_currency ?? 'EUR';
+                $catLabel = $isExpenseRow ? $expenseLabel($cat) : null;
+                $amount = $isExpenseRow ? ($row->amount ?? null) : null;
+                $currency = $isExpenseRow ? ($row->te_currency ?? 'EUR') : null;
 
-                $liters = $row->te_liters ?? null;
-                $odoExpense = $row->odometer_km ?? ($row->te_odometer_km ?? null);
-                $fuelLike = $isFuelLike($cat);
+                $liters = $isExpenseRow ? ($row->te_liters ?? null) : null;
+                $odoExpense = $isExpenseRow ? ($row->odometer_km ?? null) : null;
+                $fuelLike = $isExpenseRow ? $isFuelLike($cat) : false;
 
-                // step label
-                $stepLabel = $typeVal === TruckOdometerEvent::TYPE_STEP
-                    ? ($stepStatusLabel($row->step_status) ?? null)
+                // Для driver expenses одометр в "шапке" показываем только для Degviela / AdBlue
+                if ($isExpenseRow && !$fuelLike) {
+                    $odoMainValue = null;
+                    $odoExpense = null;
+                }
+
+                $odoMain = $odoMainValue !== null
+                    ? number_format((float)$odoMainValue, 1, ',', ' ') . ' km'
                     : null;
 
-                $typeLabel = match ($typeVal) {
-                    TruckOdometerEvent::TYPE_DEPARTURE => 'Garage departure',
-                    TruckOdometerEvent::TYPE_RETURN => 'Garage return',
-                    TruckOdometerEvent::TYPE_EXPENSE => 'Driver expenses',
-                    TruckOdometerEvent::TYPE_STEP => ($stepLabel ? ('Step: '.$stepLabel) : 'Step status'),
-                    default => 'Event',
-                };
+                // Тип/бейдж:
+                // - row_kind=expense  -> Driver expenses (зелёный)
+                // - row_kind=event + TYPE_STEP      -> Step + статус шага (голубой)
+                // - row_kind=event + RUN_START/END  -> OdometerEventType (amber/violet)
+                // - остальное                       -> Event (серый)
+                $typeLabel = null;
+                $badgeClass = null;
+
+                if ($isExpenseRow) {
+                    $typeLabel = 'Driver expenses';
+                    $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
+                } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
+                    $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                    $typeLabel = $stepLabel ? ('Step: ' . $stepLabel) : 'Step status';
+                    $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
+                } elseif ($isEventRow && $typeEnum) {
+                    $typeLabel = $typeEnum->label();
+                    $badgeClass = $typeEnum->badgeClass();
+                } else {
+                    $typeLabel = 'Event';
+                    $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
+                }
             @endphp
 
             @if(!$isHiddenSubcontractor)
@@ -191,7 +228,7 @@
                             <div class="text-sm text-gray-600 dark:text-gray-300 truncate">🚛 {{ $truck }}</div>
                         </div>
 
-                        <span class="shrink-0 inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $badge($typeVal) }}">
+                        <span class="shrink-0 inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $badgeClass }}">
                             {{ $typeLabel }}
                         </span>
                     </div>
@@ -283,43 +320,82 @@
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                 @forelse($rows as $row)
                     @php
-                        $driver = trim(($row->d_first_name ?? '').' '.($row->d_last_name ?? '')) ?: '—';
+                $driver = trim(($row->d_first_name ?? '').' '.($row->d_last_name ?? '')) ?: '—';
 
                         $truckPlate = $row->tr_plate ?? '';
                         $truckModel = $row->tr_model ?? '';
                         $truck = trim(($row->tr_brand ?? '').' '.$truckModel.' '.$truckPlate) ?: '—';
 
+                        $rowKind = $row->row_kind ?? 'event';
                         $typeVal = (int)($row->type ?? 0);
+                        $isEventRow = $rowKind === 'event';
+                        $isExpenseRow = $rowKind === 'expense';
+                // Маппинг типов TruckOdometerEvent -> OdometerEventType только для RUN-событий
+                $typeEnum = match ($typeVal) {
+                    TruckOdometerEvent::TYPE_DEPARTURE => OdometerEventType::RUN_START,
+                    TruckOdometerEvent::TYPE_RETURN    => OdometerEventType::RUN_END,
+                    default                            => null,
+                };
 
-                        $ts = optional($row->occurred_at)->format('d.m.Y H:i') ?? '—';
-                        $odo = $row->odometer_km !== null ? number_format((float)$row->odometer_km, 1, ',', ' ') : '—';
+                        $rawOccurred = $row->occurred_at ?? null;
+                        $rawExpenseDate = $row->expense_date ?? null;
 
+                        if (!empty($rawOccurred)) {
+                            $ts = date('d.m.Y H:i', strtotime($rawOccurred));
+                        } elseif (!empty($rawExpenseDate)) {
+                            $ts = date('d.m.Y', strtotime($rawExpenseDate));
+                        } else {
+                            $ts = '—';
+                        }
+
+                        $odoMainValue = $row->odometer_km ?? null;
+                        if ($rowKind === 'event' && $odoMainValue === null) {
+                            if ($typeVal === TruckOdometerEvent::TYPE_DEPARTURE && $row->trip_odo_start_km !== null) {
+                                $odoMainValue = $row->trip_odo_start_km;
+                            } elseif ($typeVal === TruckOdometerEvent::TYPE_RETURN && $row->trip_odo_end_km !== null) {
+                                $odoMainValue = $row->trip_odo_end_km;
+                            }
+                        }
                         // expense
-                        $cat = $row->expense_category ?: ($row->te_category ?? null);
-                        $isExpenseRow = $typeVal === TruckOdometerEvent::TYPE_EXPENSE;
+                        $cat = $isExpenseRow ? ($row->expense_category ?? null) : null;
                         $isHiddenSubcontractor = $isExpenseRow && ($cat === TripExpenseCategory::SUBCONTRACTOR->value);
 
-                        $catLabel = $expenseLabel($cat);
+                        $catLabel = $isExpenseRow ? $expenseLabel($cat) : null;
 
-                        $amount = $row->expense_amount ?? null;
-                        $currency = $row->te_currency ?? 'EUR';
+                        $amount = $isExpenseRow ? ($row->amount ?? null) : null;
+                        $currency = $isExpenseRow ? ($row->te_currency ?? 'EUR') : null;
 
-                        $liters = $row->te_liters ?? null;
-                        $odoExpense = $row->odometer_km ?? ($row->te_odometer_km ?? null);
-                        $fuelLike = $isFuelLike($cat);
+                        $liters = $isExpenseRow ? ($row->te_liters ?? null) : null;
+                        $odoExpense = $isExpenseRow ? ($row->odometer_km ?? null) : null;
+                        $fuelLike = $isExpenseRow ? $isFuelLike($cat) : false;
 
-                        // step label
-                        $stepLabel = $typeVal === TruckOdometerEvent::TYPE_STEP
-                            ? ($stepStatusLabel($row->step_status) ?? null)
-                            : null;
+                        // Для driver expenses одометр в колонке Odo показываем только для Degviela / AdBlue
+                        if ($isExpenseRow && !$fuelLike) {
+                            $odoMainValue = null;
+                            $odoExpense = null;
+                        }
 
-                        $typeLabel = match ($typeVal) {
-                            TruckOdometerEvent::TYPE_DEPARTURE => 'Garage departure',
-                            TruckOdometerEvent::TYPE_RETURN => 'Garage return',
-                            TruckOdometerEvent::TYPE_EXPENSE => 'Driver expenses',
-                            TruckOdometerEvent::TYPE_STEP => ($stepLabel ? ('Step: '.$stepLabel) : 'Step status'),
-                            default => 'Event',
-                        };
+                        $odo = $odoMainValue !== null
+                            ? number_format((float)$odoMainValue, 1, ',', ' ')
+                            : '—';
+
+                        $typeLabel = null;
+                        $badgeClass = null;
+
+                        if ($isExpenseRow) {
+                            $typeLabel = 'Driver expenses';
+                            $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
+                        } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
+                            $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                            $typeLabel = $stepLabel ? ('Step: ' . $stepLabel) : 'Step status';
+                            $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
+                        } elseif ($isEventRow && $typeEnum) {
+                            $typeLabel = $typeEnum->label();
+                            $badgeClass = $typeEnum->badgeClass();
+                        } else {
+                            $typeLabel = 'Event';
+                            $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
+                        }
                     @endphp
 
                     @if(!$isHiddenSubcontractor)
@@ -327,7 +403,7 @@
                             <td class="px-4 py-3">{{ $driver }}</td>
                             <td class="px-4 py-3">{{ $truck }}</td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $badge($typeVal) }}">
+                                <span class="inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $badgeClass }}">
                                     {{ $typeLabel }}
                                 </span>
                             </td>

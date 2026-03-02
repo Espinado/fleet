@@ -157,30 +157,55 @@ class TripsStatsTable extends Component
             ) AS profit
         ');
 
-        /*
-        |--------------------------------------------------------------------------
-        | 🚛 Odometer events
-        |--------------------------------------------------------------------------
-        */
-        $rangeStart = "TIMESTAMP(trips.start_date, '00:00:00')";
-        $rangeEnd   = "TIMESTAMP(trips.end_date, '23:59:59')";
-
         $q->addSelect([
-            'departure_at' => TruckOdometerEvent::query()
-                ->select('occurred_at')
-                ->whereColumn('truck_id', 'trips.truck_id')
+            // 🕒 Timestamp:
+            // 1) явное событие выезда/заезда из гаража
+            // 2) started_at / ended_at из рейса
+            // 3) как fallback — самое раннее / позднее событие по этому trip_id (step/expense и т.д.)
+            'departure_at' => DB::raw(sprintf(
+                'COALESCE(
+                    (SELECT toe.occurred_at
+                     FROM truck_odometer_events toe
+                     WHERE toe.trip_id = trips.id
+                       AND toe.type = %d
+                     ORDER BY toe.occurred_at ASC
+                     LIMIT 1),
+                    trips.started_at,
+                    (SELECT MIN(te2.occurred_at)
+                     FROM truck_odometer_events te2
+                     WHERE te2.trip_id = trips.id)
+                )',
+                TruckOdometerEvent::TYPE_DEPARTURE
+            )),
+
+            'return_at' => DB::raw(sprintf(
+                'COALESCE(
+                    (SELECT toe.occurred_at
+                     FROM truck_odometer_events toe
+                     WHERE toe.trip_id = trips.id
+                       AND toe.type = %d
+                     ORDER BY toe.occurred_at DESC
+                     LIMIT 1),
+                    trips.ended_at,
+                    (SELECT MAX(te2.occurred_at)
+                     FROM truck_odometer_events te2
+                     WHERE te2.trip_id = trips.id)
+                )',
+                TruckOdometerEvent::TYPE_RETURN
+            )),
+
+            // 🚛 Odometer: из события, но если 0 или события нет — из trips.*
+            'departure_odometer' => TruckOdometerEvent::query()
+                ->selectRaw('COALESCE(NULLIF(odometer_km, 0), trips.odo_start_km)')
+                ->whereColumn('trip_id', 'trips.id')
                 ->where('type', TruckOdometerEvent::TYPE_DEPARTURE)
-                ->whereRaw("occurred_at >= {$rangeStart}")
-                ->whereRaw("occurred_at <= {$rangeEnd}")
                 ->orderBy('occurred_at', 'asc')
                 ->limit(1),
 
-            'return_at' => TruckOdometerEvent::query()
-                ->select('occurred_at')
-                ->whereColumn('truck_id', 'trips.truck_id')
+            'return_odometer' => TruckOdometerEvent::query()
+                ->selectRaw('COALESCE(NULLIF(odometer_km, 0), trips.odo_end_km)')
+                ->whereColumn('trip_id', 'trips.id')
                 ->where('type', TruckOdometerEvent::TYPE_RETURN)
-                ->whereRaw("occurred_at >= {$rangeStart}")
-                ->whereRaw("occurred_at <= {$rangeEnd}")
                 ->orderBy('occurred_at', 'desc')
                 ->limit(1),
         ]);

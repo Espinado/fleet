@@ -15,6 +15,11 @@
 
     <title>{{ config('app.name', 'Fleet Manager') }} - @yield('title')</title>
 
+    {{-- jQuery + Select2 (для всех select2-полей в админке) --}}
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     {{-- Livewire styles --}}
     @livewireStyles
 
@@ -54,12 +59,12 @@
         <nav class="p-4 space-y-2">
             <a href="{{ route('dashboard') }}"
                @class([$navBase, request()->routeIs('dashboard') ? $navActive : $navIdle])>
-                📊 Dashboard
+                📊 {{ __('app.nav.dashboard') }}
             </a>
 
             <a href="{{ route('drivers.index') }}"
                @class([$navBase, request()->routeIs('drivers.*') ? $navActive : $navIdle])>
-                👨‍✈️ Drivers
+                👨‍✈️ {{ __('app.nav.drivers') }}
             </a>
 
             <details class="rounded" @if($transportOpen) open @endif>
@@ -67,7 +72,7 @@
         class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
                {{ $transportOpen ? $navActive : $navIdle }}"
     >
-        <span>🚚 Transport</span>
+        <span>🚚 {{ __('app.nav.transport') }}</span>
         <span class="text-xs opacity-70">
             @if($transportOpen) ▲ @else ▼ @endif
         </span>
@@ -77,12 +82,12 @@
 
         <a href="{{ route('trucks.index') }}"
            @class([$navBase, $trucksActive ? $navActive : $navIdle])>
-            🚛 Trucks
+            🚛 {{ __('app.nav.trucks') }}
         </a>
 
         <a href="{{ route('trailers.index') }}"
            @class([$navBase, $trailersActive ? $navActive : $navIdle])>
-            🚚 Trailers
+            🚚 {{ __('app.nav.trailers') }}
         </a>
 
     </div>
@@ -90,12 +95,12 @@
 
             <a href="{{ route('clients.index') }}"
                @class([$navBase, request()->routeIs('clients.*') ? $navActive : $navIdle])>
-                🏢 Clients
+                🏢 {{ __('app.nav.clients') }}
             </a>
 
             <a href="{{ route('trips.index') }}"
                @class([$navBase, request()->routeIs('trips.*') ? $navActive : $navIdle])>
-                🧭 Trips
+                🧭 {{ __('app.nav.trips') }}
             </a>
 
             {{-- ✅ STATS (dropdown) --}}
@@ -104,7 +109,7 @@
                     class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
                            {{ $statsOpen ? $navActive : $navIdle }}"
                 >
-                    <span>📊 Stats</span>
+                    <span>📊 {{ __('app.nav.stats') }}</span>
                     <span class="text-xs opacity-70">@if($statsOpen) ▲ @else ▼ @endif</span>
                 </summary>
 
@@ -112,20 +117,20 @@
                     {{-- существующий stats.index -> внутрь как Overview --}}
                     <a href="{{ route('stats.index') }}"
                        @class([$navBase, $statsOverviewActive ? $navActive : $navIdle])>
-                        📈 Overview
+                        📈 {{ __('app.nav.stats_overview') }}
                     </a>
 
                     {{-- новое подменю --}}
                     <a href="{{ route('stats.events') }}"
                        @class([$navBase, $statsEventsActive ? $navActive : $navIdle])>
-                        🧾 Events
+                        🧾 {{ __('app.nav.stats_events') }}
                     </a>
                 </div>
             </details>
 
             <a href="{{ route('invoices.index') }}"
                @class([$navBase, request()->routeIs('invoices.*') ? $navActive : $navIdle])>
-                💶 Invoices
+                💶 {{ __('app.nav.invoices') }}
             </a>
         </nav>
     </aside>
@@ -139,11 +144,11 @@
                 ☰
             </button>
 
-            <h1 class="text-lg font-semibold">{{ $title ?? 'Dashboard' }}</h1>
+            <h1 class="text-lg font-semibold">{{ $title ?? __('app.nav.dashboard') }}</h1>
 
             <div class="relative group">
                 <button class="flex items-center space-x-2 text-gray-700 hover:text-gray-900 focus:outline-none">
-                    <span>Hello, {{ Auth::user()->name }}</span>
+                    <span>{{ __('app.nav.hello', ['name' => Auth::user()->name]) }}</span>
                     <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-700"
                          fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -156,7 +161,7 @@
                         @csrf
                         <button type="submit"
                                 class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                            Logout
+                            {{ __('app.nav.logout') }}
                         </button>
                     </form>
                 </div>
@@ -196,6 +201,35 @@
 
     {{-- Livewire scripts --}}
     @livewireScripts
+
+    {{-- Select2 init (работает и с Livewire) --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const initSelect2 = () => {
+                $('.js-select2').each(function () {
+                    if (!$(this).data('select2')) {
+                        const $parent =
+                            $(this).closest('.select2-parent').length
+                                ? $(this).closest('.select2-parent')
+                                : $('body');
+
+                        $(this).select2({
+                            width: 'resolve',
+                            dropdownParent: $parent
+                        });
+                    }
+                });
+            };
+
+            initSelect2();
+
+            if (window.Livewire) {
+                window.Livewire.hook('message.processed', () => {
+                    initSelect2();
+                });
+            }
+        });
+    </script>
 
     {{-- Push notifications --}}
     <script src="/pwa/push.js"></script>

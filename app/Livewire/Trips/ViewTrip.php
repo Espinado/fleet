@@ -103,13 +103,13 @@ class ViewTrip extends Component
         $this->validate([
             "{$field}.{$cargoId}" => 'required|string|max:191',
         ], [
-            "{$field}.{$cargoId}.required" => 'Введите номер документа перед генерацией.',
+            "{$field}.{$cargoId}.required" => __('app.trip.show.doc_nr_required'),
         ]);
 
         $val = trim((string) data_get($this->{$field}, $cargoId, ''));
 
         if ($val === '') {
-            $this->addError("{$field}.{$cargoId}", 'Введите номер документа перед генерацией.');
+            $this->addError("{$field}.{$cargoId}", __('app.trip.show.doc_nr_required'));
         }
 
         return $val;
@@ -166,7 +166,7 @@ class ViewTrip extends Component
             'trip' => $this->trip,
         ])
             ->layout('layouts.app', [
-        'title' => 'Trip info'
-    ]);
+            'title' => __('app.trip.show.title'),
+        ]);
     }
 }

@@ -66,7 +66,7 @@ public function loadMaponData(): void
     }
 
     // cache учитывает компанию (ключ Mapon разный)
-    $companyId = (int) ($this->truck->company ?? 0);
+    $companyId = (int) ($this->truck->company_id ?? 0);
     $cacheKey = $this->cacheKey($unitId) . ':company:' . $companyId;
 
     $result = Cache::remember($cacheKey, now()->addMinutes(5), function () {
@@ -161,11 +161,11 @@ public function loadMaponData(): void
     {
         if ($this->truck) {
             $this->truck->delete();
-            session()->flash('success', 'Truck deleted successfully.');
+            session()->flash('success', __('app.truck.show.deleted_success'));
             return redirect()->route('trucks.index');
         }
 
-        session()->flash('error', 'Truck not found.');
+        session()->flash('error', __('app.truck.show.deleted_error'));
         return redirect()->route('trucks.index');
     }
 
@@ -173,7 +173,7 @@ public function loadMaponData(): void
     {
         return view('livewire.trucks.show-truck')
             ->layout('layouts.app', [
-        'title' => 'Truck info'
-    ]);
+                'title' => __('app.truck.show.title'),
+            ]);
     }
 }

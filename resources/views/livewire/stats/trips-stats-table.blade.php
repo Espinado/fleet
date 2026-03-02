@@ -7,7 +7,7 @@
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
                 <h1 class="text-lg sm:text-2xl font-semibold text-gray-800 truncate">
-                    📊 Stats
+                    📊 Statistika
                 </h1>
 
                 {{-- Mobile: tiny subtitle with applied dates --}}
@@ -17,7 +17,7 @@
                         →
                         {{ $dateTo ? \Carbon\Carbon::parse($dateTo)->format('d.m.Y') : '…' }}
                     @else
-                        Период: всё время
+                        Periods: viss laiks
                     @endif
                 </div>
             </div>
@@ -25,7 +25,7 @@
             {{-- Rows badge (desktop) --}}
             <div class="hidden sm:flex text-sm text-gray-600 items-center">
                 <span class="px-3 py-2 rounded-xl bg-gray-200/60">
-                    Rows: {{ $rows->total() }}
+                    Rindu skaits: {{ $rows->total() }}
                 </span>
             </div>
         </div>
@@ -36,7 +36,7 @@
                 <input
                     type="text"
                     wire:model.live.debounce.400ms="search"
-                    placeholder="Поиск: trip id, водитель, plate..."
+                    placeholder="Meklēt: reisa ID, vadītājs, numurzīme..."
                     class="w-full px-3 py-2.5 rounded-xl border border-gray-300 bg-white text-gray-900
                            focus:outline-none focus:ring-2 focus:ring-blue-200"
                 />
@@ -84,7 +84,7 @@
             <div class="flex items-center justify-between gap-2">
                 <div class="text-sm text-gray-700">
                     <span class="font-semibold">{{ $rows->total() }}</span>
-                    <span class="text-gray-500">rows</span>
+                    <span class="text-gray-500">rindas</span>
                 </div>
 
                 <div class="flex gap-2 overflow-x-auto no-scrollbar">
@@ -144,7 +144,7 @@
                                     {{ number_format($freight, 2, '.', ' ') }}
                                     <span class="text-xs text-gray-500">{{ $cur }}</span>
                                 </div>
-                                <div class="text-xs text-gray-500">Фрахт (Σ)</div>
+                                <div class="text-xs text-gray-500">Kravas pārvadājums (Σ)</div>
                             </div>
                         </div>
 
@@ -166,7 +166,7 @@
                         {{-- Money row --}}
                         <div class="mt-3 grid grid-cols-3 gap-2">
                             <div class="rounded-xl border border-gray-200 p-3">
-                                <div class="text-xs text-gray-500 mb-1">Расходы (Σ)</div>
+                                <div class="text-xs text-gray-500 mb-1">Izdevumi (Σ)</div>
                                 <div class="font-semibold text-gray-900">
                                     {{ number_format($expenses, 2, '.', ' ') }}
                                     <span class="text-xs text-gray-500">{{ $cur }}</span>
@@ -174,7 +174,7 @@
                             </div>
 
                             <div class="rounded-xl border border-gray-200 p-3">
-                                <div class="text-xs text-gray-500 mb-1">Прибыль</div>
+                                <div class="text-xs text-gray-500 mb-1">Peļņa</div>
                                 <div class="font-semibold {{ $profit < 0 ? 'text-red-600' : 'text-green-600' }}">
                                     {{ number_format($profit, 2, '.', ' ') }}
                                     <span class="text-xs text-gray-500">{{ $cur }}</span>
@@ -182,7 +182,7 @@
                             </div>
 
                             <div class="rounded-xl border border-gray-200 p-3">
-                                <div class="text-xs text-gray-500 mb-1">Маржа</div>
+                                <div class="text-xs text-gray-500 mb-1">Marža</div>
                                 @php
                                     $margin = $freight > 0 ? ($profit / $freight) * 100 : null;
                                 @endphp
@@ -199,30 +199,42 @@
                         {{-- Odometer row --}}
                         <div class="mt-3 grid grid-cols-2 gap-2">
                             <div class="rounded-xl border border-gray-200 p-3">
-                                <div class="text-xs text-gray-500 mb-1">Выезд</div>
-                                @if($trip->departure_at)
+                                <div class="text-xs text-gray-500 mb-1">Izbraukšana</div>
+                                @if($trip->started_at)
                                     <div class="font-semibold text-gray-900">
-                                        {{ \Carbon\Carbon::parse($trip->departure_at)->format('d.m.Y H:i') }}
+                                        {{ $trip->started_at->format('d.m.Y H:i') }}
                                     </div>
+                                @else
+                                    <div class="text-gray-400 mb-0.5">—</div>
+                                @endif
+                                @if(!is_null($trip->departure_odometer))
                                     <div class="text-xs text-gray-600">
                                         {{ number_format((float)$trip->departure_odometer, 1, '.', ' ') }} km
                                     </div>
-                                @else
-                                    <div class="text-gray-400">—</div>
+                                @elseif(!is_null($trip->odo_start_km))
+                                    <div class="text-xs text-gray-600">
+                                        {{ number_format((float)$trip->odo_start_km, 1, '.', ' ') }} km
+                                    </div>
                                 @endif
                             </div>
 
                             <div class="rounded-xl border border-gray-200 p-3">
-                                <div class="text-xs text-gray-500 mb-1">Возврат</div>
-                                @if($trip->return_at)
+                                <div class="text-xs text-gray-500 mb-1">Atgriešanās</div>
+                                @if($trip->ended_at)
                                     <div class="font-semibold text-gray-900">
-                                        {{ \Carbon\Carbon::parse($trip->return_at)->format('d.m.Y H:i') }}
+                                        {{ $trip->ended_at->format('d.m.Y H:i') }}
                                     </div>
+                                @else
+                                    <div class="text-gray-400 mb-0.5">—</div>
+                                @endif
+                                @if(!is_null($trip->return_odometer))
                                     <div class="text-xs text-gray-600">
                                         {{ number_format((float)$trip->return_odometer, 1, '.', ' ') }} km
                                     </div>
-                                @else
-                                    <div class="text-gray-400">—</div>
+                                @elseif(!is_null($trip->odo_end_km))
+                                    <div class="text-xs text-gray-600">
+                                        {{ number_format((float)$trip->odo_end_km, 1, '.', ' ') }} km
+                                    </div>
                                 @endif
                             </div>
                         </div>
@@ -230,11 +242,11 @@
                         <div class="mt-3 flex gap-2">
                             <button wire:click="sortBy('departure_at')"
                                     class="flex-1 px-3 py-2 rounded-xl text-sm bg-gray-100 border border-gray-200">
-                                ⇅ Выезд
+                                ⇅ Izbraukšana
                             </button>
                             <button wire:click="sortBy('freight_total')"
                                     class="flex-1 px-3 py-2 rounded-xl text-sm bg-gray-100 border border-gray-200">
-                                ⇅ Фрахт
+                                ⇅ Kravas pārvadājums
                             </button>
                         </div>
 
@@ -242,7 +254,7 @@
                 </div>
             @empty
                 <div class="bg-white rounded-2xl shadow border border-gray-200 p-8 text-center text-gray-500">
-                    Нет данных
+                    Nav datu
                 </div>
             @endforelse
 
@@ -260,39 +272,39 @@
                             <tr>
                                 <th class="px-4 py-3 text-left whitespace-nowrap">
                                     <button wire:click="sortBy('id')" class="font-semibold hover:underline">
-                                        # Trip
+                                        # Reiss
                                     </button>
                                 </th>
 
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Truck / Driver</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Kravas auto / Vadītājs</th>
 
                                 <th class="px-4 py-3 text-left whitespace-nowrap">
                                     <button wire:click="sortBy('departure_at')" class="font-semibold hover:underline">
-                                        Выезд из гаража
+                                        Izbraukšana no garāžas
                                     </button>
                                 </th>
 
                                 <th class="px-4 py-3 text-left whitespace-nowrap">
                                     <button wire:click="sortBy('return_at')" class="font-semibold hover:underline">
-                                        Возврат в гараж
+                                        Atgriešanās garāžā
                                     </button>
                                 </th>
 
                                 <th class="px-4 py-3 text-right whitespace-nowrap">
                                     <button wire:click="sortBy('freight_total')" class="font-semibold hover:underline">
-                                        Фрахт (Σ)
+                                        Kravas pārvadājums (Σ)
                                     </button>
                                 </th>
 
                                 <th class="px-4 py-3 text-right whitespace-nowrap">
                                     <button wire:click="sortBy('expenses_total')" class="font-semibold hover:underline">
-                                        Расходы (Σ)
+                                        Izdevumi (Σ)
                                     </button>
                                 </th>
 
                                 <th class="px-4 py-3 text-right whitespace-nowrap">
                                     <button wire:click="sortBy('profit')" class="font-semibold hover:underline">
-                                        Прибыль / Убыток
+                                        Peļņa / Zaudējumi
                                     </button>
                                 </th>
                             </tr>
@@ -333,28 +345,40 @@
                                     </td>
 
                                     <td class="px-4 py-3 whitespace-nowrap text-gray-900">
-                                        @if($trip->departure_at)
+                                        @if($trip->started_at)
                                             <div class="font-semibold">
-                                                {{ \Carbon\Carbon::parse($trip->departure_at)->format('d.m.Y H:i') }}
-                                            </div>
-                                            <div class="text-xs text-gray-600">
-                                                {{ number_format((float)$trip->departure_odometer, 1, '.', ' ') }} km
+                                                {{ $trip->started_at->format('d.m.Y H:i') }}
                                             </div>
                                         @else
                                             <span class="text-gray-400">—</span>
                                         @endif
+                                        @if(!is_null($trip->departure_odometer))
+                                            <div class="text-xs text-gray-600">
+                                                {{ number_format((float)$trip->departure_odometer, 1, '.', ' ') }} km
+                                            </div>
+                                        @elseif(!is_null($trip->odo_start_km))
+                                            <div class="text-xs text-gray-600">
+                                                {{ number_format((float)$trip->odo_start_km, 1, '.', ' ') }} km
+                                            </div>
+                                        @endif
                                     </td>
 
                                     <td class="px-4 py-3 whitespace-nowrap text-gray-900">
-                                        @if($trip->return_at)
+                                        @if($trip->ended_at)
                                             <div class="font-semibold">
-                                                {{ \Carbon\Carbon::parse($trip->return_at)->format('d.m.Y H:i') }}
-                                            </div>
-                                            <div class="text-xs text-gray-600">
-                                                {{ number_format((float)$trip->return_odometer, 1, '.', ' ') }} km
+                                                {{ $trip->ended_at->format('d.m.Y H:i') }}
                                             </div>
                                         @else
                                             <span class="text-gray-400">—</span>
+                                        @endif
+                                        @if(!is_null($trip->return_odometer))
+                                            <div class="text-xs text-gray-600">
+                                                {{ number_format((float)$trip->return_odometer, 1, '.', ' ') }} km
+                                            </div>
+                                        @elseif(!is_null($trip->odo_end_km))
+                                            <div class="text-xs text-gray-600">
+                                                {{ number_format((float)$trip->odo_end_km, 1, '.', ' ') }} km
+                                            </div>
                                         @endif
                                     </td>
 
@@ -376,7 +400,7 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="px-4 py-8 text-center text-gray-500">
-                                        Нет данных
+                                        Nav datu
                                     </td>
                                 </tr>
                             @endforelse
@@ -410,7 +434,7 @@
                         class="flex-1 px-3 py-3 rounded-xl bg-blue-600 text-white font-semibold active:scale-[0.99]
                                flex items-center justify-center gap-2"
                     >
-                        <span>🔎 Фильтры</span>
+                        <span>🔎 Filtri</span>
                         @if($this->activeFiltersCount > 0)
                             <span class="text-xs px-2 py-1 rounded-full bg-white/20 border border-white/20">
                                 • {{ $this->activeFiltersCount }}
@@ -421,7 +445,7 @@
                     <button
                         wire:click="resetFilters"
                         class="px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 text-gray-800 font-semibold"
-                        title="Сбросить"
+                        title="Notīrīt"
                     >
                         ♻️
                     </button>
@@ -437,8 +461,8 @@
                 x-on:click="window.scrollTo({ top: 0, behavior: 'smooth' })"
                 class="w-12 h-12 rounded-2xl bg-white/95 border border-gray-200 shadow-lg
                        flex items-center justify-center text-lg active:scale-[0.98]"
-                aria-label="Наверх"
-                title="Наверх"
+                aria-label="Uz augšu"
+                title="Uz augšu"
             >
                 ↑
             </button>
@@ -461,7 +485,7 @@
             <div class="max-w-7xl mx-auto px-4 pb-4">
                 <div class="bg-white rounded-t-3xl shadow-2xl border border-gray-200 overflow-hidden">
                     <div class="px-4 py-3 flex items-center justify-between">
-                        <div class="font-semibold text-gray-900">Фильтры</div>
+                        <div class="font-semibold text-gray-900">Filtri</div>
                         <button
                             class="px-3 py-2 rounded-xl bg-gray-100 border border-gray-200"
                             x-on:click="open = false"
@@ -474,14 +498,14 @@
                         <input
                             type="text"
                             wire:model.live.debounce.400ms="search"
-                            placeholder="Поиск: trip id, водитель, plate..."
+                            placeholder="Meklēt: reisa ID, vadītājs, numurzīme..."
                             class="w-full px-3 py-3 rounded-xl border border-gray-300 bg-white text-gray-900
                                    focus:outline-none focus:ring-2 focus:ring-blue-200"
                         />
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <div class="text-xs text-gray-500 mb-1">Date from</div>
+                                <div class="text-xs text-gray-500 mb-1">Datums no</div>
                                 <input
                                     type="date"
                                     wire:model.live="dateFrom"
@@ -490,7 +514,7 @@
                                 />
                             </div>
                             <div>
-                                <div class="text-xs text-gray-500 mb-1">Date to</div>
+                                <div class="text-xs text-gray-500 mb-1">Datums līdz</div>
                                 <input
                                     type="date"
                                     wire:model.live="dateTo"
@@ -512,19 +536,19 @@
                                 wire:click="resetFilters"
                                 class="flex-1 px-3 py-3 rounded-xl bg-gray-100 border border-gray-200 font-semibold"
                             >
-                                Сбросить
+                                Notīrīt
                             </button>
 
                             <button
                                 class="flex-1 px-3 py-3 rounded-xl bg-blue-600 text-white font-semibold"
                                 x-on:click="open = false"
                             >
-                                Применить
+                                Piemērot
                             </button>
                         </div>
 
                         <div class="text-xs text-gray-500 text-center pt-1">
-                            Rows: {{ $rows->total() }}
+                            Rindu skaits: {{ $rows->total() }}
                         </div>
                     </div>
                 </div>

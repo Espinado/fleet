@@ -3,6 +3,7 @@
 namespace App\Livewire\Invoices;
 
 use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -16,6 +17,11 @@ class InvoicesTable extends Component
 
     public string $sortBy = 'issued_at';
     public string $sortDir = 'desc';
+
+    // Inline payment form state
+    public ?int $paymentInvoiceId = null;
+    public ?string $payment_date = null;
+    public ?string $payment_amount = null;
 
     protected $queryString = [
         'search'  => ['except' => ''],
@@ -49,10 +55,60 @@ class InvoicesTable extends Component
         $this->sortDir = 'asc';
     }
 
+    public function startAddPayment(int $invoiceId): void
+    {
+        $this->paymentInvoiceId = $invoiceId;
+
+        $invoice = Invoice::find($invoiceId);
+
+        $this->payment_date = now()->toDateString();
+        // по умолчанию — текущий баланс, но можно изменить вручную
+        $this->payment_amount = $invoice ? (string) $invoice->balance : null;
+
+        $this->resetErrorBag(['payment_date', 'payment_amount']);
+    }
+
+    public function cancelAddPayment(): void
+    {
+        $this->paymentInvoiceId = null;
+        $this->payment_date = null;
+        $this->payment_amount = null;
+
+        $this->resetErrorBag(['payment_date', 'payment_amount']);
+    }
+
+    public function savePayment(): void
+    {
+        if (!$this->paymentInvoiceId) {
+            return;
+        }
+
+        $data = $this->validate([
+            'payment_date'   => ['required', 'date'],
+            'payment_amount' => ['required', 'numeric', 'min:0.01'],
+        ], [], [
+            'payment_date'   => 'payment date',
+            'payment_amount' => 'payment amount',
+        ]);
+
+        $invoice = Invoice::findOrFail($this->paymentInvoiceId);
+
+        InvoicePayment::create([
+            'invoice_id' => $invoice->id,
+            'paid_at'    => $data['payment_date'],
+            'amount'     => (float) $data['payment_amount'],
+            'currency'   => $invoice->currency ?? 'EUR',
+        ]);
+
+        $this->cancelAddPayment();
+
+        session()->flash('success', 'Payment added.');
+    }
+
     public function render()
     {
         $q = Invoice::query()
-            ->with(['payer'])
+            ->with(['payer', 'payments'])
             ->select('invoices.*')
             ->selectSub(function ($sub) {
                 $sub->from('invoice_payments')

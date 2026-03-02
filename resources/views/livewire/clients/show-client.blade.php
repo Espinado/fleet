@@ -1,7 +1,7 @@
 {{-- resources/views/clients/show.blade.php --}}
-<div class="min-h-screen bg-gray-100 pb-24">
+    <div class="min-h-screen bg-gray-100 pb-24">
 
-    {{-- ✅ TOP BAR (PWA-friendly) --}}
+    {{-- ✅ Augšējā josla (PWA) --}}
     <div class="sticky top-0 z-30 bg-white/95 border-b border-gray-200 backdrop-blur">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
@@ -9,7 +9,7 @@
                     🏢 {{ $client->company_name }}
                 </h1>
                 <div class="text-xs text-gray-500 truncate">
-                    {{ $client->reg_nr ? 'Reg: '.$client->reg_nr : '—' }}
+                    {{ $client->reg_nr ? __('app.client.show.reg_nr').': '.$client->reg_nr : '—' }}
                     @if($client->representative)
                         <span class="text-gray-300 px-1">•</span>
                         {{ $client->representative }}
@@ -20,12 +20,12 @@
             <div class="flex items-center gap-2 shrink-0">
                 <a href="{{ route('clients.edit', $client->id) }}"
                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow">
-                    ✏️ <span class="hidden sm:inline">Edit</span>
+                    ✏️ <span class="hidden sm:inline">{{ __('app.client.show.edit') }}</span>
                 </a>
 
                 <a href="{{ route('clients.index') }}"
                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300">
-                    ← <span class="hidden sm:inline">Back</span>
+                    ← <span class="hidden sm:inline">{{ __('app.client.show.back') }}</span>
                 </a>
             </div>
         </div>
@@ -45,45 +45,45 @@
         ========================== --}}
         <section class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 space-y-6">
 
-            {{-- Company Info --}}
+            {{-- Kompānijas informācija --}}
             <div>
                 <div class="flex items-center justify-between gap-2 mb-3">
-                    <h2 class="text-base sm:text-lg font-semibold text-gray-800">Company Info</h2>
-                    <span class="text-[11px] text-gray-500">Client #{{ $client->id }}</span>
+                    <h2 class="text-base sm:text-lg font-semibold text-gray-800">{{ __('app.client.show.company_info') }}</h2>
+                    <span class="text-[11px] text-gray-500">{{ __('app.client.show.client_id', ['id' => $client->id]) }}</span>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">Reg. Nr</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.reg_nr') }}</div>
                         <div class="font-semibold text-gray-900">{{ $client->reg_nr ?? '—' }}</div>
                     </div>
 
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">Representative</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.representative') }}</div>
                         <div class="font-semibold text-gray-900">{{ $client->representative ?? '—' }}</div>
                     </div>
 
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">Email</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.email') }}</div>
                         <div class="font-semibold text-gray-900 break-words">{{ $client->email ?? '—' }}</div>
                     </div>
 
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">Phone</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.phone') }}</div>
                         <div class="font-semibold text-gray-900">{{ $client->phone ?? '—' }}</div>
                     </div>
                 </div>
             </div>
 
-            {{-- Addresses --}}
+            {{-- Adreses --}}
             <div class="border-t pt-5">
-                <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3">Addresses</h2>
+                <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3">{{ __('app.client.show.addresses') }}</h2>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    {{-- Legal --}}
+                    {{-- Juridiskā adrese --}}
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
                         <div class="flex items-center justify-between">
-                            <div class="text-sm font-semibold text-gray-800">Legal Address</div>
+                            <div class="text-sm font-semibold text-gray-800">{{ __('app.client.show.legal_address') }}</div>
                             <span class="text-[11px] text-gray-500">jur_*</span>
                         </div>
 
@@ -97,10 +97,10 @@
                         </div>
                     </div>
 
-                    {{-- Physical --}}
+                    {{-- Faktiskā adrese --}}
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
                         <div class="flex items-center justify-between">
-                            <div class="text-sm font-semibold text-gray-800">Physical Address</div>
+                            <div class="text-sm font-semibold text-gray-800">{{ __('app.client.show.physical_address') }}</div>
                             <span class="text-[11px] text-gray-500">fiz_*</span>
                         </div>
 
@@ -116,18 +116,18 @@
                 </div>
             </div>
 
-            {{-- Bank --}}
+            {{-- Bankas dati --}}
             <div class="border-t pt-5">
-                <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3">Bank Details</h2>
+                <h2 class="text-base sm:text-lg font-semibold text-gray-800 mb-3">{{ __('app.client.show.bank_details') }}</h2>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">Bank Name</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.bank_name') }}</div>
                         <div class="font-semibold text-gray-900">{{ $client->bank_name ?? '—' }}</div>
                     </div>
 
                     <div class="rounded-2xl bg-gray-50 border border-gray-200 p-3">
-                        <div class="text-xs text-gray-500 mb-1">SWIFT</div>
+                        <div class="text-xs text-gray-500 mb-1">{{ __('app.client.show.swift') }}</div>
                         <div class="font-semibold text-gray-900">{{ $client->swift ?? '—' }}</div>
                     </div>
                 </div>
@@ -138,9 +138,9 @@
             ========================== --}}
             <div class="border-t pt-6">
                 <div class="flex items-center justify-between gap-2 mb-4">
-                    <h2 class="text-base sm:text-lg font-semibold text-gray-800">📚 Activity</h2>
+                    <h2 class="text-base sm:text-lg font-semibold text-gray-800">{{ __('app.client.show.activity') }}</h2>
                     <div class="text-[11px] text-gray-500">
-                        Invoices & Docs connected to this client
+                        {{ __('app.client.show.activity_hint') }}
                     </div>
                 </div>
 
@@ -169,11 +169,11 @@
                     $hasDocs = $clientCargos->isNotEmpty();
                     $hasInvs = $clientInvoices->isNotEmpty();
 
-                    $roleLabel = function($cargo) use ($client) {
+                        $roleLabel = function($cargo) use ($client) {
                         $roles = [];
-                        if ((int)$cargo->customer_id === (int)$client->id)  $roles[] = 'Customer';
-                        if ((int)$cargo->shipper_id === (int)$client->id)   $roles[] = 'Shipper';
-                        if ((int)$cargo->consignee_id === (int)$client->id) $roles[] = 'Consignee';
+                        if ((int)$cargo->customer_id === (int)$client->id)  $roles[] = __('app.client.show.role_customer');
+                        if ((int)$cargo->shipper_id === (int)$client->id)   $roles[] = __('app.client.show.role_shipper');
+                        if ((int)$cargo->consignee_id === (int)$client->id) $roles[] = __('app.client.show.role_consignee');
                         return $roles ? implode(' / ', $roles) : '—';
                     };
 
@@ -198,7 +198,7 @@
                                 :class="tab === 'invoices'
                                     ? 'bg-white border-gray-300 text-gray-900 shadow-sm'
                                     : 'bg-transparent border-transparent text-gray-600 hover:bg-white/60'">
-                            💶 Invoices
+                            💶 {{ __('app.client.show.tab_invoices') }}
                             <span class="ml-1 text-xs text-gray-500">({{ $clientInvoices->count() }})</span>
                         </button>
 
@@ -208,7 +208,7 @@
                                 :class="tab === 'docs'
                                     ? 'bg-white border-gray-300 text-gray-900 shadow-sm'
                                     : 'bg-transparent border-transparent text-gray-600 hover:bg-white/60'">
-                            📄 Documents
+                            📄 {{ __('app.client.show.tab_docs') }}
                             <span class="ml-1 text-xs text-gray-500">({{ $clientCargos->count() }})</span>
                         </button>
                     </div>
@@ -218,7 +218,7 @@
                     ========================== --}}
                     <div x-show="tab === 'invoices'" x-cloak class="space-y-3">
                         @if(!$hasInvs)
-                            <div class="text-sm text-gray-500 italic">No invoices for this client.</div>
+                            <div class="text-sm text-gray-500 italic">{{ __('app.client.show.no_invoices') }}</div>
                         @else
                             <div class="space-y-2">
                                 @foreach($clientInvoices as $inv)
@@ -229,13 +229,13 @@
                                         $balance = $total - $paid;
 
                                         if ($paid >= $total && $total > 0) {
-                                            $statusText = 'Paid';
+                                            $statusText = __('app.client.show.status_paid');
                                             $badge = 'bg-green-100 text-green-700 border-green-200';
                                         } elseif ($paid > 0 && $paid < $total) {
-                                            $statusText = 'Partial';
+                                            $statusText = __('app.client.show.status_partial');
                                             $badge = 'bg-yellow-100 text-yellow-800 border-yellow-200';
                                         } else {
-                                            $statusText = 'Unpaid';
+                                            $statusText = __('app.client.show.status_unpaid');
                                             $badge = 'bg-red-100 text-red-700 border-red-200';
                                         }
 
@@ -262,11 +262,11 @@
                                                 </div>
 
                                                 <div class="mt-1 text-xs text-gray-600">
-                                                    Issued: <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
+                                                    {{ __('app.client.show.issued') }}: <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
                                                     <span class="text-gray-300 px-1">•</span>
-                                                    Due: <span class="font-semibold text-gray-900">{{ $dueAt }}</span>
+                                                    {{ __('app.client.show.due') }}: <span class="font-semibold text-gray-900">{{ $dueAt }}</span>
                                                     <span class="text-gray-300 px-1">•</span>
-                                                    Paid: <span class="font-semibold text-gray-900">{{ $paidAt }}</span>
+                                                    {{ __('app.client.show.paid') }}: <span class="font-semibold text-gray-900">{{ $paidAt }}</span>
                                                 </div>
                                             </div>
 
@@ -276,30 +276,30 @@
                                                    rel="noopener"
                                                    class="shrink-0 inline-flex items-center justify-center px-3 py-2 rounded-xl
                                                           bg-amber-200 text-amber-900 font-semibold text-sm hover:bg-amber-300 transition">
-                                                    👁 Open
+                                                    👁 {{ __('app.client.show.open_pdf') }}
                                                 </a>
                                             @else
-                                                <span class="text-xs text-gray-400">no pdf</span>
+                                                <span class="text-xs text-gray-400">{{ __('app.client.show.no_pdf') }}</span>
                                             @endif
                                         </div>
 
                                         <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">Total</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.total') }}</div>
                                                 <div class="text-sm font-semibold text-gray-900">
                                                     {{ number_format($total, 2, '.', ' ') }} {{ $currency }}
                                                 </div>
                                             </div>
 
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">Paid</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.paid_amount') }}</div>
                                                 <div class="text-sm font-semibold text-gray-900">
                                                     {{ number_format($paid, 2, '.', ' ') }} {{ $currency }}
                                                 </div>
                                             </div>
 
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">Balance</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.balance') }}</div>
                                                 <div class="text-sm font-semibold {{ $balance <= 0 ? 'text-green-700' : 'text-gray-900' }}">
                                                     {{ number_format(max($balance, 0), 2, '.', ' ') }} {{ $currency }}
                                                 </div>
@@ -310,13 +310,13 @@
                                             @if($inv->trip_id)
                                                 <a href="{{ route('trips.show', $inv->trip_id) }}"
                                                    class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold">
-                                                    🧭 Trip #{{ $inv->trip_id }}
+                                                    🧭 {{ __('app.client.show.trip') }} #{{ $inv->trip_id }}
                                                 </a>
                                             @endif
 
                                             @if($inv->trip_cargo_id)
                                                 <span class="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-700 font-semibold">
-                                                    📦 Cargo #{{ $inv->trip_cargo_id }}
+                                                    📦 {{ __('app.client.show.cargo') }} #{{ $inv->trip_cargo_id }}
                                                 </span>
                                             @endif
                                         </div>
@@ -331,7 +331,7 @@
                     ========================== --}}
                     <div x-show="tab === 'docs'" x-cloak class="space-y-3">
                         @if(!$hasDocs)
-                            <div class="text-sm text-gray-500 italic">No documents found for this client.</div>
+                            <div class="text-sm text-gray-500 italic">{{ __('app.client.show.no_docs') }}</div>
                         @else
                             <div class="space-y-2">
                                 @foreach($clientCargos as $cargo)
@@ -350,7 +350,7 @@
                                         <div class="flex items-start justify-between gap-3">
                                             <div class="min-w-0">
                                                 <div class="text-sm font-semibold text-gray-900 truncate">
-                                                    Trip
+                                                    {{ __('app.client.show.trip') }}
                                                     <a href="{{ route('trips.show', $tripId) }}" class="text-blue-600 hover:underline">
                                                         #{{ $tripId }}
                                                     </a>
@@ -366,7 +366,7 @@
                                             </div>
 
                                             @if(!$hasAny)
-                                                <span class="text-xs text-gray-400">no files</span>
+                                                <span class="text-xs text-gray-400">{{ __('app.client.show.files_none') }}</span>
                                             @endif
                                         </div>
 
@@ -376,7 +376,7 @@
                                                 <a href="{{ $cmrUrl }}" target="_blank"
                                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold
                                                           bg-blue-600 text-white hover:bg-blue-700 transition">
-                                                    📄 CMR
+                                                    📄 {{ __('app.client.show.cmr') }}
                                                     @if($cargo->cmr_created_at)
                                                         <span class="text-[10px] opacity-80">
                                                             {{ \Carbon\Carbon::parse($cargo->cmr_created_at)->format('d.m.Y') }}
@@ -389,7 +389,7 @@
                                                 <a href="{{ $orderUrl }}" target="_blank"
                                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold
                                                           bg-gray-900 text-white hover:bg-black transition">
-                                                    🧾 Order
+                                                    🧾 {{ __('app.client.show.order') }}
                                                     @if($cargo->order_created_at)
                                                         <span class="text-[10px] opacity-80">
                                                             {{ \Carbon\Carbon::parse($cargo->order_created_at)->format('d.m.Y') }}
@@ -402,7 +402,7 @@
                                                 <a href="{{ $invUrl }}" target="_blank"
                                                    class="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold
                                                           bg-emerald-600 text-white hover:bg-emerald-700 transition">
-                                                    💶 Invoice
+                                                    💶 {{ __('app.client.show.invoice') }}
                                                     @if($cargo->inv_created_at)
                                                         <span class="text-[10px] opacity-80">
                                                             {{ \Carbon\Carbon::parse($cargo->inv_created_at)->format('d.m.Y') }}
@@ -415,17 +415,17 @@
                                         {{-- meta --}}
                                         <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">CMR №</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.cmr') }} №</div>
                                                 <div class="font-semibold text-gray-900">{{ $cargo->cmr_nr ?? '—' }}</div>
                                             </div>
 
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">Order №</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.order') }} №</div>
                                                 <div class="font-semibold text-gray-900">{{ $cargo->order_nr ?? '—' }}</div>
                                             </div>
 
                                             <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                                                <div class="text-gray-500">Invoice №</div>
+                                                <div class="text-gray-500">{{ __('app.client.show.invoice') }} №</div>
                                                 <div class="font-semibold text-gray-900">{{ $cargo->inv_nr ?? '—' }}</div>
                                             </div>
                                         </div>
@@ -442,7 +442,7 @@
 
     </div>
 
-    {{-- ✅ BOTTOM BAR (optional, to keep actions reachable in PWA) --}}
+    {{-- ✅ Apakšējā josla (PWA) --}}
     <div class="fixed bottom-0 inset-x-0 z-30 bg-white/95 border-t border-gray-200 backdrop-blur">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div class="text-xs text-gray-500 truncate">
@@ -451,11 +451,11 @@
             <div class="flex items-center gap-2">
                 <a href="{{ route('clients.edit', $client->id) }}"
                    class="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 shadow">
-                    ✏️ Edit
+                    ✏️ {{ __('app.client.show.edit') }}
                 </a>
                 <a href="{{ route('clients.index') }}"
                    class="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold bg-gray-200 text-gray-800 hover:bg-gray-300">
-                    ← Back
+                    ← {{ __('app.client.show.back') }}
                 </a>
             </div>
         </div>

@@ -91,7 +91,7 @@ class EditClient extends Component
 
         $this->client->update($validated);
 
-        session()->flash('success', 'Client updated successfully!');
+        session()->flash('success', __('app.client.edit.save_success'));
         return redirect()->route('clients.index');
     }
 
@@ -106,7 +106,7 @@ class EditClient extends Component
             'jurCities' => $jurCities,
             'fizCities' => $fizCities,
         ])->layout('layouts.app', [
-        'title' => 'Edit client'
-    ]);
+            'title' => __('app.client.edit.title'),
+        ]);
     }
 }

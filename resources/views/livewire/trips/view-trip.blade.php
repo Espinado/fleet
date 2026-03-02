@@ -16,13 +16,13 @@
         $startDate = optional($startStep)->date;
         $endDate   = optional($endStep)->date;
 
-        // status labels/colors (enum-friendly)
-        if (is_object($trip->status) && method_exists($trip->status, 'label')) {
-            $statusLabel = $trip->status->label();
+        // status labels/colors (enum-friendly, translated)
+        if (is_object($trip->status) && method_exists($trip->status, 'value')) {
+            $statusLabel = __('app.trip.status.' . $trip->status->value);
             $statusColor = $trip->status->color();
             $mobileStatusLabel = $statusLabel;
         } else {
-            $statusLabel = is_string($trip->status) ? ucfirst($trip->status) : '—';
+            $statusLabel = is_string($trip->status) ? __('app.trip.status.' . $trip->status) : '—';
             $statusColor = 'bg-gray-100 text-gray-800';
             $mobileStatusLabel = $statusLabel;
         }
@@ -40,6 +40,61 @@
 
         // show only if trailer is container and at least one filled
         $hasContInfo = $isContainerTrailer && ($cont !== '' || $seal !== '');
+
+        // companies / transport
+        $carrier    = $trip->carrierCompany;
+        $expeditor  = $trip->expeditorCompany;
+        $isThirdPartyCarrier = (bool) ($carrier?->is_third_party ?? false);
+
+        $driver  = $trip->driver;
+        $truck   = $trip->truck;
+        $trailer = $trip->trailer;
+
+        $driverName = $driver
+            ? trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? ''))
+            : ($isThirdPartyCarrier ? __('app.trip.show.third_party_driver') : '—');
+
+        // For third-party we often store brand/model как "Unknown" — в UI это шум.
+        $truckBrand = trim((string)($truck->brand ?? ''));
+        $truckModel = trim((string)($truck->model ?? ''));
+        $truckPlate = trim((string)($truck->plate ?? ''));
+
+        if ($isThirdPartyCarrier) {
+            if (mb_strtolower($truckBrand) === 'unknown') {
+                $truckBrand = '';
+            }
+            if (mb_strtolower($truckModel) === 'unknown') {
+                $truckModel = '';
+            }
+        }
+
+        $truckLabel = $truck
+            ? trim(implode(' ', array_filter([$truckBrand, $truckModel, $truckPlate])))
+            : ($isThirdPartyCarrier ? __('app.trip.show.third_party_truck') : '—');
+
+        $trailerBrand = trim((string)($trailer->brand ?? ''));
+        $trailerPlate = trim((string)($trailer->plate ?? ''));
+
+        if ($isThirdPartyCarrier && mb_strtolower($trailerBrand) === 'unknown') {
+            $trailerBrand = '';
+        }
+
+        $trailerLabel = $trailer
+            ? trim(implode(' ', array_filter([$trailerBrand, $trailerPlate])))
+            : ($isThirdPartyCarrier ? __('app.trip.show.third_party_trailer') : '—');
+
+        // scheme (own / third_party / resell) — translated
+        $schemeLabel = $trip->scheme_key ? __('app.trip.scheme.' . $trip->scheme_key) : null;
+        $schemeBadge = $trip->scheme_badge_class ?? 'bg-gray-100 text-gray-800';
+
+        // third-party fixed payment (from TripExpense created on trip create)
+        $thirdPartyFee = null;
+        if ($isThirdPartyCarrier) {
+            $thirdPartyFee = $trip->expenses()
+                ->where('supplier_company_id', $carrier->id)
+                ->sum('amount');
+            $thirdPartyFee = $thirdPartyFee > 0 ? $thirdPartyFee : null;
+        }
 
         // =========================
         // TOTALS (ALL CARGOS + ALL ITEMS)
@@ -96,10 +151,10 @@
                 </a>
 
                 <div class="flex flex-col min-w-0">
-                    <span class="text-[10px] uppercase tracking-wide text-gray-300">Trip</span>
+                    <span class="text-[10px] uppercase tracking-wide text-gray-300">{{ __('app.trip.show.trip_label') }}</span>
 
                     <span class="text-base font-semibold leading-tight truncate">
-                        CMR #{{ $trip->id }}
+                        {{ $isThirdPartyCarrier ? __('app.trip.show.order_trip') : __('app.trip.show.cmr_trip') }} #{{ $trip->id }}
                     </span>
 
                     @if($hasContInfo)
@@ -125,14 +180,14 @@
 
         <div class="mt-3 grid grid-cols-2 gap-2 text-[11px] text-gray-200">
             <div class="rounded-xl bg-white/10 px-3 py-2">
-                <div class="text-gray-300">Freight (with VAT)</div>
+                <div class="text-gray-300">{{ __('app.trip.show.freight_with_vat') }}</div>
                 <div class="font-semibold text-white">
                     €{{ number_format($totalFreightWithVat, 2, '.', ' ') }}
                 </div>
             </div>
 
             <div class="rounded-xl bg-white/10 px-3 py-2">
-                <div class="text-gray-300">Gross / Volume</div>
+                <div class="text-gray-300">{{ __('app.trip.show.gross_volume') }}</div>
                 <div class="font-semibold text-white">
                     {{ number_format($totalGross, 0, '.', ' ') }} kg • {{ number_format($totalVolume, 2, '.', ' ') }} m³
                 </div>
@@ -162,17 +217,26 @@
     {{-- ===================================================================== --}}
     <div class="hidden md:block bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-4">
 
-        <div class="flex items-center justify-between gap-3">
-            <div class="min-w-0">
-                <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-3">
-                    🚛 CMR Trip #{{ $trip->id }}
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div class="min-w-0 space-y-2">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h1 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+                        🚛 {{ $isThirdPartyCarrier ? __('app.trip.show.order_trip') : __('app.trip.show.cmr_trip') }} #{{ $trip->id }}
+                    </h1>
+
                     <span class="px-2 py-1 rounded-full text-xs font-medium {{ $statusColor }}">
                         {{ $statusLabel }}
                     </span>
-                </h1>
 
-                <p class="text-sm text-gray-500 mt-1">
-                    Start / Stop:
+                    @if($schemeLabel)
+                        <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $schemeBadge }}">
+                            {{ $schemeLabel }}
+                        </span>
+                    @endif
+                </div>
+
+                <p class="text-sm text-gray-500">
+                    {{ __('app.trip.show.start_stop') }}
                     <span class="font-medium text-gray-700 dark:text-gray-200">
                         {{ $startDate?->format('d.m.Y') ?? '—' }} →
                         {{ $endDate?->format('d.m.Y') ?? '—' }}
@@ -180,8 +244,8 @@
                 </p>
 
                 @if($hasContInfo)
-                    <p class="text-sm text-gray-500 mt-1">
-                        Container / Seal:
+                    <p class="text-sm text-gray-500">
+                        {{ __('app.trip.show.container_seal') }}
                         <span class="font-medium text-gray-700 dark:text-gray-200">
                             📦 {{ $cont !== '' ? $cont : '—' }}
                             <span class="mx-2 text-gray-300 dark:text-gray-700">|</span>
@@ -189,17 +253,65 @@
                         </span>
                     </p>
                 @endif
+
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 space-y-1">
+                        <div class="text-gray-500 font-semibold">{{ __('app.trip.show.companies') }}</div>
+                        <div class="text-gray-800 dark:text-gray-100">
+                            <span class="text-gray-500">{{ __('app.trip.show.expeditor') }}</span>
+                            <span class="font-medium">
+                                {{ $expeditor?->name ?? '—' }}
+                            </span>
+                        </div>
+                        <div class="text-gray-800 dark:text-gray-100">
+                            <span class="text-gray-500">{{ __('app.trip.show.carrier') }}</span>
+                            <span class="font-medium">
+                                {{ $carrier?->name ?? '—' }}
+                                @if($isThirdPartyCarrier)
+                                    <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-800">
+                                        {{ __('app.trip.show.third_party_carrier') }}
+                                    </span>
+                                @endif
+                            </span>
+                        </div>
+
+                        @if($thirdPartyFee !== null)
+                            <div class="text-[11px] text-gray-600 dark:text-gray-300 pt-1">
+                                {{ __('app.trip.show.third_party_fee') }}
+                                <span class="font-semibold">
+                                    €{{ number_format((float)$thirdPartyFee, 2, '.', ' ') }}
+                                </span>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 space-y-1">
+                        <div class="text-gray-500 font-semibold">{{ __('app.trip.show.transport') }}</div>
+                        <div class="text-gray-800 dark:text-gray-100">
+                            <span class="text-gray-500">{{ __('app.trip.show.driver') }}</span>
+                            <span class="font-medium">{{ $driverName }}</span>
+                        </div>
+                        <div class="text-gray-800 dark:text-gray-100">
+                            <span class="text-gray-500">{{ __('app.trip.show.truck') }}</span>
+                            <span class="font-medium">{{ $truckLabel }}</span>
+                        </div>
+                        <div class="text-gray-800 dark:text-gray-100">
+                            <span class="text-gray-500">{{ __('app.trip.show.trailer') }}</span>
+                            <span class="font-medium">{{ $trailerLabel }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-start gap-2 shrink-0">
                 <a href="{{ route('trips.edit', $trip->id) }}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white">
-                    ✏️ Edit
+                    ✏️ {{ __('app.trip.show.edit') }}
                 </a>
 
                 <a href="{{ route('trips.index') }}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700">
-                    ⬅ Back to Trips
+                    ⬅ {{ __('app.trip.show.back_to_trips') }}
                 </a>
             </div>
         </div>
@@ -207,75 +319,75 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4 text-xs sm:text-sm">
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Cargos</div>
+                <div class="text-gray-500">{{ __('app.trip.show.cargos') }}</div>
                 <div class="font-semibold">{{ $totalCargosCount }}</div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Items (lines)</div>
+                <div class="text-gray-500">{{ __('app.trip.show.items_lines') }}</div>
                 <div class="font-semibold">{{ $totalItemLines }}</div>
                 <div class="text-[11px] text-gray-400">
-                    unique: {{ $totalUniqueItemNames }}
+                    {{ __('app.trip.show.unique') }} {{ $totalUniqueItemNames }}
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Packages / Pallets</div>
+                <div class="text-gray-500">{{ __('app.trip.show.packages_pallets') }}</div>
                 <div class="font-semibold">
                     {{ number_format($totalPackages, 0, '.', ' ') }} / {{ number_format($totalPallets, 0, '.', ' ') }}
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    units: {{ number_format($totalUnits, 0, '.', ' ') }}
+                    {{ __('app.trip.show.units') }} {{ number_format($totalUnits, 0, '.', ' ') }}
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Net / Gross</div>
+                <div class="text-gray-500">{{ __('app.trip.show.net_gross') }}</div>
                 <div class="font-semibold">
                     {{ number_format($totalNet, 0, '.', ' ') }} / {{ number_format($totalGross, 0, '.', ' ') }} kg
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    tonnes: {{ number_format($totalTonnes, 2, '.', ' ') }} t
+                    {{ __('app.trip.show.tonnes') }} {{ number_format($totalTonnes, 2, '.', ' ') }} t
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Volume / LM</div>
+                <div class="text-gray-500">{{ __('app.trip.show.volume_lm') }}</div>
                 <div class="font-semibold">
                     {{ number_format($totalVolume, 2, '.', ' ') }} m³
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    LM: {{ number_format($totalLm, 2, '.', ' ') }}
+                    {{ __('app.trip.show.lm') }} {{ number_format($totalLm, 2, '.', ' ') }}
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Freight (with VAT)</div>
+                <div class="text-gray-500">{{ __('app.trip.show.freight_with_vat') }}</div>
                 <div class="font-semibold">
                     €{{ number_format($totalFreightWithVat, 2, '.', ' ') }}
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    no VAT: €{{ number_format($totalFreightNoVat, 2, '.', ' ') }}
+                    {{ __('app.trip.show.no_vat') }} €{{ number_format($totalFreightNoVat, 2, '.', ' ') }}
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800">
-                <div class="text-gray-500">Supplier invoice</div>
+                <div class="text-gray-500">{{ __('app.trip.show.supplier_invoice') }}</div>
                 <div class="font-semibold">
                     €{{ number_format($totalSupplierInvoice, 2, '.', ' ') }}
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    (sum of cargos)
+                    {{ __('app.trip.show.sum_of_cargos') }}
                 </div>
             </div>
 
             <div class="border rounded-lg px-3 py-2 bg-gray-50 dark:bg-gray-800 lg:col-span-2">
-                <div class="text-gray-500">Goods value (items, with VAT)</div>
+                <div class="text-gray-500">{{ __('app.trip.show.goods_value') }}</div>
                 <div class="font-semibold">
                     €{{ number_format($totalGoodsWithVat, 2, '.', ' ') }}
                 </div>
                 <div class="text-[11px] text-gray-400">
-                    no VAT: €{{ number_format($totalGoodsNoVat, 2, '.', ' ') }} • VAT: €{{ number_format($totalGoodsVat, 2, '.', ' ') }}
+                    {{ __('app.trip.show.no_vat') }} €{{ number_format($totalGoodsNoVat, 2, '.', ' ') }} • {{ __('app.trip.show.vat') }} €{{ number_format($totalGoodsVat, 2, '.', ' ') }}
                 </div>
             </div>
 
@@ -293,7 +405,7 @@
             type="button"
             @click="openRoute = !openRoute"
             class="w-full flex items-center justify-between mb-3 px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-lg text-sm font-semibold text-gray-800 dark:text-gray-100">
-            🛣️ Маршрут рейса (управление, Drag & Drop)
+            🛣️ {{ __('app.trip.route.accordion') }}
             <span x-text="openRoute ? '▲' : '▼'" class="text-xs"></span>
         </button>
 
@@ -362,7 +474,7 @@
                             <button type="button" @click="openCargo = !openCargo"
                                     class="w-full flex items-center justify-between text-left gap-3">
                                 <div class="min-w-0">
-                                    <p class="font-semibold">📦 Krava #{{ $cargo->id }}</p>
+                                    <p class="font-semibold">📦 {{ __('app.trip.show.cargo_label', ['id' => $cargo->id]) }}</p>
 
                                     <p class="text-xs text-gray-500 truncate">
                                         {{ $cargo->shipper->company_name ?? '—' }} →
@@ -370,27 +482,27 @@
                                     </p>
 
                                     <p class="text-xs text-gray-400 mt-1">
-                                        {{ number_format($cPackages, 0, '.', ' ') }} pkgs •
-                                        {{ number_format($cPallets, 0, '.', ' ') }} pallets •
-                                        {{ number_format($cUnits, 0, '.', ' ') }} units •
+                                        {{ number_format($cPackages, 0, '.', ' ') }} {{ __('app.trip.show.pkgs') }} •
+                                        {{ number_format($cPallets, 0, '.', ' ') }} {{ __('app.trip.show.pallets') }} •
+                                        {{ number_format($cUnits, 0, '.', ' ') }} {{ __('app.trip.show.units_short') }} •
                                         {{ number_format($cGross, 0, '.', ' ') }} kg •
                                         {{ number_format($cVolume, 2, '.', ' ') }} m³
                                         @if($cLm > 0) • {{ number_format($cLm, 2, '.', ' ') }} LM @endif
                                     </p>
 
                                     <p class="text-xs text-gray-500 mt-1">
-                                        Freight:
+                                        {{ __('app.trip.show.freight') }}
                                         <span class="font-semibold">€{{ number_format($cargoFreightWithVat, 2, '.', ' ') }}</span>
-                                        <span class="text-[11px] text-gray-400">(no VAT: €{{ number_format($cargoFreightNoVat, 2, '.', ' ') }})</span>
+                                        <span class="text-[11px] text-gray-400">({{ __('app.trip.show.no_vat') }} €{{ number_format($cargoFreightNoVat, 2, '.', ' ') }})</span>
 
                                         <span class="mx-2 text-gray-300 dark:text-gray-600">|</span>
 
-                                        Goods:
+                                        {{ __('app.trip.show.goods') }}
                                         <span class="font-semibold">€{{ number_format($cargoGoodsWithVat, 2, '.', ' ') }}</span>
 
                                         @if($cargoSupplier > 0)
                                             <span class="mx-2 text-gray-300 dark:text-gray-600">|</span>
-                                            Supplier inv:
+                                            {{ __('app.trip.show.supplier_inv') }}
                                             <span class="font-semibold">€{{ number_format($cargoSupplier, 2, '.', ' ') }}</span>
                                         @endif
                                     </p>
@@ -406,7 +518,7 @@
                                 <div x-data="{ openRoute: false }">
                                     <button type="button" @click="openRoute = !openRoute"
                                             class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
-                                        🗺 Maršruta punkti
+                                        🗺 {{ __('app.trip.show.route_points') }}
                                         <span class="transition-transform" :class="{ 'rotate-180': openRoute }">▼</span>
                                     </button>
 
@@ -453,7 +565,7 @@
                                 <div x-data="{ openItems: false }">
                                     <button type="button" @click="openItems = !openItems"
                                             class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold">
-                                        📦 Preču vienības
+                                        📦 {{ __('app.trip.show.items_accordion') }}
                                         <span class="transition-transform" :class="{ 'rotate-180': openItems }">▼</span>
                                     </button>
 
@@ -468,8 +580,8 @@
                                                         @endif
                                                     </p>
                                                     <p class="text-xs text-gray-400">
-                                                        {{ (int)($item->packages ?? 0) }} pkgs •
-                                                        {{ (int)($item->pallets ?? 0) }} pallets •
+                                                        {{ (int)($item->packages ?? 0) }} {{ __('app.trip.show.pkgs') }} •
+                                                        {{ (int)($item->pallets ?? 0) }} {{ __('app.trip.show.pallets') }} •
                                                         {{ number_format((float)($item->gross_weight ?? 0), 0, '.', ' ') }} kg •
                                                         {{ number_format((float)($item->volume ?? 0), 2, '.', ' ') }} m³
                                                     </p>
@@ -490,15 +602,16 @@
                                         @click="openDocs = !openDocs"
                                         class="w-full bg-white dark:bg-gray-900 px-3 py-2 rounded-lg flex items-center justify-between text-sm font-semibold"
                                     >
-                                        📄 Dokumenti
+                                        📄 {{ __('app.trip.show.documents') }}
                                         <span class="transition-transform" :class="{ 'rotate-180': openDocs }">▼</span>
                                     </button>
 
                                     <div x-cloak x-show="openDocs" x-collapse class="mt-3 space-y-3 text-xs">
 
-                                        {{-- CMR --}}
-                                        <div
-                                            x-data="{
+                                        {{-- CMR (only for own/resell transport, not third-party carrier) --}}
+                                        @unless($isThirdPartyCarrier)
+                                            <div
+                                                x-data="{
                                                 loading: false,
                                                 nr: @entangle('cmrNr.' . $cargo->id).defer,
                                                 get isValid() { return String(this.nr ?? '').trim().length > 0; },
@@ -514,53 +627,55 @@
                                                         .finally(() => this.loading = false);
                                                 }
                                             }"
-                                            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-                                        >
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0">
-                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">📘 CMR</div>
-                                                    @if(!empty($cargo->cmr_nr))
-                                                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                                            Nr: <span class="font-medium">{{ $cargo->cmr_nr }}</span>
-                                                        </div>
+                                                class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                            >
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="min-w-0">
+                                                        <div class="font-semibold text-gray-800 dark:text-gray-100">📘 {{ __('app.trip.show.cmr') }}</div>
+                                                        @if(!empty($cargo->cmr_nr))
+                                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                {{ __('app.trip.show.nr') }} <span class="font-medium">{{ $cargo->cmr_nr }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    @if ($cargo->cmr_file)
+                                                        <a href="{{ asset('storage/'.$cargo->cmr_file) }}" target="_blank"
+                                                           class="shrink-0 px-3 py-2 bg-blue-200 text-blue-900 rounded-lg font-semibold">
+                                                            👁 {{ __('app.trip.show.open') }}
+                                                        </a>
                                                     @endif
                                                 </div>
 
-                                                @if ($cargo->cmr_file)
-                                                    <a href="{{ asset('storage/'.$cargo->cmr_file) }}" target="_blank"
-                                                       class="shrink-0 px-3 py-2 bg-blue-200 text-blue-900 rounded-lg font-semibold">
-                                                        👁 Open
-                                                    </a>
+                                                @if (!$cargo->cmr_file)
+                                                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                                                        <div>
+                                                            <input type="text"
+                                                                   x-model.trim="nr"
+                                                                   placeholder="{{ __('app.trip.show.cmr_placeholder') }}"
+                                                                   class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
+                                                                   @keydown.enter.prevent="run()" />
+                                                            @error('cmrNr.'.$cargo->id)
+                                                                <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+
+                                                        <button type="button"
+                                                                @click="run()"
+                                                                :disabled="loading || !isValid"
+                                                                class="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-blue-600">
+                                                            <span x-show="!loading">{{ __('app.trip.show.generate') }}</span>
+                                                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                        </button>
+                                                    </div>
                                                 @endif
                                             </div>
+                                        @endunless
 
-                                            @if (!$cargo->cmr_file)
-                                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-                                                    <div>
-                                                        <input type="text"
-                                                               x-model.trim="nr"
-                                                               placeholder="CMR number (required)"
-                                                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
-                                                               @keydown.enter.prevent="run()" />
-                                                        @error('cmrNr.'.$cargo->id)
-                                                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
-                                                        @enderror
-                                                    </div>
-
-                                                    <button type="button"
-                                                            @click="run()"
-                                                            :disabled="loading || !isValid"
-                                                            class="w-full sm:w-auto px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-blue-600">
-                                                        <span x-show="!loading">Generate</span>
-                                                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                    </button>
-                                                </div>
-                                            @endif
-                                        </div>
-
-                                        {{-- ORDER --}}
-                                        <div
-                                            x-data="{
+                                        {{-- ORDER (only for third-party carrier, expeditor issues order to carrier) --}}
+                                        @if($isThirdPartyCarrier)
+                                            <div
+                                                x-data="{
                                                 loading: false,
                                                 nr: @entangle('orderNr.' . $cargo->id).defer,
                                                 get isValid() { return String(this.nr ?? '').trim().length > 0; },
@@ -576,49 +691,50 @@
                                                         .finally(() => this.loading = false);
                                                 }
                                             }"
-                                            class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
-                                        >
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="min-w-0">
-                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">📄 Order</div>
-                                                    @if(!empty($cargo->order_nr))
-                                                        <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                                            Nr: <span class="font-medium">{{ $cargo->order_nr }}</span>
-                                                        </div>
+                                                class="bg-white/70 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-3"
+                                            >
+                                                <div class="flex items-start justify-between gap-3">
+                                                    <div class="min-w-0">
+                                                        <div class="font-semibold text-gray-800 dark:text-gray-100">📄 {{ __('app.trip.show.order') }}</div>
+                                                        @if(!empty($cargo->order_nr))
+                                                            <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                                                                {{ __('app.trip.show.nr') }} <span class="font-medium">{{ $cargo->order_nr }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    @if ($cargo->order_file)
+                                                        <a href="{{ asset('storage/'.$cargo->order_file) }}" target="_blank"
+                                                           class="shrink-0 px-3 py-2 bg-indigo-200 text-indigo-900 rounded-lg font-semibold">
+                                                            👁 {{ __('app.trip.show.open') }}
+                                                        </a>
                                                     @endif
                                                 </div>
 
-                                                @if ($cargo->order_file)
-                                                    <a href="{{ asset('storage/'.$cargo->order_file) }}" target="_blank"
-                                                       class="shrink-0 px-3 py-2 bg-indigo-200 text-indigo-900 rounded-lg font-semibold">
-                                                        👁 Open
-                                                    </a>
+                                                @if (!$cargo->order_file)
+                                                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
+                                                        <div>
+                                                            <input type="text"
+                                                                   x-model.trim="nr"
+                                                                   placeholder="{{ __('app.trip.show.order_placeholder') }}"
+                                                                   class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
+                                                                   @keydown.enter.prevent="run()" />
+                                                            @error('orderNr.'.$cargo->id)
+                                                                <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+
+                                                        <button type="button"
+                                                                @click="run()"
+                                                                :disabled="loading || !isValid"
+                                                                class="w-full sm:w-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-indigo-600">
+                                                            <span x-show="!loading">{{ __('app.trip.show.generate') }}</span>
+                                                            <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                                        </button>
+                                                    </div>
                                                 @endif
                                             </div>
-
-                                            @if (!$cargo->order_file)
-                                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 items-center">
-                                                    <div>
-                                                        <input type="text"
-                                                               x-model.trim="nr"
-                                                               placeholder="Order number (required)"
-                                                               class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
-                                                               @keydown.enter.prevent="run()" />
-                                                        @error('orderNr.'.$cargo->id)
-                                                            <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
-                                                        @enderror
-                                                    </div>
-
-                                                    <button type="button"
-                                                            @click="run()"
-                                                            :disabled="loading || !isValid"
-                                                            class="w-full sm:w-auto px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-indigo-600">
-                                                        <span x-show="!loading">Generate</span>
-                                                        <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                                    </button>
-                                                </div>
-                                            @endif
-                                        </div>
+                                        @endif
 
                                         {{-- INVOICE --}}
                                         <div
@@ -642,10 +758,10 @@
                                         >
                                             <div class="flex items-start justify-between gap-3">
                                                 <div class="min-w-0">
-                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">💶 Invoice</div>
+                                                    <div class="font-semibold text-gray-800 dark:text-gray-100">💶 {{ __('app.trip.show.invoice') }}</div>
                                                     @if(!empty($cargo->inv_nr))
                                                         <div class="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
-                                                            Nr: <span class="font-medium">{{ $cargo->inv_nr }}</span>
+                                                            {{ __('app.trip.show.nr') }} <span class="font-medium">{{ $cargo->inv_nr }}</span>
                                                         </div>
                                                     @endif
                                                 </div>
@@ -653,7 +769,7 @@
                                                 @if ($cargo->inv_file)
                                                     <a href="{{ asset('storage/'.$cargo->inv_file) }}" target="_blank"
                                                        class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold">
-                                                        👁 Open
+                                                        👁 {{ __('app.trip.show.open') }}
                                                     </a>
                                                 @endif
                                             </div>
@@ -663,7 +779,7 @@
                                                     <div>
                                                         <input type="text"
                                                                x-model.trim="nr"
-                                                               placeholder="Invoice number (required)"
+                                                               placeholder="{{ __('app.trip.show.invoice_placeholder') }}"
                                                                class="w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 text-sm"
                                                                @keydown.enter.prevent="run()" />
                                                         @error('invNr.'.$cargo->id)
@@ -675,7 +791,7 @@
                                                             @click="run()"
                                                             :disabled="loading || !isValid"
                                                             class="w-full sm:w-auto px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold flex items-center justify-center disabled:opacity-50 disabled:hover:bg-amber-600">
-                                                        <span x-show="!loading">Generate</span>
+                                                        <span x-show="!loading">{{ __('app.trip.show.generate') }}</span>
                                                         <span x-show="loading" class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
                                                     </button>
                                                 </div>
@@ -704,7 +820,7 @@
 
         <button type="button" @click="openTripDocs = !openTripDocs"
                 class="w-full flex items-center justify-between text-left">
-            <h2 class="text-lg font-semibold">📄 Dokumenti par reisu</h2>
+            <h2 class="text-lg font-semibold">📄 {{ __('app.trip.show.documents_trip') }}</h2>
             <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripDocs }">▼</div>
         </button>
 
@@ -722,7 +838,7 @@
 
         <button type="button" @click="openTripExpenses = !openTripExpenses"
                 class="w-full flex items-center justify-between text-left">
-            <h2 class="text-lg font-semibold">💶 Izdevumi par reisu</h2>
+            <h2 class="text-lg font-semibold">💶 {{ __('app.trip.show.expenses_trip') }}</h2>
             <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openTripExpenses }">▼</div>
         </button>
 
@@ -748,14 +864,14 @@
                 setTimeout(() => el.remove(), 2600);
             };
 
-            Livewire.on('cmrGenerated', () => toast('CMR generated!', 'bg-green-600'));
-            Livewire.on('orderGenerated', () => toast('Order generated!', 'bg-indigo-600'));
-            Livewire.on('invoiceGenerated', () => toast('Invoice generated!', 'bg-amber-600'));
-            Livewire.on('stepDocumentDeleted', () => toast('Document deleted', 'bg-red-600'));
-            Livewire.on('stepDocumentUploaded', () => toast('Document uploaded', 'bg-green-600'));
-            Livewire.on('tripDocumentUploaded', () => toast('Trip document uploaded', 'bg-green-600'));
-            Livewire.on('tripExpenseAdded', () => toast('Expense saved', 'bg-green-600'));
-            Livewire.on('tripExpenseDeleted', () => toast('Expense deleted', 'bg-red-600'));
+            Livewire.on('cmrGenerated', () => toast('{{ __("app.trip.show.toast_cmr") }}', 'bg-green-600'));
+            Livewire.on('orderGenerated', () => toast('{{ __("app.trip.show.toast_order") }}', 'bg-indigo-600'));
+            Livewire.on('invoiceGenerated', () => toast('{{ __("app.trip.show.toast_invoice") }}', 'bg-amber-600'));
+            Livewire.on('stepDocumentDeleted', () => toast('{{ __("app.trip.show.toast_doc_deleted") }}', 'bg-red-600'));
+            Livewire.on('stepDocumentUploaded', () => toast('{{ __("app.trip.show.toast_doc_uploaded") }}', 'bg-green-600'));
+            Livewire.on('tripDocumentUploaded', () => toast('{{ __("app.trip.show.toast_trip_doc") }}', 'bg-green-600'));
+            Livewire.on('tripExpenseAdded', () => toast('{{ __("app.trip.show.toast_expense_saved") }}', 'bg-green-600'));
+            Livewire.on('tripExpenseDeleted', () => toast('{{ __("app.trip.show.toast_expense_deleted") }}', 'bg-red-600'));
         </script>
     @endpush
 

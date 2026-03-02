@@ -218,7 +218,7 @@ class EditDriver extends Component
             }
         });
 
-        session()->flash('success', 'Driver updated successfully!');
+        session()->flash('success', __('app.driver.edit.success'));
         return redirect()->route('drivers.index');
     }
 
@@ -240,10 +240,12 @@ class EditDriver extends Component
             : [];
 
         return view('livewire.drivers.edit-driver', [
-            'companies' => $companies,
-            'countries' => $countries,
+            'companies'      => $companies,
+            'countries'      => $countries,
             'declaredCities' => $declaredCities,
-            'actualCities' => $actualCities,
-        ])->layout('layouts.app')->title('Edit Driver');
+            'actualCities'   => $actualCities,
+        ])->layout('layouts.app', [
+            'title' => __('app.drivers.title'),
+        ]);
     }
 }

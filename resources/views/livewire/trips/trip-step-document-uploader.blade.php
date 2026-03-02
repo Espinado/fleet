@@ -6,7 +6,7 @@
             📄 Dokumenti solim
         </h2>
         <span class="text-sm text-gray-500 dark:text-gray-400">
-            Step ID: {{ $step->id }}
+            {{ __('app.trip.show.step_id') }}: {{ $step->id }}
         </span>
     </div>
 

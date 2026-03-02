@@ -73,6 +73,12 @@
 
     <div class="max-w-7xl mx-auto px-4 py-4">
 
+        @if (session('success'))
+            <div class="mb-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+                {{ session('success') }}
+            </div>
+        @endif
+
         {{-- ✅ DESKTOP TABLE --}}
         <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
@@ -108,6 +114,10 @@
                                     Paid date
                                 </button>
                             </th>
+
+                            <th class="px-4 py-3 text-right font-semibold">
+                                Actions
+                            </th>
                         </tr>
                     </thead>
 
@@ -130,17 +140,34 @@
                                 }
 
                                 $issuedAt = $inv->issued_at ? \Carbon\Carbon::parse($inv->issued_at)->format('d.m.Y') : '—';
+
+                                $dueCarbon = $inv->due_date ? \Carbon\Carbon::parse($inv->due_date)->startOfDay() : null;
+                                $today     = \Carbon\Carbon::now()->startOfDay();
+                                $isOverdue = $dueCarbon && $paid < $total && $today->gt($dueCarbon);
+                                $overdueDays = $isOverdue ? $dueCarbon->diffInDays($today) : null;
+                                $dueDate  = $dueCarbon ? $dueCarbon->format('d.m.Y') : '—';
+
                                 $paidAt   = $inv->last_paid_at ? \Carbon\Carbon::parse($inv->last_paid_at)->format('d.m.Y') : '—';
 
                                 $payerName = $inv->payer?->company_name ?? '—';
                                 $payerReg  = $inv->payer?->reg_nr ? (' • ' . $inv->payer->reg_nr) : '';
                             @endphp
 
-                            <tr class="hover:bg-gray-50">
+                            <tr class="hover:bg-gray-50 @if($isOverdue) bg-red-50/60 @endif">
                                 <td class="px-4 py-3">
                                     <span class="inline-flex items-center px-2.5 py-1 rounded-full border text-xs font-semibold {{ $badge }}">
                                         {{ $statusText }}
                                     </span>
+
+                                    @if($isOverdue && $overdueDays !== null)
+                                        @php
+                                            $unpaid = max($total - $paid, 0);
+                                        @endphp
+                                        <div class="mt-1 text-[11px] text-red-700 space-y-0.5">
+                                            <div>Overdue by {{ $overdueDays }} day{{ $overdueDays === 1 ? '' : 's' }}</div>
+                                            <div>Unpaid: {{ number_format($unpaid, 2, '.', ' ') }} {{ $currency }}</div>
+                                        </div>
+                                    @endif
                                 </td>
 
                                 <td class="px-4 py-3">
@@ -176,11 +203,87 @@
                                 </td>
 
                                 <td class="px-4 py-3 text-gray-800">
-                                    {{ $issuedAt }}
+                                    <div>{{ $issuedAt }}</div>
+                                    <div class="text-xs text-gray-500">
+                                        Due: {{ $dueDate }}
+                                    </div>
                                 </td>
 
-                                <td class="px-4 py-3 text-gray-800">
-                                    {{ $paidAt }}
+                                <td class="px-4 py-3 text-gray-800 align-top">
+                                    @php
+                                        $payments = $inv->payments->sortBy('paid_at');
+                                    @endphp
+
+                                    @if($payments->isEmpty())
+                                        <div>{{ $paidAt }}</div>
+                                    @else
+                                        <div class="space-y-0.5">
+                                            @foreach($payments as $p)
+                                                @php
+                                                    $pDate = $p->paid_at ? \Carbon\Carbon::parse($p->paid_at)->format('d.m.Y') : '—';
+                                                    $pAmount = (float) $p->amount;
+                                                @endphp
+                                                <div class="text-xs text-gray-800">
+                                                    {{ $pDate }} — {{ number_format($pAmount, 2, '.', ' ') }} {{ $p->currency ?? $currency }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </td>
+
+                                {{-- Actions / Add payment --}}
+                                <td class="px-4 py-3 text-right align-top">
+                                    @if($paymentInvoiceId === $inv->id)
+                                        <form wire:submit.prevent="savePayment" class="space-y-1 inline-block text-left">
+                                            <div>
+                                                <input
+                                                    type="date"
+                                                    wire:model.defer="payment_date"
+                                                    class="w-40 rounded-lg border-gray-300 text-xs"
+                                                >
+                                                @error('payment_date')
+                                                    <div class="mt-0.5 text-[11px] text-red-600">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+
+                                            <div>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    wire:model.defer="payment_amount"
+                                                    class="w-40 rounded-lg border-gray-300 text-xs"
+                                                    placeholder="Amount"
+                                                >
+                                                @error('payment_amount')
+                                                    <div class="mt-0.5 text-[11px] text-red-600">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+
+                                            <div class="flex justify-end gap-1 pt-1">
+                                                <button
+                                                    type="submit"
+                                                    class="px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700"
+                                                >
+                                                    Save
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    wire:click="cancelAddPayment"
+                                                    class="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    @else
+                                        <button
+                                            type="button"
+                                            wire:click="startAddPayment({{ $inv->id }})"
+                                            class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                                        >
+                                            + Payment
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -219,13 +322,20 @@
                     }
 
                     $issuedAt = $inv->issued_at ? \Carbon\Carbon::parse($inv->issued_at)->format('d.m.Y') : '—';
+
+                    $dueCarbon = $inv->due_date ? \Carbon\Carbon::parse($inv->due_date)->startOfDay() : null;
+                    $today     = \Carbon\Carbon::now()->startOfDay();
+                    $isOverdue = $dueCarbon && $paid < $total && $today->gt($dueCarbon);
+                    $overdueDays = $isOverdue ? $dueCarbon->diffInDays($today) : null;
+                    $dueDate  = $dueCarbon ? $dueCarbon->format('d.m.Y') : '—';
+
                     $paidAt   = $inv->last_paid_at ? \Carbon\Carbon::parse($inv->last_paid_at)->format('d.m.Y') : '—';
 
                     $payerName = $inv->payer?->company_name ?? '—';
                     $payerReg  = $inv->payer?->reg_nr ? $inv->payer->reg_nr : null;
                 @endphp
 
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+                <div class="bg-white rounded-2xl shadow-sm border {{ $isOverdue ? 'border-red-300' : 'border-gray-200' }} p-4 @if($isOverdue) bg-red-50/60 @endif">
                     {{-- top row --}}
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0">
@@ -244,6 +354,16 @@
                                     <span class="text-gray-400">• {{ $payerReg }}</span>
                                 @endif
                             </div>
+
+                            @if($isOverdue && $overdueDays !== null)
+                                @php
+                                    $unpaid = max($total - $paid, 0);
+                                @endphp
+                                <div class="mt-1 text-[11px] text-red-700 space-y-0.5">
+                                    <div>Overdue by {{ $overdueDays }} day{{ $overdueDays === 1 ? '' : 's' }}</div>
+                                    <div>Unpaid: {{ number_format($unpaid, 2, '.', ' ') }} {{ $currency }}</div>
+                                </div>
+                            @endif
                         </div>
 
                         @if(!empty($inv->pdf_file))
@@ -278,15 +398,100 @@
 
                     {{-- dates --}}
                     <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
-                        <div class="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2">
-                            <span class="text-gray-500">Issued</span>
-                            <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
+                        <div class="flex flex-col rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-500">Issued</span>
+                                <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
+                            </div>
+                            <div class="mt-1 text-[11px] text-gray-600">
+                                Due: {{ $dueDate }}
+                            </div>
                         </div>
 
-                        <div class="flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 p-2">
-                            <span class="text-gray-500">Paid date</span>
-                            <span class="font-semibold text-gray-900">{{ $paidAt }}</span>
+                        <div class="flex flex-col rounded-xl bg-gray-50 border border-gray-200 p-2">
+                            <span class="text-gray-500 mb-1">Payments</span>
+
+                            @php
+                                $payments = $inv->payments->sortBy('paid_at');
+                            @endphp
+
+                            @if($payments->isEmpty())
+                                <span class="text-[11px] text-gray-500">No payments (last: {{ $paidAt }})</span>
+                            @else
+                                <div class="space-y-0.5">
+                                    @foreach($payments as $p)
+                                        @php
+                                            $pDate = $p->paid_at ? \Carbon\Carbon::parse($p->paid_at)->format('d.m.Y') : '—';
+                                            $pAmount = (float) $p->amount;
+                                        @endphp
+                                        <div class="flex items-center justify-between text-[11px] text-gray-800">
+                                            <span>{{ $pDate }}</span>
+                                            <span class="font-semibold">
+                                                {{ number_format($pAmount, 2, '.', ' ') }} {{ $p->currency ?? $currency }}
+                                            </span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
+                    </div>
+
+                    {{-- Add payment (mobile) --}}
+                    <div class="mt-3 pt-2 border-t border-dashed border-gray-200">
+                        @if($paymentInvoiceId === $inv->id)
+                            <form wire:submit.prevent="savePayment" class="space-y-2">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[11px] text-gray-600 mb-1">Date</label>
+                                        <input
+                                            type="date"
+                                            wire:model.defer="payment_date"
+                                            class="w-full rounded-lg border-gray-300 text-xs"
+                                        >
+                                        @error('payment_date')
+                                            <div class="mt-0.5 text-[11px] text-red-600">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-gray-600 mb-1">Amount</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            wire:model.defer="payment_amount"
+                                            class="w-full rounded-lg border-gray-300 text-xs"
+                                            placeholder="0.00"
+                                        >
+                                        @error('payment_amount')
+                                            <div class="mt-0.5 text-[11px] text-red-600">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="flex justify-end gap-2">
+                                    <button
+                                        type="button"
+                                        wire:click="cancelAddPayment"
+                                        class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        class="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold"
+                                    >
+                                        Save
+                                    </button>
+                                </div>
+                            </form>
+                        @else
+                            <button
+                                type="button"
+                                wire:click="startAddPayment({{ $inv->id }})"
+                                class="w-full mt-1 inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                            >
+                                + Payment
+                            </button>
+                        @endif
                     </div>
                 </div>
             @empty

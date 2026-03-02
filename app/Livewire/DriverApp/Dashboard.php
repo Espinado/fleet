@@ -69,11 +69,28 @@ class Dashboard extends Component
             'completed_value' => TripStatus::COMPLETED->value,
         ]);
 
-        $this->trip = Trip::withoutGlobalScopes()
+        // 1) В первую очередь ищем реально "идущий" рейс:
+        //    IN_PROGRESS или AWAITING_GARAGE.
+        $trip = Trip::withoutGlobalScopes()
             ->where('driver_id', $this->driver->id)
-            ->where('status', '!=', TripStatus::COMPLETED->value)
+            ->whereIn('status', [
+                TripStatus::IN_PROGRESS->value,
+                TripStatus::AWAITING_GARAGE->value,
+            ])
             ->latest('id')
             ->first();
+
+        // 2) Если таких рейсов нет, показываем ближайший PLANNED,
+        //    чтобы водитель сразу видел следующий рейс.
+        if (!$trip) {
+            $trip = Trip::withoutGlobalScopes()
+                ->where('driver_id', $this->driver->id)
+                ->where('status', TripStatus::PLANNED->value)
+                ->latest('id')
+                ->first();
+        }
+
+        $this->trip = $trip;
 
         \Log::info('DriverApp loadCurrentTrip AFTER', [
             'trip_id' => optional($this->trip)->id,
@@ -208,10 +225,11 @@ class Dashboard extends Component
                         'odo_start_km'   => $odo,
                     ]);
 
-                    // 3) Odometer event departure
+                    // 3) Odometer event departure (привязываем к trip_id, чтобы видеть в Stats)
                     TruckOdometerEvent::create([
                         'truck_id'      => $truckId,
                         'driver_id'     => $this->driver->id,
+                        'trip_id'       => $trip->id,
                         'type'          => TruckOdometerEvent::TYPE_DEPARTURE,
                         'odometer_km'   => $odo,
                         'source'        => TruckOdometerEvent::SOURCE_MANUAL,
@@ -251,7 +269,7 @@ class Dashboard extends Component
                         ]);
                     }
 
-                    // 2) Trip: end odo + vehicle_run_id null + возможно completed
+                    // 2) Trip: end odo + vehicle_run_id null
                     $updateTrip = [
                         'odo_end_km'     => $odo,
                         'vehicle_run_id' => null,
@@ -269,10 +287,11 @@ class Dashboard extends Component
 
                     $trip->update($updateTrip);
 
-                    // 3) Odometer event return
+                    // 3) Odometer event return (привязываем к trip_id, чтобы видеть в Stats)
                     TruckOdometerEvent::create([
                         'truck_id'      => $truckId,
                         'driver_id'     => $this->driver->id,
+                        'trip_id'       => $trip->id,
                         'type'          => TruckOdometerEvent::TYPE_RETURN,
                         'odometer_km'   => $odo,
                         'source'        => TruckOdometerEvent::SOURCE_MANUAL,

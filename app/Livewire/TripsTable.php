@@ -127,7 +127,7 @@ class TripsTable extends Component
 
         return view('livewire.trips-table', compact('trips'))
             ->layout('layouts.app', [
-                'title' => 'Trips'
+                'title' => __('app.trips.title'),
             ]);
     }
 }

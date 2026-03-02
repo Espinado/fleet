@@ -2,12 +2,12 @@
 
 <div class="space-y-6">
 
-    {{-- Приветствие --}}
+    {{-- Sveiciens --}}
     <div class="text-2xl font-bold">
-        👋 Привет, {{ $driver->first_name }}
+        👋 {{ __('app.driver.dashboard.hello', ['name' => $driver->first_name]) }}
     </div>
 
-    {{-- Информация о водителе --}}
+    {{-- Informācija par vadītāju --}}
     <div class="bg-white p-4 rounded-xl shadow space-y-2">
         <div class="flex items-center gap-4">
 
@@ -32,15 +32,15 @@
         </div>
     </div>
 
-    {{-- Документы --}}
+    {{-- Dokumenti --}}
     <div class="bg-white p-4 rounded-xl shadow">
-        <h2 class="font-bold text-lg mb-3">📄 Документы</h2>
+        <h2 class="font-bold text-lg mb-3">📄 {{ __('app.driver.dashboard.documents') }}</h2>
 
         <ul class="space-y-2 text-gray-700 text-sm">
             <li>
-                Водительские права:
+                {{ __('app.driver.dashboard.license') }}:
                 <span class="font-medium">{{ $driver->license_number }}</span>
-                (до {{ $driver->license_end }})
+                ({{ __('app.driver.dashboard.license_to', ['date' => $driver->license_end]) }})
             </li>
 
             <li>
@@ -49,18 +49,18 @@
             </li>
 
             <li>
-                Мед. справка: до {{ $driver->medical_expired }}
+                {{ __('app.driver.dashboard.medical') }}: {{ $driver->medical_expired }}
             </li>
         </ul>
     </div>
 
-    {{-- Активный рейс --}}
+    {{-- Aktīvais reiss --}}
     @if($trip)
         <div class="bg-white p-4 rounded-xl shadow space-y-3">
 
             <div class="flex items-start justify-between gap-3">
                 <h2 class="text-lg font-bold">
-                    🚛 Текущий рейс #{{ $trip->id }}
+                    🚛 {{ __('app.driver.dashboard.active_trip', ['id' => $trip->id]) }}
                 </h2>
 
                 {{-- Бейдж статуса --}}
@@ -70,17 +70,17 @@
             </div>
 
             <p class="text-gray-700">
-                Машина: <strong>{{ $trip->truck?->plate ?? '—' }}</strong>
+                {{ __('app.driver.dashboard.truck') }}: <strong>{{ $trip->truck?->plate ?? '—' }}</strong>
             </p>
 
-            {{-- Если все шаги завершены, но еще не вернулся в гараж --}}
+            {{-- Ja visi soļi pabeigti, bet vēl nav atgriezies garāžā --}}
             @if($trip->status->value === 'awaiting_garage')
                 <div class="p-3 rounded-xl bg-yellow-50 border border-yellow-200 text-yellow-900 text-sm">
-                    ✅ Все шаги завершены. Осталось отметить <strong>возврат в гараж</strong>, чтобы рейс закрылся.
+                    ✅ {{ __('app.driver.dashboard.awaiting') }}
                 </div>
             @endif
 
-            {{-- Гараж: выезд/возврат --}}
+            {{-- Garāža: izbraukšana / atgriešanās --}}
             <div class="pt-2 space-y-2">
 
                 @if($garageError)
@@ -95,7 +95,7 @@
                     </div>
                 @endif
 
-                {{-- ВЫЕЗД --}}
+                {{-- IZBRAUKŠANA --}}
                 <button
                     type="button"
                     wire:click="departFromGarage"
@@ -108,15 +108,15 @@
                            disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <span wire:loading.remove wire:target="departFromGarage">
-                        🚛 <span class="ml-1">Выехал из гаража</span>
+                        🚛 <span class="ml-1">{{ __('app.driver.dashboard.depart') }}</span>
                     </span>
 
                     <span wire:loading wire:target="departFromGarage">
-                        ⏳ Открываем форму…
+                        ⏳ {{ __('app.driver.dashboard.open_form') }}
                     </span>
                 </button>
 
-                {{-- ВОЗВРАТ --}}
+                {{-- ATGRIEŠANĀS --}}
                 <button
                     type="button"
                     wire:click="backToGarage"
@@ -129,21 +129,24 @@
                            disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <span wire:loading.remove wire:target="backToGarage">
-                        🏁 <span class="ml-1">Вернулся в гараж</span>
+                        🏁 <span class="ml-1">{{ __('app.driver.dashboard.return') }}</span>
                     </span>
 
                     <span wire:loading wire:target="backToGarage">
-                        ⏳ Открываем форму…
+                        ⏳ {{ __('app.driver.dashboard.open_form') }}
                     </span>
                 </button>
 
-                {{-- Мини-индикатор состояния --}}
+                {{-- Stāvokļa indikators --}}
                 <div class="text-xs text-gray-500 flex items-center justify-between">
                     <span>
-                        Смена: <span class="font-medium">{{ $trip->vehicle_run_id ? 'открыта' : 'закрыта' }}</span>
+                        {{ __('app.driver.dashboard.shift') }}:
+                        <span class="font-medium">
+                            {{ $trip->vehicle_run_id ? __('app.driver.dashboard.shift_open') : __('app.driver.dashboard.shift_closed') }}
+                        </span>
                     </span>
                     <span>
-                        {{ $trip->vehicle_run_id ? '🚚 В пути' : '🏠 В гараже' }}
+                        {{ $trip->vehicle_run_id ? '🚚 '. __('app.driver.dashboard.state_road') : '🏠 '. __('app.driver.dashboard.state_garage') }}
                     </span>
                 </div>
 
@@ -154,13 +157,13 @@
                 class="block text-center bg-blue-600 hover:bg-blue-700 transition
                        text-white py-2 rounded-xl font-medium mt-3"
             >
-                Открыть детали рейса
+                {{ __('app.driver.dashboard.open_details') }}
             </a>
 
         </div>
     @else
         <div class="bg-yellow-100 border border-yellow-300 rounded-xl p-4">
-            Нет активного рейса
+            {{ __('app.driver.dashboard.no_active') }}
         </div>
     @endif
 

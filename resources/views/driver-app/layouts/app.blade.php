@@ -27,8 +27,8 @@
 
 <body class="bg-gray-100 min-h-screen">
 
-    <main class="min-h-screen pb-20 px-3">
-        <div class="mx-auto w-full max-w-[520px]">
+    <main class="min-h-screen min-h-[100dvh] pb-20 px-3 flex">
+        <div class="mx-auto w-full max-w-[520px] flex-1 flex flex-col">
             {{ $slot }}
         </div>
     </main>

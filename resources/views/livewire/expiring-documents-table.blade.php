@@ -3,12 +3,12 @@
     {{-- 🔝 Верхняя панель (адаптивная) --}}
     <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3 mb-4">
 
-        {{-- 🔍 Поиск --}}
+        {{-- 🔍 Meklēšana --}}
         <div class="flex items-center gap-2 w-full md:w-auto">
             <input
                 type="text"
                 wire:model.live.debounce.300ms="search"
-                placeholder="🔍 Search document..."
+                placeholder="🔍 {{ __('app.exp.search') }}"
                 class="flex-1 border rounded-lg px-3 py-2 text-sm shadow-sm focus:ring focus:ring-blue-100"
             />
             @if ($search)
@@ -18,14 +18,14 @@
             @endif
         </div>
 
-        {{-- 🔽 Sort (mobile) + Rows (desktop) --}}
+        {{-- 🔽 Kārtošana (mobilā) + Rindu skaits (desktop) --}}
         <div class="flex items-center justify-end gap-3 w-full md:w-auto">
 
-            {{-- 🔽 Кнопка сортировки (только мобильные) --}}
+            {{-- 🔽 Kārtošanas poga (tikai mobilajām ierīcēm) --}}
             <div x-data="{ open: false }" class="relative block md:hidden">
                 <button @click="open = !open"
                         class="px-3 py-2 text-sm border rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 flex items-center gap-1">
-                    ⬇️ Sort
+                    ⬇️ {{ __('app.exp.sort') }}
                     @if ($sortDirection === 'asc')
                         <span class="text-xs">▲</span>
                     @else
@@ -33,18 +33,18 @@
                     @endif
                 </button>
 
-                {{-- Меню сортировки мобильное --}}
+                {{-- Mobilā kārtošanas izvēlne --}}
                 <div x-show="open" @click.away="open = false"
                      class="absolute left-0 mt-1 w-48 bg-white border rounded-lg shadow-lg z-50 text-sm overflow-hidden">
 
                     @foreach ([
-                        'type'        => 'Type',
-                        'name'        => 'Name',
-                        'document'    => 'Document',
-                        'expiry_date' => 'Expiry date',
-                        'company'     => 'Company',
-                        'status'      => 'Status',
-                        'is_active'   => 'Active',
+                        'type'        => 'Tips',
+                        'name'        => 'Nosaukums',
+                        'document'    => 'Dokuments',
+                        'expiry_date' => 'Derīgs līdz',
+                        'company'     => 'Kompānija',
+                        'status'      => 'Statuss',
+                        'is_active'   => 'Aktīvs',
                     ] as $field => $label)
 
                         <button wire:click="sortBy('{{ $field }}')" @click="open = false"
@@ -60,9 +60,9 @@
                 </div>
             </div>
 
-            {{-- 📄 Кол-во строк — только для desktop --}}
+            {{-- 📄 Rindu skaits — tikai desktop --}}
             <div class="hidden md:flex items-center gap-2">
-                <label for="perPage" class="text-sm text-gray-600">Rows:</label>
+                <label for="perPage" class="text-sm text-gray-600">{{ __('app.exp.rows') }}:</label>
                 <select id="perPage" wire:model.live="perPage"
                         class="border rounded-lg px-2 py-1 text-sm shadow-sm focus:ring focus:ring-blue-100">
                     <option value="5">5</option>
@@ -75,20 +75,20 @@
         </div>
     </div>
 
-    {{-- 💻 TABLE VERSION --}}
+    {{-- 💻 TABULAS VERSIJA --}}
     <div class="hidden md:block bg-white rounded-lg shadow">
         <table class="w-full border-collapse">
             <thead>
             <tr class="bg-gray-100 text-left text-sm">
                 @php
                     $cols = [
-                        'type'        => 'Type',
-                        'name'        => 'Name',
-                        'document'    => 'Document',
-                        'expiry_date' => 'Expiry date',
-                        'company'     => 'Company',
-                        'status'      => 'Status',
-                        'is_active'   => 'Active',
+                        'type'        => __('app.exp.col_type'),
+                        'name'        => __('app.exp.col_name'),
+                        'document'    => __('app.exp.col_document'),
+                        'expiry_date' => __('app.exp.col_expiry'),
+                        'company'     => __('app.exp.col_company'),
+                        'status'      => __('app.exp.col_status'),
+                        'is_active'   => __('app.exp.col_active'),
                     ];
                 @endphp
 
@@ -102,7 +102,7 @@
                     </th>
                 @endforeach
 
-                <th class="p-3 text-left">Action</th>
+                <th class="p-3 text-left">{{ __('app.exp.col_action') }}</th>
             </tr>
             </thead>
 
@@ -126,11 +126,11 @@
                         {{ $item->expiry_date->format('d.m.Y') }}
                         <span class="text-xs text-gray-600 ml-1">
                             @if($days < 0)
-                                (expired {{ abs($days) }}d)
+                                ({{ __('app.exp.expired_before', ['days' => abs($days)]) }})
                             @elseif($days == 0)
-                                (today)
+                                ({{ __('app.exp.expired_today') }})
                             @else
-                                (in {{ $days }}d)
+                                ({{ __('app.exp.expires_in', ['days' => $days]) }})
                             @endif
                         </span>
                     </td>
@@ -141,19 +141,19 @@
 
                     <td class="p-3 text-center">
                         <a href="/{{ strtolower($item->type) }}s/{{ $item->id }}"
-                           class="text-blue-600">👁️</a>
+                           class="text-blue-600" title="Atvērt">👁️</a>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8" class="text-center py-4 text-gray-500">No results</td>
+                    <td colspan="8" class="text-center py-4 text-gray-500">{{ __('app.exp.no_data') }}</td>
                 </tr>
             @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- 📱 MOBILE / PWA VERSION --}}
+    {{-- 📱 MOBILĀ / PWA VERSIJA --}}
     <div class="block md:hidden mt-3 space-y-3">
         @forelse($items as $item)
             @php
@@ -178,31 +178,33 @@
                 </div>
 
                 <div class="text-sm text-gray-700 grid grid-cols-2 gap-y-1">
-                    <div><b>Type:</b> {{ $item->type }}</div>
-                    <div><b>Company:</b> {{ $item->company }}</div>
+                    <div><b>{{ __('app.exp.col_type') }}:</b> {{ $item->type }}</div>
+                    <div><b>{{ __('app.exp.col_company') }}:</b> {{ $item->company }}</div>
 
-                    <div><b>Document:</b> {{ $item->document }}</div>
+                    <div><b>{{ __('app.exp.col_document') }}:</b> {{ $item->document }}</div>
 
                     <div>
-                        <b>Expiry:</b>
+                        <b>{{ __('app.exp.col_expiry') }}:</b>
                         {{ $item->expiry_date->format('d.m.Y') }}
-                        ({{ $days < 0 ? "expired $days d" : "in $days d" }})
+                        ({{ $days < 0
+                            ? __('app.exp.expired_before', ['days' => abs($days)])
+                            : __('app.exp.expires_in', ['days' => $days]) }})
                     </div>
 
                     <div>
-                        <b>Status:</b>
+                        <b>{{ __('app.exp.col_status') }}:</b>
                         {{ $item->status }}
                     </div>
 
                     <div>
-                        <b>Active:</b>
+                        <b>{{ __('app.exp.col_active') }}:</b>
                         {{ $item->is_active ? '✅' : '❌' }}
                     </div>
                 </div>
             </div>
         @empty
             <div class="text-center text-gray-500 py-10">
-                📄 No documents found
+                📄 {{ __('app.exp.no_docs') }}
             </div>
         @endforelse
     </div>
@@ -210,7 +212,7 @@
     {{-- 🔄 Loading + Pagination --}}
     <div class="mt-6 flex justify-center">
         <div wire:loading.delay>
-            <span class="text-gray-500 text-sm animate-pulse">Loading...</span>
+            <span class="text-gray-500 text-sm animate-pulse">{{ __('app.exp.loading') }}</span>
         </div>
     </div>
 

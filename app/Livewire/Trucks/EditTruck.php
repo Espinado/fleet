@@ -105,7 +105,7 @@ class EditTruck extends Component
 
         $this->truck->update($validated);
 
-        session()->flash('success', 'Truck updated successfully!');
+        session()->flash('success', __('app.truck.edit.save'));
         return redirect()->route('trucks.show', $this->truck->id);
     }
 
@@ -118,7 +118,7 @@ class EditTruck extends Component
         return view('livewire.trucks.edit-truck', [
             'companies' => $companies,
         ])->layout('layouts.app', [
-            'title' => 'Edit truck'
+            'title' => __('app.truck.edit.title'),
         ]);
     }
 }

@@ -17,7 +17,7 @@
     >
         <div class="bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg 
                     pointer-events-auto text-sm font-semibold">
-            🔒 Šo soli nevar pārvietot
+            🔒 {{ __('app.trip.route.cannot_move') }}
         </div>
     </div>
 
@@ -25,13 +25,12 @@
          HEADER
     ====================================== --}}
     <h2 class="text-2xl font-bold flex items-center gap-2">
-        🧭 Маршрут рейса
+        🧭 {{ __('app.trip.route.title') }}
     </h2>
 
     @unless($readonly)
         <p class="text-gray-600 text-sm mb-4">
-            Перетащите карточки, чтобы изменить порядок действий.
-            Водитель увидит маршрут именно в этом порядке.
+            {{ __('app.trip.route.subtitle') }}
         </p>
     @endunless
 
@@ -152,17 +151,17 @@
                     {{-- LEFT --}}
                     <div class="space-y-1">
                         <p class="text-lg font-semibold">
-                            {{ $step['type'] === 'loading' ? '📦 Погрузка' : '📤 Разгрузка' }}
+                            {{ $step['type'] === 'loading' ? '📦 ' . __('app.trip.route.loading') : '📤 ' . __('app.trip.route.unloading') }}
                         </p>
 
-                        <p class="text-sm text-gray-700"><b>Страна:</b> {{ $step['country'] }}</p>
-                        <p class="text-sm text-gray-700"><b>Город:</b> {{ $step['city'] }}</p>
-                        <p class="text-sm"><b>Адрес:</b> {{ $step['address'] }}</p>
+                        <p class="text-sm text-gray-700"><b>{{ __('app.trip.route.country') }}</b> {{ $step['country'] }}</p>
+                        <p class="text-sm text-gray-700"><b>{{ __('app.trip.route.city') }}</b> {{ $step['city'] }}</p>
+                        <p class="text-sm"><b>{{ __('app.trip.route.address') }}</b> {{ $step['address'] }}</p>
 
                         <p class="text-xs text-gray-500">
-                            <b>Дата:</b> {{ $step['date'] ?? '—' }}
+                            <b>{{ __('app.trip.route.date') }}</b> {{ $step['date'] ?? '—' }}
                             &nbsp;
-                            <b>{{ $step['type'] === 'loading' ? 'Время погрузки' : 'Время разгрузки' }}:</b>
+                            <b>{{ $step['type'] === 'loading' ? __('app.trip.route.time_loading') : __('app.trip.route.time_unloading') }}</b>
                             {{ $step['time'] ?? '—' }}
                         </p>
                     </div>
@@ -177,7 +176,7 @@
 
                 @if($isLocked)
                     <div class="mt-3 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
-                        🔒 Šo soli vairs nevar pārvietot — tas jau tiek veikts vai pabeigts
+                        🔒 {{ __('app.trip.route.step_locked') }}
                     </div>
                 @endif
 
@@ -192,7 +191,7 @@
 @push('scripts')
 <script>
 document.addEventListener('livewire:initialized', () => {
-    Livewire.on('order-updated', () => routeToast("Новая последовательность сохранена"));
+    Livewire.on('order-updated', () => routeToast(@json(__('app.trip.route.order_saved'))));
 });
 
 function routeToast(text) {

@@ -104,7 +104,7 @@ class CreateTrailer extends Component
             'tech_passport_photo' => $photoPath,
         ]);
 
-        session()->flash('success', 'Trailer created successfully!');
+        session()->flash('success', __('app.trailer.create.save'));
         return redirect()->route('trailers.index');
     }
 
@@ -118,7 +118,7 @@ class CreateTrailer extends Component
         return view('livewire.trailers.create-trailer', [
             'companies' => $companies,
         ])->layout('layouts.app', [
-            'title' => 'New trailer'
+            'title' => __('app.trailer.create.title'),
         ]);
     }
 }

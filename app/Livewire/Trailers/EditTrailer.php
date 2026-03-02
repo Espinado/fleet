@@ -136,7 +136,7 @@ class EditTrailer extends Component
             'type_id' => $this->type_id,
         ]);
 
-        session()->flash('success', 'Trailer updated successfully!');
+        session()->flash('success', __('app.trailer.edit.save'));
         return redirect()->route('trailers.index');
     }
 
@@ -149,7 +149,7 @@ class EditTrailer extends Component
         return view('livewire.trailers.edit-trailer', [
             'companies' => $companies,
         ])->layout('layouts.app', [
-            'title' => 'Edit trailer'
+            'title' => __('app.trailer.edit.title'),
         ]);
     }
 }

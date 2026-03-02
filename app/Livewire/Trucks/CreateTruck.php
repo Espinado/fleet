@@ -113,7 +113,7 @@ class CreateTruck extends Component
             'license_expired' => $this->license_expired,
         ]);
 
-        session()->flash('success', 'Truck added successfully!');
+        session()->flash('success', __('app.truck.create.save'));
         return redirect()->route('trucks.index');
     }
 
@@ -126,7 +126,7 @@ class CreateTruck extends Component
         return view('livewire.trucks.create-truck', [
             'companies' => $companies,
         ])->layout('layouts.app', [
-            'title' => 'Add truck'
+            'title' => __('app.truck.create.title'),
         ]);
     }
 }

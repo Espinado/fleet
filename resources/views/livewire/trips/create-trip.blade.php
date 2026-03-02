@@ -156,7 +156,7 @@
 
                         <select
                             wire:model.live="expeditor_id"
-                            @class([$baseInput, $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
+                            @class([$baseInput, 'js-select2', $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
                         >
                             <option value="">— выберите экспедитора —</option>
                             @foreach($expeditors as $exp)
@@ -179,7 +179,7 @@
 
                         <select
                             wire:model.live="bank_index"
-                            @class([$baseInput, $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
+                            @class([$baseInput, 'js-select2', $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
                         >
                             <option value="">— выберите банк —</option>
                             @foreach(($banks ?? []) as $idx => $bank)
@@ -211,6 +211,7 @@
                                 wire:model.live="carrier_company_select"
                                 @class([
                                     $baseInput,
+                                    'js-select2',
                                     $warnInput => ($isBlank($carrier_company_select) && !$errors->has($kCarrierSelect)),
                                     $errInput => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId)),
                                     'input-error' => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId))
@@ -375,7 +376,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Водитель {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="driver_id" class="{{ $baseInput }}">
+                        <select wire:model.live="driver_id" class="{{ $baseInput }} js-select2">
                             <option value="">— выбрать —</option>
                             @foreach($drivers as $driver)
                                 <option value="{{ $driver->id }}">{{ $driver->first_name }} {{ $driver->last_name }}</option>
@@ -388,7 +389,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Тягач {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="truck_id" class="{{ $baseInput }}">
+                        <select wire:model.live="truck_id" class="{{ $baseInput }} js-select2">
                             <option value="">— выбрать —</option>
                             @foreach($trucks as $truck)
                                 <option value="{{ $truck->id }}">{{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})</option>
@@ -402,7 +403,7 @@
                             Прицеп <span class="ml-2 text-[11px] text-gray-400">(опц.)</span>
                         </label>
 
-                        <select wire:model.live="trailer_id" class="{{ $baseInput }}">
+                        <select wire:model.live="trailer_id" class="{{ $baseInput }} js-select2">
                             <option value="">— без прицепа —</option>
                             @foreach($trailers as $trailer)
                                 @php
@@ -581,7 +582,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Страна {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.country_id" class="{{ $baseInput }}">
+                                <select wire:model.live="steps.{{ $index }}.country_id" class="{{ $baseInput }} js-select2">
                                     <option value="">— выбрать —</option>
                                     @foreach($countries as $countryId => $country)
                                         <option value="{{ $countryId }}">{{ $country['name'] }}</option>
@@ -594,7 +595,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Город {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.city_id" class="{{ $baseInput }}">
+                                <select wire:model.live="steps.{{ $index }}.city_id" class="{{ $baseInput }} js-select2">
                                     <option value="">— выбрать —</option>
                                     @foreach(($stepCities[$index]['cities'] ?? []) as $cityId => $city)
                                         <option value="{{ $cityId }}">{{ $city['name'] ?? ('#'.$cityId) }}</option>
@@ -834,7 +835,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Заказчик {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }}">
+                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }} js-select2">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -845,7 +846,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Shipper {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }}">
+                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }} js-select2">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -856,7 +857,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Consignee {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }}">
+                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }} js-select2">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -907,7 +908,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">НДС %</label>
-                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs">
+                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs js-select2">
                                     @foreach($taxRates as $rate)
                                         <option value="{{ $rate }}">{{ $rate }}</option>
                                     @endforeach
@@ -932,7 +933,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик</label>
-                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs">
+                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs js-select2">
                                     <option value="">— не выбрано —</option>
                                     @foreach($payers as $payerId => $payer)
                                         <option value="{{ $payerId }}">{{ $payer['label'] ?? $payerId }}</option>

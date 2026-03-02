@@ -122,7 +122,7 @@
     ============================ --}}
     @php $TS = \App\Enums\TripStepStatus::class; @endphp
 
-    @foreach ($steps as $step)
+@foreach ($steps as $step)
         @php
             $city = getCityNameByCountryId($step->country_id, $step->city_id)
                 ?? getCountryById($step->country_id);
@@ -319,6 +319,53 @@
             </div>
         </div>
     @endforeach
+
+    {{-- ============================
+         STEP ODOMETER MODAL
+    ============================ --}}
+    @if($showStepOdoModal)
+        <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
+            <div class="bg-white rounded-2xl shadow-xl p-4 w-full max-w-sm space-y-3">
+                <h2 class="text-sm font-semibold">
+                    ⛽ Ievadiet odometru (km)
+                </h2>
+                <p class="text-xs text-gray-600">
+                    Odometra rādījumam jābūt <strong>ne mazākam</strong> par iepriekšējo soli.
+                </p>
+
+                <div>
+                    <input
+                        type="number"
+                        step="0.1"
+                        wire:model.defer="stepOdoKm"
+                        class="w-full rounded-lg border-gray-300 text-sm"
+                        placeholder="piem.: 123456.7"
+                    >
+                    @error('stepOdoKm')
+                        <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="flex justify-end gap-2 pt-1">
+                    <button
+                        type="button"
+                        wire:click="$set('showStepOdoModal', false)"
+                        class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold"
+                    >
+                        Atcelt
+                    </button>
+                    <button
+                        type="button"
+                        wire:click="confirmStepStatusWithOdo"
+                        wire:loading.attr="disabled"
+                        class="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold"
+                    >
+                        Saglabāt
+                    </button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- ============================
          DRIVER EXPENSES

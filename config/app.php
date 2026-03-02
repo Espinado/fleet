@@ -78,9 +78,10 @@ return [
     |
     */
 
-    'locale' => env('APP_LOCALE', 'en'),
+    // Fiksēta lietotnes valoda — latviešu
+    'locale' => 'lv',
 
-    'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
+    'fallback_locale' => 'lv',
 
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
