@@ -301,8 +301,9 @@
         document.getElementById('btn-enable-push') && document.getElementById('btn-enable-push').addEventListener('click', function () {
             var btn = this;
             if (!window.subscribeForPush) return;
+            var origText = btn.textContent;
             btn.disabled = true;
-            btn.textContent = '…';
+            window.fleetPushStatus = function (s) { btn.textContent = s || origText; };
             window.subscribeForPush().then(function (ok) {
                 btn.disabled = false;
                 btn.textContent = ok ? '🔔 Уведомления включены' : '🔔 Включить уведомления';
