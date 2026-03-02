@@ -99,6 +99,10 @@ return [
     'driver.toast.success' => 'Izpildīts',
     'driver.toast.error'   => 'Kļūda! Sazinieties ar administratoru.',
 
+    // Driver app: offline (PWA)
+    'driver.offline.title'   => 'Nav savienojuma',
+    'driver.offline.message' => 'Jūs esat bezsaistē. Lūdzu, pārbaudiet interneta savienojumu un mēģiniet vēlreiz.',
+
     // Drivers list
     'drivers.title'         => 'Vadītāji',
     'drivers.add'           => 'Pievienot vadītāju',
