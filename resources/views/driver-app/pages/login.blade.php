@@ -6,7 +6,8 @@
         <div class="text-red-600 mb-2">{{ $message }}</div>
     @enderror
 
-    <input type="text"
+    <input type="number"
+           inputmode="numeric"
            wire:model="pin"
            class="border rounded-xl w-full p-3 text-lg mb-4 text-center"
            placeholder="{{ __('app.driver.login.pin') }}">
