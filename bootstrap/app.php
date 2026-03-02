@@ -3,6 +3,8 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ErrorReport;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,5 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withProviders([
         NotificationChannels\WebPush\WebPushServiceProvider::class,
     ])
-    ->withExceptions(function (Exceptions $exceptions) {})
+    ->withExceptions(function (Exceptions $exceptions) {
+        // Любая ошибка (report()) отсылает уведомление на rvr@arguss.lv
+        $exceptions->reportable(function (\Throwable $e) {
+            try {
+                Mail::to('rvr@arguss.lv')->send(new ErrorReport($e));
+            } catch (\Throwable $mailException) {
+                // Не ломаем приложение, если отправка письма не удалась
+                report($mailException);
+            }
+        });
+    })
     ->create();

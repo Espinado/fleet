@@ -110,7 +110,7 @@ class TripDetails extends Component
     // важное: переприсвоить модель, чтобы кнопка/статус обновились в UI
     $this->reloadTrip();
 
-    $this->dispatch('success', 'Reiss uzsākts!');
+    $this->dispatch('driver-toast-success');
 }
 
 public function endTrip(): void
@@ -118,7 +118,7 @@ public function endTrip(): void
     $this->reloadTrip();
 
     if (!$this->trip->started_at) {
-        $this->dispatch('error', 'Vispirms uzsāciet reisu (izbraukšana no garāžas).');
+        $this->dispatch('driver-toast-error');
         return;
     }
 
@@ -148,7 +148,7 @@ public function endTrip(): void
         $this->odo_end_km = $this->trip->odo_end_km;
         $this->showOdoEnd = true;
 
-        $this->dispatch('error', 'CAN odometrs ir mazāks par starta. Ievadiet beigu odometru manuāli.');
+        $this->dispatch('driver-toast-error');
         return;
     }
 
@@ -169,7 +169,7 @@ public function endTrip(): void
 
     $this->reloadTrip();
 
-    $this->dispatch('success', 'Reiss pabeigts!');
+    $this->dispatch('driver-toast-success');
 }
 
 public function saveOdoEnd(): void
@@ -186,7 +186,7 @@ public function saveOdoEnd(): void
     }
 
     if ($this->trip->odo_start_km === null) {
-        $this->dispatch('error', 'Nav starta odometra. Vispirms ievadiet starta odometru.');
+        $this->dispatch('driver-toast-error');
         return;
     }
 
@@ -216,7 +216,7 @@ public function saveOdoEnd(): void
     $this->showOdoEnd = false;
 
     $this->trip->refresh();
-    $this->dispatch('success', 'Beigu odometrs saglabāts, reiss pabeigts!');
+    $this->dispatch('driver-toast-success');
 }
 
 public function saveOdoStart(): void
@@ -250,7 +250,7 @@ public function saveOdoStart(): void
     $this->showOdoStart = false;
 
     $this->trip->refresh();
-    $this->dispatch('success', 'Starta odometrs saglabāts, reiss uzsākts!');
+    $this->dispatch('driver-toast-success');
 }
 
     /**
@@ -263,13 +263,13 @@ public function saveOdoStart(): void
 
         // 🚫 Нельзя менять шаги, пока водитель не выехал из гаража
         if (!$this->trip->started_at) {
-            $this->dispatch('error', 'Vispirms uzsāciet reisu (izbraukšana no garāžas).');
+            $this->dispatch('driver-toast-error');
             return;
         }
 
         // 🚫 Нельзя менять шаги после завершения рейса
         if ($this->trip->ended_at) {
-            $this->dispatch('error', 'Reiss jau ir pabeigts.');
+            $this->dispatch('driver-toast-error');
             return;
         }
 
@@ -277,7 +277,7 @@ public function saveOdoStart(): void
         try {
             $newStatus = TripStepStatus::from($newStatusInt);
         } catch (\ValueError $e) {
-            $this->dispatch('error', 'Nederīgs status.');
+            $this->dispatch('driver-toast-error');
             return;
         }
 
@@ -327,7 +327,7 @@ public function saveOdoStart(): void
                         $this->errorStepId = $step->id;
 
                         DB::rollBack();
-                        $this->dispatch('error', 'Šo kravu vēl neesat iekraujis!');
+                        $this->dispatch('driver-toast-error');
                         return;
                     }
                 }
@@ -370,11 +370,11 @@ public function saveOdoStart(): void
 
             $this->trip->refresh()->load('truck');
 
-            $this->dispatch('success', 'Status veiksmīgi atjaunots!');
+            $this->dispatch('driver-toast-success');
         } catch (\Throwable $e) {
             DB::rollBack();
             report($e);
-            $this->dispatch('error', 'Radās kļūda!');
+            $this->dispatch('driver-toast-error');
         }
     }
 
@@ -406,6 +406,7 @@ public function saveOdoStart(): void
         } catch (\InvalidArgumentException $e) {
             $this->addError('stepOdoKm', $e->getMessage());
             $this->errorStepId = $step->id;
+            $this->dispatch('driver-toast-error');
             return;
         }
 
@@ -427,7 +428,7 @@ public function saveOdoStart(): void
 
         $this->trip->refresh()->load('truck');
 
-        $this->dispatch('success', 'Odometrs saglabāts un solis atjaunināts!');
+        $this->dispatch('driver-toast-success');
     }
 
     /**

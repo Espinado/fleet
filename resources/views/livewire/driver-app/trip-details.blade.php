@@ -1,33 +1,7 @@
 {{-- resources/views/livewire/driver-app/trip-details.blade.php --}}
 <div class="flex flex-col min-h-screen bg-gray-100 px-4 pt-4 pb-24">
 
-    {{-- ============================
-         ERROR POPUP (single)
-    ============================ --}}
-    <script>
-        document.addEventListener('livewire:init', () => {
-            Livewire.on('error', message => {
-                window.dispatchEvent(new CustomEvent('driver-error', { detail: message }));
-            });
-        });
-    </script>
-
-    <div
-        x-data="{ show: false, msg: '' }"
-        x-on:driver-error.window="
-            msg = $event.detail;
-            show = true;
-            setTimeout(() => show = false, 3500);
-        "
-        x-show="show"
-        x-transition.opacity.duration.200ms
-        x-transition.scale.origin.center.duration.200ms
-        class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-    >
-        <div class="bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl text-center text-sm font-semibold max-w-xs w-auto pointer-events-auto">
-            <span x-text="msg"></span>
-        </div>
-    </div>
+    {{-- Errors show via global driver toast (layout): "Ошибка! Свяжитесь с администратором" --}}
 
     {{-- ============================
          TRIP SUMMARY

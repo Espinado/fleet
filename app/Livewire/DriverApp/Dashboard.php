@@ -112,12 +112,14 @@ class Dashboard extends Component
 
         if (!$this->trip) {
             $this->garageError = 'Нет активного рейса.';
+            $this->dispatch('driver-toast-error');
             $this->syncGarageFlags();
             return;
         }
 
         if (!$this->trip->truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
+            $this->dispatch('driver-toast-error');
             $this->syncGarageFlags();
             return;
         }
@@ -136,12 +138,14 @@ class Dashboard extends Component
 
         if (!$this->trip) {
             $this->garageError = 'Нет активного рейса.';
+            $this->dispatch('driver-toast-error');
             $this->syncGarageFlags();
             return;
         }
 
         if (!$this->trip->truck) {
             $this->garageError = 'В активном рейсе не найден truck.';
+            $this->dispatch('driver-toast-error');
             $this->syncGarageFlags();
             return;
         }
@@ -169,6 +173,7 @@ class Dashboard extends Component
 
         if (!$this->trip || !$this->trip->truck_id) {
             $this->garageError = 'Нет активного рейса.';
+            $this->dispatch('driver-toast-error');
             $this->cancelManualOdo();
             $this->syncGarageFlags();
             return;
@@ -313,6 +318,7 @@ class Dashboard extends Component
 
             report($e);
             $this->garageError = 'Neizdevās saglabāt odometru. Sazinieties ar dispečeru.';
+            $this->dispatch('driver-toast-error');
             return;
         }
 
@@ -320,6 +326,7 @@ class Dashboard extends Component
             ? "✅ Выезд (вручную): {$odo} км"
             : "✅ Возврат (вручную): {$odo} км";
 
+        $this->dispatch('driver-toast-success');
         $this->cancelManualOdo();
 
         $this->loadCurrentTrip();

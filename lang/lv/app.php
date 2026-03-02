@@ -95,6 +95,10 @@ return [
     'driver.dashboard.open_details' => 'Atvērt reisa detaļas',
     'driver.dashboard.no_active'    => 'Nav aktīva reisa',
 
+    // Driver app: toast (action feedback)
+    'driver.toast.success' => 'Izpildīts',
+    'driver.toast.error'   => 'Kļūda! Sazinieties ar administratoru.',
+
     // Drivers list
     'drivers.title'         => 'Vadītāji',
     'drivers.add'           => 'Pievienot vadītāju',

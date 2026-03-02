@@ -26,6 +26,10 @@ return [
     'driver.dashboard.open_details' => 'Открыть детали рейса',
     'driver.dashboard.no_active'    => 'Нет активного рейса',
 
+    // Driver app: toast (action feedback)
+    'driver.toast.success' => 'Выполнено',
+    'driver.toast.error'   => 'Ошибка! Свяжитесь с администратором.',
+
     // Driver app: bottom bar
     'driver.nav.home'           => 'Главная',
     'driver.nav.trip'           => 'Рейс',

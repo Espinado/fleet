@@ -166,6 +166,7 @@ class DriverTripExpenses extends Component
         if ($needsOdometer && !$this->trip->truck) {
             Log::error('DriverTripExpenses: odometer required but trip has no truck', $this->logCtx());
             $this->addError('manualOdometerKm', 'В рейсе не найден truck.');
+            $this->dispatch('driver-toast-error');
             return;
         }
 
@@ -257,14 +258,15 @@ class DriverTripExpenses extends Component
             ]));
 
             $this->addError('save', 'Neizdevās saglabāt. Mēģiniet vēlreiz vai sazinieties ar dispečeru.');
-            session()->flash('error', 'Neizdevās saglabāt izdevumu.');
+            $this->dispatch('driver-toast-error');
+            report($e);
             return;
         }
 
         $this->reset(['category', 'description', 'amount', 'expense_date', 'file', 'manualOdometerKm', 'liters']);
         $this->resetValidation();
 
-        session()->flash('success', 'Izdevums pievienots!');
+        $this->dispatch('driver-toast-success');
     }
 
     public function render()

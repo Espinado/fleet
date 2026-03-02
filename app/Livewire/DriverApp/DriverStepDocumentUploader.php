@@ -52,23 +52,30 @@ class DriverStepDocumentUploader extends Component
         // дополнительная защита от странных фронтенд-глюков
         if (! $this->file) {
             $this->addError('file', 'Lūdzu izvēlieties failu.');
+            $this->dispatch('driver-toast-error');
             return;
         }
 
-        $path = $this->file->store("trip_steps/{$this->step->id}", 'public');
+        try {
+            $path = $this->file->store("trip_steps/{$this->step->id}", 'public');
 
-        TripStepDocument::create([
-            'trip_step_id'       => $this->step->id,
-            'trip_id'            => $this->step->trip_id,
-            'cargo_id'           => null,
-            'uploader_user_id'   => null,
-            'uploader_driver_id' => Auth::user()->driver->id ?? null,
-            'type'               => $this->type,
-            'file_path'          => $path,
-            'comment'            => $this->comment,
-        ]);
+            TripStepDocument::create([
+                'trip_step_id'       => $this->step->id,
+                'trip_id'            => $this->step->trip_id,
+                'cargo_id'           => null,
+                'uploader_user_id'   => null,
+                'uploader_driver_id' => Auth::user()->driver->id ?? null,
+                'type'               => $this->type,
+                'file_path'          => $path,
+                'comment'            => $this->comment,
+            ]);
 
-        session()->flash('success', 'Dokuments veiksmīgi augšupielādēts!');
+            $this->dispatch('driver-toast-success');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('driver-toast-error');
+            return;
+        }
 
         // обновляем связи и чистим форму
         $this->step->refresh();
