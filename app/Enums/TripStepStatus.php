@@ -2,23 +2,20 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Str;
+
 enum TripStepStatus: int
 {
-    case NOT_STARTED = 1;   // Шаг ещё не начат
-    case ON_THE_WAY  = 2;   // Водитель едет к адресу
-    case ARRIVED     = 3;   // Прибыл на место
-    case PROCESSING  = 4;   // Идёт загрузка/разгрузка
-    case COMPLETED   = 5;   // Шаг завершён
+    case NOT_STARTED = 1;
+    case ON_THE_WAY  = 2;
+    case ARRIVED     = 3;
+    case PROCESSING  = 4;
+    case COMPLETED   = 5;
 
     public function label(): string
     {
-        return match ($this) {
-            self::NOT_STARTED => 'Nav uzsākts',
-            self::ON_THE_WAY  => 'Ceļā',
-            self::ARRIVED     => 'Ieradies',
-            self::PROCESSING  => 'Procesā',
-            self::COMPLETED   => 'Pabeigts',
-        };
+        return Lang::get('app.enums.trip_step_status.' . Str::snake($this->name));
     }
 
     public static function options(): array

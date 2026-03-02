@@ -42,41 +42,9 @@ enum TripDocumentType: string
      ========================== */
     case Additional = 'additional';
 
-    /* =======================================================
-       LABELS FOR UI
-       ======================================================= */
     public function label(): string
     {
-        return match ($this) {
-
-            // ---- LOADING ----
-            self::LoadingBefore     => 'Foto pirms iekraušanas',
-            self::LoadingAfter      => 'Foto pēc iekraušanas',
-            self::LoadingDocs       => 'Iekraušanas dokumenti',
-            self::LoadingSignature  => 'Nosūtītāja paraksts',
-
-            // ---- UNLOADING ----
-            self::UnloadingBefore    => 'Foto pirms izkraušanas',
-            self::UnloadingAfter     => 'Foto pēc izkraušanas',
-            self::UnloadingDocs      => 'Izkraušanas dokumenti',
-            self::UnloadingSignature => 'Saņēmēja paraksts',
-
-            // ---- EXPENSES ----
-            self::FuelReceipt    => 'Degvielas čeks',
-            self::TollReceipt    => 'Ceļu nodevas',
-            self::ParkingReceipt => 'Stāvvieta',
-            self::OtherExpense   => 'Cits izdevums',
-
-            // ---- TRIP DOCS ----
-            self::CMR            => 'CMR',
-            self::TransportOrder => 'Transporta pasūtījums',
-            self::Invoice        => 'Rēķins',
-            self::Permit         => 'Atļauja',
-            self::Insurance      => 'Apdrošināšana',
-
-            // ---- OTHER ----
-            self::Additional => 'Cits',
-        };
+        return \Illuminate\Support\Facades\Lang::get('app.enums.trip_document_type.' . $this->value);
     }
 
     /* =======================================================

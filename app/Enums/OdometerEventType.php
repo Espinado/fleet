@@ -2,6 +2,9 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Str;
+
 enum OdometerEventType: int
 {
     case RUN_START      = 1;
@@ -12,13 +15,7 @@ enum OdometerEventType: int
 
     public function label(): string
     {
-        return match ($this) {
-            self::RUN_START      => 'Garage departure',
-            self::STEP_ARRIVED   => 'Step arrived',
-            self::STEP_COMPLETED => 'Step completed',
-            self::RUN_END        => 'Run ended',
-            self::MANUAL         => 'Manual entry',
-        };
+        return Lang::get('app.enums.odometer_event_type.' . Str::snake($this->name));
     }
 
     public function badgeClass(): string

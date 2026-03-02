@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+
 enum TripStatus: string
 {
     case PLANNED         = 'planned';
@@ -12,13 +14,7 @@ enum TripStatus: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::PLANNED         => 'Planned',
-            self::IN_PROGRESS     => 'In Progress',
-            self::AWAITING_GARAGE => 'Awaiting Garage',
-            self::COMPLETED       => 'Completed',
-            self::CANCELLED       => 'Cancelled',
-        };
+        return Lang::get('app.enums.trip_status.' . $this->value);
     }
 
     // ✅ Цвет бейджа для Tailwind CSS

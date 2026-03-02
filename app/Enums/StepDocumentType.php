@@ -2,29 +2,19 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+
 enum StepDocumentType: string
 {
-    /* --------------------------------
-     |  STEP DOCUMENTS
-     |--------------------------------*/
-    case DeliveryNote = 'delivery_note';       // Pavadzīme
-    case WarehouseStamp = 'warehouse_stamp';   // Noliktavas zīmogs
-    case PalletList = 'pallet_list';           // Palešu saraksts
-    case Invoice = 'invoice';                  // Rēķins
-    case Other = 'other';                      // Cits
+    case DeliveryNote   = 'delivery_note';
+    case WarehouseStamp = 'warehouse_stamp';
+    case PalletList     = 'pallet_list';
+    case Invoice        = 'invoice';
+    case Other          = 'other';
 
-    /* --------------------------------
-     |  OPTIONAL: LABELS FOR UI
-     |--------------------------------*/
     public function label(): string
     {
-        return match ($this) {
-            self::DeliveryNote => 'Pavadzīme',
-            self::WarehouseStamp => 'Noliktavas zīmogs',
-            self::PalletList => 'Palešu saraksts',
-            self::Invoice => 'Rēķins',
-            self::Other => 'Cits',
-        };
+        return Lang::get('app.enums.step_document_type.' . $this->value);
     }
 
     /* --------------------------------

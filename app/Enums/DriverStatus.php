@@ -2,6 +2,9 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Str;
+
 enum DriverStatus: int
 {
     case ON_WORK     = 1;
@@ -9,15 +12,9 @@ enum DriverStatus: int
     case ILL         = 3;
     case STOPPED     = 4;
 
-    // обязательно ; перед методами в enum
     public function label(): string
     {
-        return match ($this) {
-            self::ON_WORK     => '👷 On work',
-            self::ON_VACATION => '🏖️ On vacation',
-            self::ILL         => '🤒 Ill',
-            self::STOPPED     => '🛑 Stopped',
-        };
+        return Lang::get('app.enums.driver_status.' . Str::snake($this->name));
     }
 
     public function color(): string

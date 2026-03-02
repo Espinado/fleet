@@ -2,13 +2,15 @@
 
 namespace App\Enums;
 
+use Illuminate\Support\Facades\Lang;
+
 enum TripExpenseCategory: string
 {
     case FUEL           = 'fuel';
-    case ADBLUE         = 'adblue';          // ✅ новое
-    case WASHER_FLUID   = 'washer_fluid';    // ✅ новое (logu mazgāšanas šķidrums)
+    case ADBLUE         = 'adblue';
+    case WASHER_FLUID   = 'washer_fluid';
     case CAR_WASH       = 'car_wash';
-    case SPARE_PARTS    = 'spare_parts';     // ✅ новое (automazgātava)
+    case SPARE_PARTS    = 'spare_parts';
 
     case TOLL           = 'toll';
     case PARKING        = 'parking';
@@ -21,21 +23,7 @@ enum TripExpenseCategory: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::FUEL           => 'Degviela',
-            self::ADBLUE         => 'AdBlue',
-            self::WASHER_FLUID   => 'Logu mazgāšanas šķidrums',
-            self::CAR_WASH       => 'Automazgātava',
-            self::SPARE_PARTS    => 'Rezerves daļas',
-            self::TOLL           => 'Ceļa nodevas',
-            self::PARKING        => 'Stāvvieta',
-            self::FINE           => 'Sods',
-            self::PERMIT         => 'Atļauja',
-            self::REPAIR         => 'Remonts / Serviss',
-            self::HOTEL          => 'Naktsmītne',
-            self::SUBCONTRACTOR  => 'Apakšpārvadātājs',
-            self::OTHER          => 'Cits izdevums',
-        };
+        return Lang::get('app.enums.trip_expense_category.' . $this->value);
     }
 
     public static function options(): array
