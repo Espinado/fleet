@@ -33,25 +33,46 @@
     </div>
 
     {{-- Dokumenti --}}
-    <div class="bg-white p-4 rounded-xl shadow">
-        <h2 class="font-bold text-lg mb-3">📄 {{ __('app.driver.dashboard.documents') }}</h2>
-
-        <ul class="space-y-2 text-gray-700 text-sm">
-            <li>
-                {{ __('app.driver.dashboard.license') }}:
-                <span class="font-medium">{{ $driver->license_number }}</span>
-                ({{ __('app.driver.dashboard.license_to', ['date' => $driver->license_end]) }})
-            </li>
-
-            <li>
-                Code95:
-                <span class="font-medium">{{ $driver->code95_end }}</span>
-            </li>
-
-            <li>
-                {{ __('app.driver.dashboard.medical') }}: {{ $driver->medical_expired }}
-            </li>
-        </ul>
+    @php
+        $fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->format('d-m-Y') : '—';
+    @endphp
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
+            <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <span class="text-xl">📄</span>
+                {{ __('app.driver.dashboard.documents') }}
+            </h2>
+        </div>
+        <div class="p-4 space-y-3">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-50/80 border border-amber-100">
+                <span class="text-2xl shrink-0" aria-hidden="true">🪪</span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold text-amber-800/90 uppercase tracking-wide">
+                        {{ __('app.driver.dashboard.license') }}
+                    </div>
+                    <div class="text-sm font-medium text-slate-800 mt-0.5">{{ $driver->license_number ?? '—' }}</div>
+                    <div class="text-xs text-slate-600 mt-1">
+                        {{ __('app.driver.dashboard.license_to', ['date' => $fmtDate($driver->license_end)]) }}
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-blue-50/80 border border-blue-100">
+                <span class="text-2xl shrink-0" aria-hidden="true">📋</span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold text-blue-800/90 uppercase tracking-wide">Code95</div>
+                    <div class="text-xs text-slate-600 mt-1">{{ $fmtDate($driver->code95_end) }}</div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-emerald-50/80 border border-emerald-100">
+                <span class="text-2xl shrink-0" aria-hidden="true">🏥</span>
+                <div class="min-w-0 flex-1">
+                    <div class="text-xs font-semibold text-emerald-800/90 uppercase tracking-wide">
+                        {{ __('app.driver.dashboard.medical') }}
+                    </div>
+                    <div class="text-xs text-slate-600 mt-1">{{ $fmtDate($driver->medical_expired) }}</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- Aktīvais reiss --}}
