@@ -30,6 +30,7 @@
     // data safety
     $expeditors        = $expeditors        ?? collect();
     $carrierCompanies  = $carrierCompanies  ?? collect();
+    $thirdPartyCarriers = $thirdPartyCarriers ?? collect();
     $banks             = $banks             ?? [];
     $expeditorData     = $expeditorData     ?? [];
     $taxRates          = $taxRates          ?? [0, 5, 10, 21];
@@ -90,7 +91,7 @@
         $thirdPartyNameWarn || $thirdPartyTruckWarn || $thirdPartyPriceWarn;
 @endphp
 
-<div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+<div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 select2-parent">
 
     {{-- HEADER --}}
     <div class="sticky top-0 z-20 bg-white/85 dark:bg-gray-900/80 border-b border-amber-200 dark:border-amber-900/40 backdrop-blur">
@@ -299,10 +300,18 @@
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                         Название третьей стороны {!! $reqBadge() !!}
                                     </label>
-                                    <input type="text"
-                                           wire:model.defer="third_party_name"
-                                           placeholder="Напр. SIA New Carrier"
-                                           @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])>
+                                    <input
+                                        type="text"
+                                        wire:model.defer="third_party_name"
+                                        list="third-party-carriers-list-create"
+                                        placeholder="Напр. SIA New Carrier"
+                                        @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])
+                                    >
+                                    <datalist id="third-party-carriers-list-create">
+                                        @foreach(($thirdPartyCarriers ?? []) as $tp)
+                                            <option value="{{ $tp->name }}">{{ $tp->name }}</option>
+                                        @endforeach
+                                    </datalist>
                                     @error('third_party_name') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                                 </div>
 

@@ -40,6 +40,9 @@ class CreateTrip extends Component
     /** internal carriers list */
     public $carrierCompanies = [];
 
+    /** third-party carriers (for autocomplete) */
+    public $thirdPartyCarriers = [];
+
     /** banks decoded from companies.banks_json */
     public array $banks = [];
     public ?string $bank_index = null;
@@ -133,12 +136,22 @@ class CreateTrip extends Component
 
         $this->payers = config('payers', []);
 
-        // internal carriers (Lakna/Padex etc)
+        // internal carriers (Lakna/Padex etc) — exclude third parties
         $this->carrierCompanies = Company::query()
             ->where('is_active', 1)
+            ->where(function ($q) {
+                $q->where('is_third_party', false)->orWhereNull('is_third_party');
+            })
             ->whereIn('type', ['carrier', 'mixed', 'forwarder'])
             ->orderBy('name')
             ->get(['id', 'name', 'type']);
+
+        // third party carriers list for name suggestions (datalist)
+        $this->thirdPartyCarriers = Company::query()
+            ->where('is_active', 1)
+            ->whereIn('type', ['carrier', 'mixed'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         // trailer meta init
         $this->updatedTrailerId($this->trailer_id);
@@ -1298,6 +1311,7 @@ class CreateTrip extends Component
             'countries'          => config('countries', []),
             'expeditors'         => $expeditors,
             'carrierCompanies'   => $this->carrierCompanies,
+            'thirdPartyCarriers' => $this->thirdPartyCarriers,
             'needsCarrierSelect' => $this->needsCarrierSelect,
             'payers'             => $this->payers,
             'taxRates'           => $this->taxRates,

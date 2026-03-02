@@ -207,16 +207,47 @@
         document.addEventListener('DOMContentLoaded', () => {
             const initSelect2 = () => {
                 $('.js-select2').each(function () {
-                    if (!$(this).data('select2')) {
+                    const $el = $(this);
+
+                    if (!$el.data('select2')) {
                         const $parent =
-                            $(this).closest('.select2-parent').length
-                                ? $(this).closest('.select2-parent')
+                            $el.closest('.select2-parent').length
+                                ? $el.closest('.select2-parent')
                                 : $('body');
 
-                        $(this).select2({
+                        $el.select2({
                             width: 'resolve',
+                            placeholder: $el.data('placeholder') || undefined,
+                            allowClear: !!$el.data('allow-clear'),
+                            tags: !!$el.data('tags'),
                             dropdownParent: $parent
                         });
+                    }
+
+                    // ✅ Жёсткая синхронизация с Livewire (expeditor / carrier и др.)
+                    if (window.Livewire && !$el.data('lw-select2-bound')) {
+                        $el.on('change', function (e) {
+                            const el = e.target;
+                            const model =
+                                el.getAttribute('wire:model.live') ||
+                                el.getAttribute('wire:model') ||
+                                el.getAttribute('wire:model.defer');
+
+                            if (!model) return;
+
+                            const componentRoot = el.closest('[wire\\:id]');
+                            if (!componentRoot) return;
+
+                            const componentId = componentRoot.getAttribute('wire:id');
+                            if (!componentId) return;
+
+                            const component = window.Livewire.find(componentId);
+                            if (!component || typeof component.set !== 'function') return;
+
+                            component.set(model, $el.val());
+                        });
+
+                        $el.data('lw-select2-bound', true);
                     }
                 });
             };

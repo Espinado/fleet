@@ -37,6 +37,9 @@ class EditTrip extends Component
     public bool $needsCarrierSelect = false;
     public $carrierCompanies = [];
 
+    /** third-party carriers (for autocomplete) */
+    public $thirdPartyCarriers = [];
+
     public array $banks = [];
     public ?string $bank_index = null;
 
@@ -144,9 +147,18 @@ class EditTrip extends Component
 
         $this->carrierCompanies = Company::query()
             ->where('is_active', 1)
+            ->where(function ($q) {
+                $q->where('is_third_party', false)->orWhereNull('is_third_party');
+            })
             ->whereIn('type', ['carrier', 'mixed', 'forwarder'])
             ->orderBy('name')
             ->get(['id', 'name', 'type']);
+
+        $this->thirdPartyCarriers = Company::query()
+            ->where('is_active', 1)
+            ->whereIn('type', ['carrier', 'mixed'])
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         // === basic trip fields
         $this->expeditor_id        = $trip->expeditor_id ? (int) $trip->expeditor_id : null;
@@ -200,6 +212,31 @@ class EditTrip extends Component
         return is_array($decoded2) ? $decoded2 : [];
     }
 
+    protected function hydrateBank(): void
+    {
+        if ($this->bank_index === null || $this->bank_index === '') {
+            $this->expeditorData['bank'] = null;
+            $this->expeditorData['iban'] = null;
+            $this->expeditorData['bic']  = null;
+            return;
+        }
+
+        $key = (string) $this->bank_index;
+
+        if (!array_key_exists($key, $this->banks)) {
+            $this->expeditorData['bank'] = null;
+            $this->expeditorData['iban'] = null;
+            $this->expeditorData['bic']  = null;
+            return;
+        }
+
+        $bank = $this->banks[$key];
+
+        $this->expeditorData['bank'] = $bank['name'] ?? null;
+        $this->expeditorData['iban'] = $bank['iban'] ?? null;
+        $this->expeditorData['bic']  = $bank['bic']  ?? null;
+    }
+
     protected function resetExpeditorState(): void
     {
         $this->expeditorData = [];
@@ -250,10 +287,16 @@ class EditTrip extends Component
 
         $this->banks = $this->decodeBanksJson($exp->banks_json);
 
-        // restore selected bank index from trip snapshot
-        $this->bank_index = $this->trip->expeditor_bank_id !== null
-            ? (string) $this->trip->expeditor_bank_id
-            : null;
+        // при редактировании: только если это исходный экспедитор — берём snapshot банка
+        $useSnapshotBank = $this->trip
+            && $this->trip->expeditor_id
+            && (int) $this->trip->expeditor_id === $id;
+
+        if ($useSnapshotBank && $this->trip->expeditor_bank_id !== null) {
+            $this->bank_index = (string) $this->trip->expeditor_bank_id;
+        } else {
+            $this->bank_index = null;
+        }
 
         $this->expeditorData = [
             'name'      => $exp->name ?? null,
@@ -264,10 +307,15 @@ class EditTrip extends Component
             'post_code' => $exp->post_code ?? null,
             'email'     => $exp->email ?? null,
             'phone'     => $exp->phone ?? null,
-            'bank'      => $this->trip->expeditor_bank ?? null,
-            'iban'      => $this->trip->expeditor_iban ?? null,
-            'bic'       => $this->trip->expeditor_bic ?? null,
+            'bank'      => $useSnapshotBank ? $this->trip->expeditor_bank : null,
+            'iban'      => $useSnapshotBank ? $this->trip->expeditor_iban : null,
+            'bic'       => $useSnapshotBank ? $this->trip->expeditor_bic : null,
         ];
+
+        // если выбрали нового экспедитора или сменили bank_index позже — обновим банковские реквизиты из banks_json
+        if (!$useSnapshotBank) {
+            $this->hydrateBank();
+        }
 
         $this->needsCarrierSelect = ($this->expeditor_type === 'expeditor');
 
@@ -367,6 +415,21 @@ class EditTrip extends Component
             $this->carrier_company_select = '';
             $this->carrier_company_id = null;
         }
+    }
+
+    public function updatedBankIndex($value = null): void
+    {
+        $this->bank_index = ($value === '' || $value === null) ? null : (string) $value;
+
+        if (empty($this->expeditorData)) {
+            $this->expeditorData = [
+                'name' => null, 'reg_nr' => null, 'country' => null, 'city' => null,
+                'address' => null, 'post_code' => null, 'email' => null, 'phone' => null,
+                'bank' => null, 'iban' => null, 'bic' => null,
+            ];
+        }
+
+        $this->hydrateBank();
     }
 
     public function updatedCarrierCompanySelect($value): void
@@ -1303,6 +1366,7 @@ class EditTrip extends Component
             'countries'          => config('countries', []),
             'expeditors'         => $expeditors,
             'carrierCompanies'   => $this->carrierCompanies,
+            'thirdPartyCarriers' => $this->thirdPartyCarriers,
             'needsCarrierSelect' => $this->needsCarrierSelect,
             'payers'             => $this->payers,
             'taxRates'           => $this->taxRates,

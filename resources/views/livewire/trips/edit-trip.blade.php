@@ -30,6 +30,7 @@
     // data safety
     $expeditors        = $expeditors        ?? collect();
     $carrierCompanies  = $carrierCompanies  ?? collect();
+    $thirdPartyCarriers = $thirdPartyCarriers ?? collect();
     $banks             = $banks             ?? [];
     $expeditorData     = $expeditorData     ?? [];
     $taxRates          = $taxRates          ?? [0, 5, 10, 21];
@@ -299,10 +300,18 @@
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                         {{ __('app.trip.edit.third_party_name') }} {!! $reqBadge() !!}
                                     </label>
-                                    <input type="text"
-                                           wire:model.defer="third_party_name"
-                                           placeholder="{{ __('app.trip.edit.placeholder_carrier') }}"
-                                           @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])>
+                                    <input
+                                        type="text"
+                                        wire:model.defer="third_party_name"
+                                        list="third-party-carriers-list-edit"
+                                        placeholder="{{ __('app.trip.edit.placeholder_carrier') }}"
+                                        @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])
+                                    >
+                                    <datalist id="third-party-carriers-list-edit">
+                                        @foreach(($thirdPartyCarriers ?? []) as $tp)
+                                            <option value="{{ $tp->name }}">{{ $tp->name }}</option>
+                                        @endforeach
+                                    </datalist>
                                     @error('third_party_name') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                                 </div>
 
