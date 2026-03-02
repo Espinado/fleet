@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" class="h-full">
+<html lang="{{ app()->getLocale() ?? 'lv' }}" class="h-full">
 <head>
     <meta charset="utf-8">
 

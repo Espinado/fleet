@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 
 use App\Http\Middleware\LogDriverRequests;
+use App\Http\Middleware\SetDriverLocale;
 
 use App\Livewire\DriverApp\Login;
 use App\Livewire\DriverApp\Dashboard;
@@ -34,7 +35,7 @@ Route::get('/driver/icons/{filename}', function ($filename) {
 |--------------------------------------------------------------------------
 */
 Route::get('/driver/login', Login::class)
-    ->middleware('guest:driver')
+    ->middleware(['guest:driver', SetDriverLocale::class])
     ->name('driver.login');
 
 /*
@@ -50,7 +51,7 @@ Route::view('/driver/offline', 'driver-app.offline')
 | AUTHENTICATED DRIVER APP (driver guard)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:driver', LogDriverRequests::class])->group(function () {
+Route::middleware(['auth:driver', LogDriverRequests::class, SetDriverLocale::class])->group(function () {
 
     Route::get('/driver/dashboard', Dashboard::class)
         ->name('driver.dashboard');

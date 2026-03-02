@@ -20,7 +20,7 @@
         @click="open = !open"
         class="w-full bg-yellow-100 px-4 py-3 rounded-xl flex items-center justify-between font-semibold"
     >
-        💶 Pievienot izdevumu
+        💶 {{ __('app.driver.expenses.add_title') }}
         <span x-text="open ? '▲' : '▼'" class="text-xs"></span>
     </button>
 
@@ -49,12 +49,12 @@
 
             {{-- Категория --}}
             <div>
-                <label class="text-xs font-semibold">Kategorija</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.category') }}</label>
                 <select
                     wire:model.live="category"
                     class="w-full border-gray-300 rounded-lg text-sm p-2 bg-white"
                 >
-                    <option value="">— Select category —</option>
+                    <option value="">{{ __('app.driver.expenses.category_choose') }}</option>
 
                     @foreach($categories as $key => $label)
                         <option value="{{ $key }}">{{ $label }}</option>
@@ -71,7 +71,7 @@
 
             {{-- Описание --}}
             <div>
-                <label class="text-xs font-semibold">Apraksts</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.description') }}</label>
                 <input
                     type="text"
                     wire:model.live="description"
@@ -84,7 +84,7 @@
 
             {{-- Сумма --}}
             <div>
-                <label class="text-xs font-semibold">Summa (€)</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.amount') }}</label>
                 <input
                     type="number"
                     step="0.01"
@@ -108,21 +108,21 @@
 
                     <div class="p-3 rounded-xl bg-blue-50 border border-blue-200">
                         <div class="text-xs text-blue-900 font-semibold mb-2">
-                            🧴 Ievadiet daudzumu (litri)
+                            🧴 {{ __('app.driver.expenses.liters_title') }}
                         </div>
 
-                        <label class="text-xs font-semibold">Litri</label>
+                        <label class="text-xs font-semibold">{{ __('app.driver.expenses.liters_label') }}</label>
                         <input
                             type="number"
                             step="0.01"
                             inputmode="decimal"
                             wire:model.live="liters"
                             class="w-full border-gray-300 rounded-lg text-sm p-2 bg-white"
-                            placeholder="piem.: 20.50"
+                            placeholder="{{ __('app.driver.expenses.liters_placeholder') }}"
                         >
 
                         <div class="text-[11px] text-gray-600 mt-1">
-                            Obligāti: Degviela / AdBlue / Logu mazgāšanas šķidrums
+                            {{ __('app.driver.expenses.liters_hint') }}
                         </div>
                     </div>
                 </div>
@@ -139,21 +139,21 @@
 
                     <div class="p-3 rounded-xl bg-yellow-50 border border-yellow-200">
                         <div class="text-xs text-yellow-900 font-semibold mb-2">
-                            ⛽ Ievadiet odometru manuāli (km)
+                            ⛽ {{ __('app.driver.expenses.odo_title') }}
                         </div>
 
-                        <label class="text-xs font-semibold">Odometrs (km)</label>
+                        <label class="text-xs font-semibold">{{ __('app.driver.expenses.odo_label') }}</label>
                         <input
                             type="number"
                             step="0.1"
                             inputmode="decimal"
                             wire:model.live="manualOdometerKm"
                             class="w-full border-gray-300 rounded-lg text-sm p-2 bg-white"
-                            placeholder="piem.: 123456.7"
+                            placeholder="{{ __('app.driver.expenses.odo_placeholder') }}"
                         >
 
                         <div class="text-[11px] text-gray-600 mt-1">
-                            Tiks saglabāts gan izdevumā, gan odometra notikumos (1:1).
+                            {{ __('app.driver.expenses.odo_hint') }}
                         </div>
                     </div>
                 </div>
@@ -161,7 +161,7 @@
 
             {{-- Дата --}}
             <div>
-                <label class="text-xs font-semibold">Datums</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.date') }}</label>
                 <input
                     type="date"
                     wire:model.live="expense_date"
@@ -174,7 +174,7 @@
 
             {{-- Файл --}}
             <div>
-                <label class="text-xs font-semibold">Fails (nav obligāti)</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.file') }}</label>
                 <input
                     type="file"
                     wire:model="file"
@@ -183,7 +183,7 @@
                     class="text-sm"
                 >
                 <div wire:loading wire:target="file" class="text-xs text-gray-500 mt-1">
-                    ⏳ Augšupielāde...
+                    ⏳ {{ __('app.driver.expenses.file_uploading') }}
                 </div>
                 @error('file')
                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
@@ -197,8 +197,8 @@
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold text-sm
                        disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                <span wire:loading.remove wire:target="saveExpense,file">💾 Saglabāt</span>
-                <span wire:loading wire:target="saveExpense,file">⏳ Saglabā...</span>
+                <span wire:loading.remove wire:target="saveExpense,file">💾 {{ __('app.driver.expenses.save') }}</span>
+                <span wire:loading wire:target="saveExpense,file">⏳ {{ __('app.driver.expenses.saving') }}</span>
             </button>
 
         </form>
@@ -210,7 +210,7 @@
         @click="openList = !openList"
         class="w-full bg-gray-100 px-4 py-3 rounded-xl flex items-center justify-between font-semibold"
     >
-        📁 Izdevumu saraksts ({{ $expenses->count() }})
+        📁 {{ __('app.driver.expenses.list_title') }} ({{ $expenses->count() }})
         <span x-text="openList ? '▲' : '▼'" class="text-xs"></span>
     </button>
 
@@ -250,13 +250,13 @@
 
                     @if($liters !== null)
                         <div class="text-xs text-gray-700 mt-1">
-                            🧴 Litri: <span class="font-semibold">{{ number_format((float)$liters, 2) }}</span>
+                            🧴 {{ __('app.driver.expenses.liters_short') }}: <span class="font-semibold">{{ number_format((float)$liters, 2) }}</span>
                         </div>
                     @endif
 
                     @if($isFuelOrAdblue && $odoKm !== null)
                         <div class="text-xs text-gray-700 mt-1">
-                            ⛽ Odometrs: <span class="font-semibold">{{ number_format((float)$odoKm, 1) }}</span> km
+                            ⛽ {{ __('app.driver.expenses.odo_short') }}: <span class="font-semibold">{{ number_format((float)$odoKm, 1) }}</span> km
                             @if($odoSrc)
                                 <span class="text-gray-500">({{ $odoSrc }})</span>
                             @endif
@@ -266,15 +266,19 @@
 
                 <div class="w-14 h-14 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden shrink-0">
                     @if ($url && $isPdf)
-                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-red-600 font-bold text-sm">PDF</a>
+                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-red-600 font-bold text-sm">
+                            {{ __('app.driver.expenses.file_pdf') }}
+                        </a>
                     @elseif ($url && $isImage)
                         <a href="{{ $url }}" target="_blank" rel="noopener" class="block">
                             <img src="{{ $url }}" class="w-14 h-14 object-cover" alt="Expense file">
                         </a>
                     @elseif ($url)
-                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-gray-700 font-semibold text-xs">FILE</a>
+                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-gray-700 font-semibold text-xs">
+                            {{ __('app.driver.expenses.file_other') }}
+                        </a>
                     @else
-                        <span class="text-gray-400 text-xs">Nav faila</span>
+                        <span class="text-gray-400 text-xs">{{ __('app.driver.expenses.file_none') }}</span>
                     @endif
                 </div>
 
@@ -282,13 +286,13 @@
 
         @empty
             <div class="text-sm text-gray-500">
-                Nav izdevumu
+                {{ __('app.driver.expenses.no_expenses') }}
             </div>
         @endforelse
 
         @if($expenses->count())
             <div class="font-semibold text-right mt-3">
-                Kopā: €{{ number_format((float)$total, 2) }}
+                {{ __('app.driver.expenses.total') }}: €{{ number_format((float)$total, 2) }}
             </div>
         @endif
     </div>

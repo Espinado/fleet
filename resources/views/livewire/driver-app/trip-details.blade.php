@@ -33,10 +33,12 @@
          TRIP SUMMARY
     ============================ --}}
     <div class="bg-white shadow rounded-xl p-4 space-y-2">
-        <h2 class="text-lg font-semibold">🚛 Рейс #{{ $trip->id }}</h2>
+        <h2 class="text-lg font-semibold">
+            🚛 {{ __('app.driver.trip_details.trip_title', ['id' => $trip->id]) }}
+        </h2>
 
         <p class="text-sm">
-            <strong>Машина:</strong> {{ $trip->truck?->plate ?? '—' }}
+            <strong>{{ __('app.driver.trip_details.truck') }}:</strong> {{ $trip->truck?->plate ?? '—' }}
         </p>
 
         @php
@@ -47,11 +49,11 @@
         @endphp
 
         <p class="text-xs bg-blue-50 text-blue-700 rounded p-2">
-            <strong>Маршрут:</strong> {!! $routeLine !!}
+            <strong>{{ __('app.driver.trip_details.route') }}:</strong> {!! $routeLine !!}
         </p>
 
         <p class="text-sm">
-            <strong>Статус:</strong>
+            <strong>{{ __('app.driver.trip_details.status') }}:</strong>
             <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded">
                 {{ $trip->status_label }}
             </span>
@@ -65,7 +67,9 @@
     <div wire:key="garage-{{ $trip->id }}" class="bg-white shadow rounded-xl p-4 space-y-3 mt-3">
 
         <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold">🚪 Garāža → Garāža</div>
+            <div class="text-sm font-semibold">
+                🚪 {{ __('app.driver.trip_details.garage_to_garage') }}
+            </div>
 
             @php
                 // сейчас CAN не используем для гаража, но бейдж оставим как инфо по траку
@@ -73,47 +77,50 @@
             @endphp
 
             <span class="text-[11px] px-2 py-1 rounded-full {{ $can ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
-                {{ $can ? 'CAN auto (nav izmantots)' : 'Manual odometrs' }}
+                {{ $can ? __('app.driver.trip_details.can_auto_unused') : __('app.driver.trip_details.manual_odo') }}
             </span>
         </div>
 
-        <div class="text-xs text-gray-600 space-y-1">
-            <div><strong>Start:</strong> {{ $trip->started_at?->format('d.m.Y H:i') ?? '—' }}</div>
-            <div><strong>End:</strong> {{ $trip->ended_at?->format('d.m.Y H:i') ?? '—' }}</div>
+            <div class="text-xs text-gray-600 space-y-1">
+            <div><strong>{{ __('app.driver.trip_details.start') }}:</strong> {{ $trip->started_at?->format('d.m.Y H:i') ?? '—' }}</div>
+            <div><strong>{{ __('app.driver.trip_details.end') }}:</strong> {{ $trip->ended_at?->format('d.m.Y H:i') ?? '—' }}</div>
 
             {{-- Odometer snapshot --}}
             <div class="pt-1 space-y-1">
                 <div>
-                    <strong>Odo start:</strong>
+                    <strong>{{ __('app.driver.trip_details.odo_start') }}:</strong>
                     {{ $trip->odo_start_km !== null ? number_format($trip->odo_start_km, 0, '.', ' ') . ' km' : '—' }}
                 </div>
                 <div>
-                    <strong>Odo end:</strong>
+                    <strong>{{ __('app.driver.trip_details.odo_end') }}:</strong>
                     {{ $trip->odo_end_km !== null ? number_format($trip->odo_end_km, 0, '.', ' ') . ' km' : '—' }}
                 </div>
 
                 @if($trip->odo_start_km !== null && $trip->odo_end_km !== null)
                     <div class="pt-1">
-                        <strong>Nobraukums:</strong>
+                        <strong>{{ __('app.driver.trip_details.distance') }}:</strong>
                         {{ number_format(($trip->odo_end_km - $trip->odo_start_km), 0, '.', ' ') }} km
                     </div>
                 @endif
             </div>
 
             <div class="text-[11px] text-gray-500 pt-1">
-                ℹ️ Izbraukšana / atgriešanās garāžā tiek veikta <strong>Dashboard</strong> sadaļā.
+                ℹ️ {{ __('app.driver.trip_details.garage_hint') }}
             </div>
         </div>
 
         {{-- Status hint --}}
-        <div class="text-xs text-gray-500 flex items-center justify-between">
-            <span>
-                Смена: <span class="font-medium">{{ $trip->vehicle_run_id ? 'открыта' : 'закрыта' }}</span>
-            </span>
-            <span>
-                {{ $trip->vehicle_run_id ? '🚚 В пути' : '🏠 В гараже' }}
-            </span>
-        </div>
+            <div class="text-xs text-gray-500 flex items-center justify-between">
+                <span>
+                    {{ __('app.driver.trip_details.shift') }}:
+                    <span class="font-medium">
+                        {{ $trip->vehicle_run_id ? __('app.driver.trip_details.shift_open') : __('app.driver.trip_details.shift_closed') }}
+                    </span>
+                </span>
+                <span>
+                    {{ $trip->vehicle_run_id ? '🚚 ' . __('app.driver.trip_details.state_road') : '🏠 ' . __('app.driver.trip_details.state_garage') }}
+                </span>
+            </div>
 
     </div>
 
@@ -144,7 +151,7 @@
                     <span class="text-[15px] font-semibold">
                         {{ $label }}
                         @if($isErrorStep)
-                            <span class="ml-2 text-[11px] font-semibold text-red-600">⚠️ kļūda</span>
+                            <span class="ml-2 text-[11px] font-semibold text-red-600">⚠️ {{ __('app.driver.trip_details.step_error') }}</span>
                         @endif
                     </span>
                     <span class="text-xs text-gray-500">{{ $city }}</span>
@@ -171,23 +178,23 @@
 
                 {{-- Location --}}
                 <div class="bg-gray-50 rounded p-3 text-sm space-y-1">
-                    <p><strong>📍 Локация:</strong> {{ $city }}</p>
-                    <p><strong>📍 Адрес:</strong> {{ $step->address }}</p>
-                    <p><strong>📅 Дата:</strong> {{ optional($step->date)->format('d.m.Y') }}</p>
+                    <p><strong>📍 {{ __('app.driver.trip_details.location') }}:</strong> {{ $city }}</p>
+                    <p><strong>📍 {{ __('app.driver.trip_details.address') }}:</strong> {{ $step->address }}</p>
+                    <p><strong>📅 {{ __('app.driver.trip_details.date') }}:</strong> {{ optional($step->date)->format('d.m.Y') }}</p>
                 </div>
 
                 {{-- Clients --}}
                 @if($step->cargos->count())
                     <div class="text-xs space-y-1">
-                        <p><strong>Отправитель:</strong> {{ $step->cargos->first()->shipper?->company_name }}</p>
-                        <p><strong>Получатель:</strong> {{ $step->cargos->first()->consignee?->company_name }}</p>
+                        <p><strong>{{ __('app.driver.trip_details.shipper') }}:</strong> {{ $step->cargos->first()->shipper?->company_name }}</p>
+                        <p><strong>{{ __('app.driver.trip_details.consignee') }}:</strong> {{ $step->cargos->first()->consignee?->company_name }}</p>
                     </div>
                 @endif
 
                 {{-- Status + actions --}}
                 <div class="border-t pt-3 mt-3 space-y-2">
                     <div class="flex items-center justify-between text-xs">
-                        <span class="text-gray-500">Status solim:</span>
+                        <span class="text-gray-500">{{ __('app.driver.trip_details.step_status_label') }}</span>
 
                         {{-- ✅ FIX: valid @class usage --}}
                         <span @class([
@@ -210,7 +217,7 @@
                                     wire:click="updateStepStatus({{ $step->id }}, {{ $TS::ARRIVED->value }})"
                                     wire:loading.attr="disabled"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold active:scale-95">
-                                    📍 Esmu klāt
+                                    📍 {{ __('app.driver.trip_details.btn_im_here') }}
                                 </button>
                                 @break
 
@@ -219,7 +226,7 @@
                                     wire:click="updateStepStatus({{ $step->id }}, {{ $TS::PROCESSING->value }})"
                                     wire:loading.attr="disabled"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 rounded-lg bg-amber-500 text-white text-xs font-semibold active:scale-95">
-                                    ⚙ Uzsākt iekraušanu/izkraušanu
+                                    ⚙ {{ __('app.driver.trip_details.btn_start_loading') }}
                                 </button>
                                 @break
 
@@ -228,13 +235,13 @@
                                     wire:click="updateStepStatus({{ $step->id }}, {{ $TS::COMPLETED->value }})"
                                     wire:loading.attr="disabled"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 rounded-lg bg-green-600 text-white text-xs font-semibold active:scale-95">
-                                    ✔ Pabeigt iekraušanu/izkraušanu
+                                    ✔ {{ __('app.driver.trip_details.btn_finish_loading') }}
                                 </button>
                                 @break
 
                             @case($TS::COMPLETED)
                                 <div class="text-xs text-green-600 font-semibold">
-                                    ✅ Solis pabeigts
+                                    ✅ {{ __('app.driver.trip_details.step_completed') }}
                                 </div>
                                 @break
 
@@ -244,7 +251,7 @@
                                     wire:click="updateStepStatus({{ $step->id }}, {{ $TS::ON_THE_WAY->value }})"
                                     wire:loading.attr="disabled"
                                     class="flex-1 inline-flex justify-center items-center px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold active:scale-95">
-                                    🚚 Dodos uz adresi
+                                    🚚 {{ __('app.driver.trip_details.btn_go_to_address') }}
                                 </button>
                                 @break
 
@@ -258,7 +265,7 @@
                 <div x-data="{ openUpload: @js($errors->isNotEmpty()), openList: false }" class="border-t pt-3 mt-3">
                     <button @click="openUpload = !openUpload"
                             class="w-full flex items-center justify-between px-3 py-2 bg-indigo-50 rounded-lg text-sm font-semibold">
-                        📤 Pievienot dokumentu
+                        📤 {{ __('app.driver.trip_details.add_document') }}
                         <span x-text="openUpload ? '▲' : '▼'" class="text-xs"></span>
                     </button>
 
@@ -272,7 +279,7 @@
 
                     <button @click="openList = !openList"
                             class="w-full flex items-center justify-between mt-4 px-3 py-2 bg-gray-100 rounded-lg text-sm font-semibold">
-                        📁 Dokumenti solim <span class="text-blue-600">({{ $docCount }})</span>
+                        📁 {{ __('app.driver.trip_details.step_documents') }} <span class="text-blue-600">({{ $docCount }})</span>
                         <span x-text="openList ? '▲' : '▼'" class="text-xs"></span>
                     </button>
 
@@ -308,7 +315,9 @@
                                             <img src="{{ $url }}" class="w-14 h-14 object-cover" alt="">
                                         </a>
                                     @else
-                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-indigo-600 underline text-xs">Open</a>
+                                        <a href="{{ $url }}" target="_blank" rel="noopener" class="text-indigo-600 underline text-xs">
+                                            {{ __('app.driver.step_docs.open') }}
+                                        </a>
                                     @endif
                                 </div>
                             </div>
@@ -327,10 +336,10 @@
         <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
             <div class="bg-white rounded-2xl shadow-xl p-4 w-full max-w-sm space-y-3">
                 <h2 class="text-sm font-semibold">
-                    ⛽ Ievadiet odometru (km)
+                    ⛽ {{ __('app.driver.trip_details.odo_modal_title') }}
                 </h2>
                 <p class="text-xs text-gray-600">
-                    Odometra rādījumam jābūt <strong>ne mazākam</strong> par iepriekšējo soli.
+                    {{ __('app.driver.trip_details.odo_modal_hint') }}
                 </p>
 
                 <div>
@@ -339,7 +348,7 @@
                         step="0.1"
                         wire:model.defer="stepOdoKm"
                         class="w-full rounded-lg border-gray-300 text-sm"
-                        placeholder="piem.: 123456.7"
+                        placeholder="{{ __('app.driver.trip_details.odo_placeholder') }}"
                     >
                     @error('stepOdoKm')
                         <div class="mt-1 text-[11px] text-red-600">{{ $message }}</div>
@@ -352,7 +361,7 @@
                         wire:click="$set('showStepOdoModal', false)"
                         class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold"
                     >
-                        Atcelt
+                        {{ __('app.driver.trip_details.cancel') }}
                     </button>
                     <button
                         type="button"
@@ -360,7 +369,7 @@
                         wire:loading.attr="disabled"
                         class="px-3 py-1.5 rounded-lg bg-green-600 text-white text-xs font-semibold"
                     >
-                        Saglabāt
+                        {{ __('app.driver.trip_details.save') }}
                     </button>
                 </div>
             </div>

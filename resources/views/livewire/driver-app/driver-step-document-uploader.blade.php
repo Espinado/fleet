@@ -7,7 +7,7 @@
 
         {{-- TYPE --}}
         <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold">Tips</label>
+            <label class="text-xs font-semibold">{{ __('app.driver.step_docs.type') }}</label>
 
             <select wire:model="type"
                     class="border-gray-300 rounded-lg text-sm p-2 bg-white">
@@ -25,7 +25,7 @@
 
         {{-- COMMENT --}}
         <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold">Komentārs</label>
+            <label class="text-xs font-semibold">{{ __('app.driver.step_docs.comment') }}</label>
             <input type="text" wire:model="comment"
                    class="border-gray-300 rounded-lg text-sm p-2 bg-white">
             @error('comment')
@@ -35,7 +35,7 @@
 
         {{-- FILE --}}
         <div class="flex flex-col gap-1">
-            <label class="text-xs font-semibold">Fails</label>
+            <label class="text-xs font-semibold">{{ __('app.driver.step_docs.file') }}</label>
             <input type="file"
                    wire:model="file"
                    accept="image/*,application/pdf"
@@ -48,7 +48,7 @@
 
         <button type="submit"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold text-sm">
-            ⬆ Augšupielādēt
+            ⬆ {{ __('app.driver.step_docs.upload') }}
         </button>
 
     </form>
@@ -95,7 +95,7 @@
                         </a>
                     @else
                         <a href="{{ $url }}" target="_blank" class="text-indigo-600 underline text-xs">
-                            Open
+                            {{ __('app.driver.step_docs.open') }}
                         </a>
                     @endif
                 </div>

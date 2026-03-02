@@ -41,8 +41,8 @@
     {{-- Header --}}
     <div class="flex items-center justify-between gap-3">
         <div>
-            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">🧾 Driver events</h1>
-            <div class="text-sm text-gray-500 dark:text-gray-400">Departure / Return / Step / Driver expenses</div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">🧾 {{ __('app.stats.events.title') }}</h1>
+            <div class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.stats.events.subtitle') }}</div>
         </div>
 
         <button
@@ -50,7 +50,7 @@
             wire:click="$toggle('filtersOpen')"
             class="md:hidden px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 font-semibold text-sm"
         >
-            🔎 Filters
+            🔎 {{ __('app.stats.filters') }}
         </button>
     </div>
 
@@ -58,19 +58,19 @@
     <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 space-y-3 @if(!$filtersOpen) hidden md:block @endif">
         <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
             <div class="md:col-span-2">
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Search</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.search') }}</label>
                 <input
                     type="text"
                     wire:model.live.debounce.400ms="search"
-                    placeholder="Driver / Truck / Expense / Note..."
+                    placeholder="{{ __('app.stats.events.search') }}"
                     class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
                 >
             </div>
 
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Type</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.type') }}</label>
                 <select wire:model.live="type" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
-                    <option value="">— all —</option>
+                    <option value="">{{ __('app.stats.events.all') }}</option>
                     @foreach($types as $k => $v)
                         <option value="{{ $k }}">{{ $v }}</option>
                     @endforeach
@@ -78,9 +78,9 @@
             </div>
 
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Driver</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.driver') }}</label>
                 <select wire:model.live="driverId" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
-                    <option value="">— all —</option>
+                    <option value="">{{ __('app.stats.events.all') }}</option>
                     @foreach($drivers as $d)
                         <option value="{{ $d['id'] }}">{{ $d['name'] }}</option>
                     @endforeach
@@ -88,9 +88,9 @@
             </div>
 
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Truck</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.truck') }}</label>
                 <select wire:model.live="truckId" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
-                    <option value="">— all —</option>
+                    <option value="">{{ __('app.stats.events.all') }}</option>
                     @foreach($trucks as $t)
                         <option value="{{ $t['id'] }}">{{ $t['name'] }}</option>
                     @endforeach
@@ -98,7 +98,7 @@
             </div>
 
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Per page</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.per_page') }}</label>
                 <select wire:model.live="perPage" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
                     <option value="10">10</option>
                     <option value="25">25</option>
@@ -110,12 +110,12 @@
 
         <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Date from</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.date_from') }}</label>
                 <input type="date" wire:model.live="dateFrom" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
             </div>
 
             <div>
-                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">Date to</label>
+                <label class="text-xs font-semibold text-gray-600 dark:text-gray-300">{{ __('app.stats.events.date_to') }}</label>
                 <input type="date" wire:model.live="dateTo" class="w-full mt-1 rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm">
             </div>
 
@@ -125,13 +125,13 @@
                     wire:click="clearFilters"
                     class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
-                    Clear
+                    {{ __('app.stats.events.clear') }}
                 </button>
             </div>
         </div>
     </div>
 
-    <div wire:loading class="text-sm text-gray-500 dark:text-gray-400">⏳ Loading…</div>
+    <div wire:loading class="text-sm text-gray-500 dark:text-gray-400">⏳ {{ __('app.stats.events.loading') }}</div>
 
     {{-- MOBILE cards (PWA) --}}
     <div class="space-y-3 md:hidden">
@@ -204,18 +204,20 @@
                 $typeLabel = null;
                 $badgeClass = null;
 
-                if ($isExpenseRow) {
-                    $typeLabel = 'Driver expenses';
+                        if ($isExpenseRow) {
+                            $typeLabel = __('app.stats.events.badge_expense');
                     $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
                 } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
-                    $stepLabel = $stepStatusLabel($row->step_status ?? null);
-                    $typeLabel = $stepLabel ? ('Step: ' . $stepLabel) : 'Step status';
+                            $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                            $typeLabel = $stepLabel
+                                ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
+                                : __('app.stats.events.badge_step');
                     $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
                 } elseif ($isEventRow && $typeEnum) {
                     $typeLabel = $typeEnum->label();
                     $badgeClass = $typeEnum->badgeClass();
                 } else {
-                    $typeLabel = 'Event';
+                            $typeLabel = __('app.stats.events.badge_event');
                     $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
                 }
             @endphp
@@ -278,7 +280,7 @@
             @endif
         @empty
             <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 text-center text-gray-500 dark:text-gray-400">
-                No events
+                {{ __('app.stats.events.no_events') }}
             </div>
         @endforelse
 
@@ -294,25 +296,25 @@
                 <thead class="bg-gray-50 dark:bg-gray-800 text-xs uppercase text-gray-600 dark:text-gray-300">
                 <tr>
                     <th class="px-4 py-3 text-left cursor-pointer" wire:click="sortBy('driver')">
-                        Driver @if($sortField === 'driver') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.driver') }} @if($sortField === 'driver') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-left cursor-pointer" wire:click="sortBy('truck')">
-                        Truck @if($sortField === 'truck') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.truck') }} @if($sortField === 'truck') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-left cursor-pointer" wire:click="sortBy('type')">
-                        Event @if($sortField === 'type') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.col_event') }} @if($sortField === 'type') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-left cursor-pointer whitespace-nowrap" wire:click="sortBy('timestamp')">
-                        Timestamp @if($sortField === 'timestamp') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.col_timestamp') }} @if($sortField === 'timestamp') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-right cursor-pointer whitespace-nowrap" wire:click="sortBy('odometer_km')">
-                        Odo @if($sortField === 'odometer_km') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.col_odo') }} @if($sortField === 'odometer_km') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-right cursor-pointer whitespace-nowrap" wire:click="sortBy('amount')">
-                        Amount @if($sortField === 'amount') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
+                        {{ __('app.stats.events.col_amount') }} @if($sortField === 'amount') {{ $sortDirection === 'asc' ? '↑' : '↓' }} @endif
                     </th>
                     <th class="px-4 py-3 text-left">
-                        Details
+                        {{ __('app.stats.events.col_details') }}
                     </th>
                 </tr>
                 </thead>
@@ -382,18 +384,20 @@
                         $typeLabel = null;
                         $badgeClass = null;
 
-                        if ($isExpenseRow) {
-                            $typeLabel = 'Driver expenses';
+                if ($isExpenseRow) {
+                    $typeLabel = __('app.stats.events.badge_expense');
                             $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
                         } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
-                            $stepLabel = $stepStatusLabel($row->step_status ?? null);
-                            $typeLabel = $stepLabel ? ('Step: ' . $stepLabel) : 'Step status';
+                    $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                    $typeLabel = $stepLabel
+                        ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
+                        : __('app.stats.events.badge_step');
                             $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
                         } elseif ($isEventRow && $typeEnum) {
                             $typeLabel = $typeEnum->label();
                             $badgeClass = $typeEnum->badgeClass();
                         } else {
-                            $typeLabel = 'Event';
+                    $typeLabel = __('app.stats.events.badge_event');
                             $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
                         }
                     @endphp
@@ -450,7 +454,7 @@
                     @endif
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">No events</td>
+                        <td colspan="7" class="px-4 py-6 text-center text-gray-500 dark:text-gray-400">{{ __('app.stats.events.no_events') }}</td>
                     </tr>
                 @endforelse
                 </tbody>

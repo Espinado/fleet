@@ -111,10 +111,10 @@ class EventsTable extends Component
     public function getTypeOptionsProperty(): array
     {
         return [
-            TruckOdometerEvent::TYPE_DEPARTURE => 'Garage departure',
-            TruckOdometerEvent::TYPE_RETURN    => 'Garage return',
-            TruckOdometerEvent::TYPE_EXPENSE   => 'Driver expenses',
-            TruckOdometerEvent::TYPE_STEP      => 'Step status',
+            TruckOdometerEvent::TYPE_DEPARTURE => __('app.stats.departure_garage'),
+            TruckOdometerEvent::TYPE_RETURN    => __('app.stats.return_garage'),
+            TruckOdometerEvent::TYPE_EXPENSE   => __('app.stats.events.badge_expense'),
+            TruckOdometerEvent::TYPE_STEP      => __('app.stats.events.badge_step'),
         ];
     }
 
@@ -318,7 +318,7 @@ class EventsTable extends Component
             'rows'  => $this->rows,
             'types' => $this->typeOptions,
         ])->layout('layouts.app', [
-            'title' => 'Driver events',
+            'title' => __('app.stats.events.title'),
         ]);
     }
 }

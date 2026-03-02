@@ -9,7 +9,7 @@
         <a href="{{ route('driver.dashboard') }}"
            class="flex flex-col items-center text-xs {{ $active === 'driver.dashboard' ? 'text-blue-600 font-semibold' : 'text-gray-500' }}">
             <div class="text-2xl leading-none">🏠</div>
-            Главная
+            {{ __('app.driver.nav.home') }}
         </a>
 
         {{-- Trip --}}
@@ -17,12 +17,12 @@
             <a href="{{ route('driver.trip', $currentTripId) }}"
                class="flex flex-col items-center text-xs {{ $active === 'driver.trip' ? 'text-blue-600 font-semibold' : 'text-gray-500' }}">
                 <div class="text-2xl leading-none">🚛</div>
-                Рейс
+                {{ __('app.driver.nav.trip') }}
             </a>
         @else
             <div class="flex flex-col items-center text-xs text-gray-300 opacity-50 cursor-not-allowed">
                 <div class="text-2xl leading-none">🚛</div>
-                Рейс
+                {{ __('app.driver.nav.trip') }}
             </div>
         @endif
 
@@ -32,7 +32,7 @@
             <button type="submit"
                 class="flex flex-col items-center text-xs text-red-500 hover:text-red-600 font-semibold">
                 <div class="text-2xl leading-none">🚪</div>
-                Выйти
+                {{ __('app.driver.nav.logout') }}
             </button>
         </form>
 

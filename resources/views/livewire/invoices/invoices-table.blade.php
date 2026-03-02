@@ -3,11 +3,11 @@
     {{-- TOP BAR --}}
     <div class="sticky top-0 z-30 bg-white/95 border-b border-gray-200 backdrop-blur">
         <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-            <h1 class="text-lg sm:text-2xl font-semibold text-gray-800 truncate">💶 Invoices</h1>
+            <h1 class="text-lg sm:text-2xl font-semibold text-gray-800 truncate">💶 {{ __('app.inv.title') }}</h1>
 
             <div class="hidden sm:flex text-sm text-gray-600 items-center">
                 <span class="px-3 py-2 rounded-xl bg-gray-200/60">
-                    Rows: {{ $rows->total() }}
+                    {{ __('app.inv.rows') }} {{ $rows->total() }}
                 </span>
             </div>
         </div>
@@ -22,7 +22,7 @@
                         <input
                             type="text"
                             wire:model.live.debounce.400ms="search"
-                            placeholder="Search: payer / reg nr / invoice no..."
+                            placeholder="{{ __('app.inv.search_placeholder') }}"
                             class="w-full rounded-xl border-gray-300 focus:border-indigo-400 focus:ring-indigo-200 pr-10"
                         />
 
@@ -33,8 +33,8 @@
                                 class="absolute right-2 top-1/2 -translate-y-1/2 z-10
                                        w-8 h-8 inline-flex items-center justify-center
                                        rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
-                                aria-label="Clear search"
-                                title="Clear"
+                                aria-label="{{ __('app.trips.clear_search') }}"
+                                title="{{ __('app.trips.clear_search') }}"
                             >
                                 ✕
                             </button>
@@ -48,10 +48,10 @@
                         wire:model.live="status"
                         class="w-full rounded-xl border-gray-300 focus:border-indigo-400 focus:ring-indigo-200"
                     >
-                        <option value="all">All statuses</option>
-                        <option value="paid">Paid</option>
-                        <option value="partial">Partially paid</option>
-                        <option value="unpaid">Unpaid</option>
+                        <option value="all">{{ __('app.inv.status_all') }}</option>
+                        <option value="paid">{{ __('app.inv.status_paid') }}</option>
+                        <option value="partial">{{ __('app.inv.status_partial') }}</option>
+                        <option value="unpaid">{{ __('app.inv.status_unpaid') }}</option>
                     </select>
                 </div>
 
@@ -61,9 +61,9 @@
                         wire:model.live="perPage"
                         class="w-full rounded-xl border-gray-300 focus:border-indigo-400 focus:ring-indigo-200"
                     >
-                        <option value="10">10 / page</option>
-                        <option value="20">20 / page</option>
-                        <option value="50">50 / page</option>
+                        <option value="10">{{ __('app.inv.per_page_10') }}</option>
+                        <option value="20">{{ __('app.inv.per_page_20') }}</option>
+                        <option value="50">{{ __('app.inv.per_page_50') }}</option>
                     </select>
                 </div>
 
@@ -85,38 +85,38 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-gray-50 text-gray-700">
                         <tr>
-                            <th class="px-4 py-3 text-left font-semibold">Status</th>
+                            <th class="px-4 py-3 text-left font-semibold">{{ __('app.inv.col_status') }}</th>
 
                             <th class="px-4 py-3 text-left font-semibold">
                                 <button wire:click="sort('invoice_no')" class="hover:underline">
-                                    Invoice #
+                                    {{ __('app.inv.col_invoice') }}
                                 </button>
                             </th>
 
-                            <th class="px-4 py-3 text-left font-semibold">Payer</th>
+                            <th class="px-4 py-3 text-left font-semibold">{{ __('app.inv.col_payer') }}</th>
 
                             <th class="px-4 py-3 text-right font-semibold">
                                 <button wire:click="sort('total')" class="hover:underline">
-                                    Total
+                                    {{ __('app.inv.col_total') }}
                                 </button>
                             </th>
 
-                            <th class="px-4 py-3 text-right font-semibold">Paid</th>
+                            <th class="px-4 py-3 text-right font-semibold">{{ __('app.inv.col_paid') }}</th>
 
                             <th class="px-4 py-3 text-left font-semibold">
                                 <button wire:click="sort('issued_at')" class="hover:underline">
-                                    Issued
+                                    {{ __('app.inv.col_issued') }}
                                 </button>
                             </th>
 
                             <th class="px-4 py-3 text-left font-semibold">
                                 <button wire:click="sort('last_paid_at')" class="hover:underline">
-                                    Paid date
+                                    {{ __('app.inv.col_paid_date') }}
                                 </button>
                             </th>
 
                             <th class="px-4 py-3 text-right font-semibold">
-                                Actions
+                                {{ __('app.inv.col_actions') }}
                             </th>
                         </tr>
                     </thead>
@@ -129,13 +129,13 @@
                                 $currency = $inv->currency ?? 'EUR';
 
                                 if ($paid >= $total && $total > 0) {
-                                    $statusText = 'Paid';
+                                    $statusText = __('app.inv.status_badge_paid');
                                     $badge = 'bg-green-100 text-green-700 border-green-200';
                                 } elseif ($paid > 0 && $paid < $total) {
-                                    $statusText = 'Partial';
+                                    $statusText = __('app.inv.status_badge_partial');
                                     $badge = 'bg-yellow-100 text-yellow-800 border-yellow-200';
                                 } else {
-                                    $statusText = 'Unpaid';
+                                    $statusText = __('app.inv.status_badge_unpaid');
                                     $badge = 'bg-red-100 text-red-700 border-red-200';
                                 }
 
@@ -164,8 +164,8 @@
                                             $unpaid = max($total - $paid, 0);
                                         @endphp
                                         <div class="mt-1 text-[11px] text-red-700 space-y-0.5">
-                                            <div>Overdue by {{ $overdueDays }} day{{ $overdueDays === 1 ? '' : 's' }}</div>
-                                            <div>Unpaid: {{ number_format($unpaid, 2, '.', ' ') }} {{ $currency }}</div>
+                                            <div>{{ __('app.inv.overdue_days', ['days' => $overdueDays]) }}</div>
+                                            <div>{{ __('app.inv.unpaid_amount', ['amount' => number_format($unpaid, 2, '.', ' '), 'currency' => $currency]) }}</div>
                                         </div>
                                     @endif
                                 </td>
@@ -184,7 +184,7 @@
                                                 class="shrink-0 px-3 py-2 bg-amber-200 text-amber-900 rounded-lg font-semibold
                                                        hover:bg-amber-300 transition"
                                             >
-                                                👁 Open
+                                                👁 {{ __('app.client.show.open_pdf') }}
                                             </a>
                                         @endif
                                     </div>
@@ -205,7 +205,7 @@
                                 <td class="px-4 py-3 text-gray-800">
                                     <div>{{ $issuedAt }}</div>
                                     <div class="text-xs text-gray-500">
-                                        Due: {{ $dueDate }}
+                                        {{ __('app.inv.due') }} {{ $dueDate }}
                                     </div>
                                 </td>
 
@@ -252,7 +252,7 @@
                                                     step="0.01"
                                                     wire:model.defer="payment_amount"
                                                     class="w-40 rounded-lg border-gray-300 text-xs"
-                                                    placeholder="Amount"
+                                                    placeholder="{{ __('app.inv.payment.placeholder') }}"
                                                 >
                                                 @error('payment_amount')
                                                     <div class="mt-0.5 text-[11px] text-red-600">{{ $message }}</div>
@@ -264,14 +264,14 @@
                                                     type="submit"
                                                     class="px-2 py-1 rounded-lg bg-green-600 text-white text-xs font-semibold hover:bg-green-700"
                                                 >
-                                                    Save
+                                                    {{ __('app.inv.payment.save') }}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     wire:click="cancelAddPayment"
                                                     class="px-2 py-1 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200"
                                                 >
-                                                    Cancel
+                                                    {{ __('app.inv.payment.cancel') }}
                                                 </button>
                                             </div>
                                         </form>
@@ -281,7 +281,7 @@
                                             wire:click="startAddPayment({{ $inv->id }})"
                                             class="inline-flex items-center px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
                                         >
-                                            + Payment
+                                            {{ __('app.inv.payment.add') }}
                                         </button>
                                     @endif
                                 </td>
@@ -289,7 +289,7 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="px-4 py-10 text-center text-gray-500">
-                                    No invoices found.
+                                    {{ __('app.inv.no_invoices') }}
                                 </td>
                             </tr>
                         @endforelse
@@ -311,13 +311,13 @@
                     $currency = $inv->currency ?? 'EUR';
 
                     if ($paid >= $total && $total > 0) {
-                        $statusText = 'Paid';
+                        $statusText = __('app.inv.status_badge_paid');
                         $badge = 'bg-green-100 text-green-700 border-green-200';
                     } elseif ($paid > 0 && $paid < $total) {
-                        $statusText = 'Partial';
+                        $statusText = __('app.inv.status_badge_partial');
                         $badge = 'bg-yellow-100 text-yellow-800 border-yellow-200';
                     } else {
-                        $statusText = 'Unpaid';
+                        $statusText = __('app.inv.status_badge_unpaid');
                         $badge = 'bg-red-100 text-red-700 border-red-200';
                     }
 
@@ -360,8 +360,8 @@
                                     $unpaid = max($total - $paid, 0);
                                 @endphp
                                 <div class="mt-1 text-[11px] text-red-700 space-y-0.5">
-                                    <div>Overdue by {{ $overdueDays }} day{{ $overdueDays === 1 ? '' : 's' }}</div>
-                                    <div>Unpaid: {{ number_format($unpaid, 2, '.', ' ') }} {{ $currency }}</div>
+                                    <div>{{ __('app.inv.overdue_days', ['days' => $overdueDays]) }}</div>
+                                    <div>{{ __('app.inv.unpaid_amount', ['amount' => number_format($unpaid, 2, '.', ' '), 'currency' => $currency]) }}</div>
                                 </div>
                             @endif
                         </div>
@@ -382,14 +382,14 @@
                     {{-- amounts --}}
                     <div class="mt-3 grid grid-cols-2 gap-2 text-xs">
                         <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                            <div class="text-gray-500">Total</div>
+                            <div class="text-gray-500">{{ __('app.inv.col_total') }}</div>
                             <div class="text-sm font-semibold text-gray-900">
                                 {{ number_format($total, 2, '.', ' ') }} {{ $currency }}
                             </div>
                         </div>
 
                         <div class="rounded-xl bg-gray-50 border border-gray-200 p-2">
-                            <div class="text-gray-500">Paid</div>
+                            <div class="text-gray-500">{{ __('app.inv.col_paid') }}</div>
                             <div class="text-sm font-semibold text-gray-900">
                                 {{ number_format($paid, 2, '.', ' ') }} {{ $currency }}
                             </div>
@@ -400,16 +400,16 @@
                     <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-700">
                         <div class="flex flex-col rounded-xl bg-gray-50 border border-gray-200 p-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-gray-500">Issued</span>
+                                <span class="text-gray-500">{{ __('app.inv.col_issued') }}</span>
                                 <span class="font-semibold text-gray-900">{{ $issuedAt }}</span>
                             </div>
                             <div class="mt-1 text-[11px] text-gray-600">
-                                Due: {{ $dueDate }}
+                                {{ __('app.inv.due') }} {{ $dueDate }}
                             </div>
                         </div>
 
                         <div class="flex flex-col rounded-xl bg-gray-50 border border-gray-200 p-2">
-                            <span class="text-gray-500 mb-1">Payments</span>
+                            <span class="text-gray-500 mb-1">{{ __('app.inv.col_paid_date') }}</span>
 
                             @php
                                 $payments = $inv->payments->sortBy('paid_at');
@@ -473,7 +473,7 @@
                                         wire:click="cancelAddPayment"
                                         class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold"
                                     >
-                                        Cancel
+                                        {{ __('app.inv.payment.cancel') }}
                                     </button>
                                     <button
                                         type="submit"
@@ -487,16 +487,16 @@
                             <button
                                 type="button"
                                 wire:click="startAddPayment({{ $inv->id }})"
-                                class="w-full mt-1 inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
-                            >
-                                + Payment
+                                        class="w-full mt-1 inline-flex items-center justify-center px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700"
+                                    >
+                                        {{ __('app.inv.payment.add') }}
                             </button>
                         @endif
                     </div>
                 </div>
             @empty
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center text-gray-500">
-                    No invoices found.
+                    {{ __('app.inv.no_invoices') }}
                 </div>
             @endforelse
 

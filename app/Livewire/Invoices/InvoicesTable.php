@@ -102,7 +102,7 @@ class InvoicesTable extends Component
 
         $this->cancelAddPayment();
 
-        session()->flash('success', 'Payment added.');
+        session()->flash('success', __('app.inv.toast_payment_added'));
     }
 
     public function render()
@@ -154,7 +154,7 @@ class InvoicesTable extends Component
         return view('livewire.invoices.invoices-table', [
             'rows' => $rows,
         ])->layout('layouts.app', [
-        'title' => 'Invoices'
-    ]);
+            'title' => __('app.inv.title'),
+        ]);
     }
 }

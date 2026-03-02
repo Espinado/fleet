@@ -7,18 +7,18 @@
         </a>
 
         <h1 class="text-2xl font-bold flex items-center gap-2">
-            📤 Загрузка документа
+            📤 {{ __('app.driver.upload.title') }}
         </h1>
     </div>
 
     {{-- DOCUMENT INFO CARD --}}
     <div class="bg-white shadow-md rounded-xl p-5 border border-gray-200 space-y-2">
-        <div class="text-gray-700"><strong>Тип документа:</strong>
+        <div class="text-gray-700"><strong>{{ __('app.driver.upload.doc_type') }}</strong>
             <span class="uppercase text-blue-700 font-semibold">{{ $type }}</span>
         </div>
 
-        <div class="text-gray-700"><strong>Trip ID:</strong> {{ $trip }}</div>
-        <div class="text-gray-700"><strong>Step:</strong> {{ $step }}</div>
+        <div class="text-gray-700"><strong>{{ __('app.driver.upload.trip_id') }}</strong> {{ $trip }}</div>
+        <div class="text-gray-700"><strong>{{ __('app.driver.upload.step') }}</strong> {{ $step }}</div>
     </div>
 
     {{-- SUCCESS --}}
@@ -33,12 +33,12 @@
         class="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 text-center space-y-4 shadow-sm">
 
         <div class="text-gray-500 text-xl">
-            📎 Нажмите чтобы выбрать файл
+            📎 {{ __('app.driver.upload.click_to_choose') }}
         </div>
 
         <label
             class="cursor-pointer inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">
-            Выбрать файл
+            {{ __('app.driver.upload.choose_file') }}
             <input type="file" wire:model="file" class="hidden">
         </label>
 
@@ -49,7 +49,7 @@
         {{-- FILE PREVIEW --}}
         @if ($file)
             <div class="mt-4 bg-gray-50 border p-4 rounded-lg text-left">
-                <div class="font-medium text-gray-700 mb-1">📄 Вы выбрали:</div>
+                <div class="font-medium text-gray-700 mb-1">📄 {{ __('app.driver.upload.selected') }}</div>
                 <div class="text-blue-700 font-semibold">
                     {{ $file->getClientOriginalName() }}
                 </div>
