@@ -12,6 +12,7 @@
 
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Fleet Manager') }} - @yield('title')</title>
 
@@ -132,6 +133,16 @@
                @class([$navBase, request()->routeIs('invoices.*') ? $navActive : $navIdle])>
                 💶 {{ __('app.nav.invoices') }}
             </a>
+
+            @if(config('webpush.vapid.public_key'))
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <button type="button" id="btn-enable-push"
+                        class="{{ $navBase }} {{ $navIdle }} w-full text-left flex items-center gap-2">
+                    🔔 Включить уведомления
+                </button>
+                <p id="push-status" class="text-xs text-gray-500 mt-1 px-3 hidden"></p>
+            </div>
+            @endif
         </nav>
     </aside>
 
@@ -262,19 +273,46 @@
         });
     </script>
 
-    {{-- Push notifications --}}
+    {{-- Push: VAPID key + script (для подписки на пуши) --}}
+    @if(config('webpush.vapid.public_key'))
+    <script>
+        window.VAPID_PUBLIC_KEY = @json(config('webpush.vapid.public_key'));
+        window.fleetPushMessage = function (msg) {
+            var el = document.getElementById('push-status');
+            if (el) { el.textContent = msg; el.classList.remove('hidden'); }
+        };
+    </script>
     <script src="/pwa/push.js"></script>
+    @endif
 
     @stack('scripts')
 
-    {{-- Register Service Worker only for admin --}}
+    {{-- Root SW (scope /) — для Web Push на /dashboard и всех страницах --}}
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/admin/serviceworker.js', { scope: '/admin/' })
-                .then(() => console.log("Admin SW loaded"))
-                .catch(e => console.warn("Admin SW error:", e));
+            navigator.serviceWorker.register('/serviceworker.js', { scope: '/' })
+                .then(function () { console.log("Push SW (root) registered"); })
+                .catch(function (e) { console.warn("Push SW error:", e); });
         }
     </script>
+    {{-- Кнопка «Включить уведомления» --}}
+    @if(config('webpush.vapid.public_key'))
+    <script>
+        document.getElementById('btn-enable-push') && document.getElementById('btn-enable-push').addEventListener('click', function () {
+            var btn = this;
+            if (!window.subscribeForPush) return;
+            btn.disabled = true;
+            btn.textContent = '…';
+            window.subscribeForPush().then(function (ok) {
+                btn.disabled = false;
+                btn.textContent = ok ? '🔔 Уведомления включены' : '🔔 Включить уведомления';
+            }).catch(function () {
+                btn.disabled = false;
+                btn.textContent = '🔔 Включить уведомления';
+            });
+        });
+    </script>
+    @endif
 
 </body>
 </html>

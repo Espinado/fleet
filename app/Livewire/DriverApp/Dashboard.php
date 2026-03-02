@@ -327,6 +327,19 @@ class Dashboard extends Component
             : "✅ Возврат (вручную): {$odo} км";
 
         $this->dispatch('driver-toast-success');
+
+        // Push: уведомить одного получателя (email из config) о выезде из гаража
+        if ($this->manualOdoMode === 'departure') {
+            $this->trip->refresh()->load('truck');
+            $email = config('notifications.push_recipient_email');
+            if ($email) {
+                $recipient = \App\Models\User::where('email', $email)->whereHas('pushSubscriptions')->first();
+                if ($recipient) {
+                    $recipient->notify(new \App\Notifications\DriverDepartureNotification($this->trip, $this->driver));
+                }
+            }
+        }
+
         $this->cancelManualOdo();
 
         $this->loadCurrentTrip();

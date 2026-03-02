@@ -8,31 +8,46 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function subscribeForPush() {
-    if (!("serviceWorker" in navigator && "PushManager" in window)) return;
-
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") return;
-
-    const reg = await navigator.serviceWorker.ready;
-
-    const sub = await reg.pushManager.subscribe({
+    if (!("serviceWorker" in navigator && "PushManager" in window)) {
+        if (typeof window.fleetPushMessage === "function") window.fleetPushMessage("Браузер не поддерживает push.");
+        return false;
+    }
+    var key = typeof VAPID_PUBLIC_KEY !== "undefined" ? VAPID_PUBLIC_KEY : (window.VAPID_PUBLIC_KEY || null);
+    if (!key) {
+        if (typeof window.fleetPushMessage === "function") window.fleetPushMessage("VAPID ключ не задан. Настройте .env.");
+        return false;
+    }
+    var permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+        if (typeof window.fleetPushMessage === "function") window.fleetPushMessage("Уведомления запрещены.");
+        return false;
+    }
+    var reg = await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(key),
     });
-
-    const json = sub.toJSON();
-
-    await fetch("/api/push/subscribe", {
+    var json = sub.toJSON();
+    var csrf = document.querySelector('meta[name="csrf-token"]');
+    var headers = { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" };
+    if (csrf && csrf.content) headers["X-CSRF-TOKEN"] = csrf.content;
+    var res = await fetch("/push/subscribe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         credentials: "include",
         body: JSON.stringify({
             endpoint: json.endpoint,
             public_key: json.keys.p256dh,
             auth_token: json.keys.auth,
-            content_encoding: (PushManager.supportedContentEncodings || ["aesgcm"])[0],
+            content_encoding: (PushManager.supportedContentEncodings && PushManager.supportedContentEncodings[0]) || "aesgcm",
         }),
     });
-
-    console.log("PUSH SUBSCRIBED");
+    if (!res.ok) {
+        if (typeof window.fleetPushMessage === "function") window.fleetPushMessage("Ошибка подписки. Проверьте вход в админку.");
+        return false;
+    }
+    if (typeof window.fleetPushMessage === "function") window.fleetPushMessage("Уведомления включены.");
+    return true;
 }
+
+window.subscribeForPush = subscribeForPush;

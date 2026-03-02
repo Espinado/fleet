@@ -5,6 +5,7 @@ namespace App\Livewire\DriverApp;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Driver;
+use App\Notifications\DriverLoggedInNotification;
 
 class Login extends Component
 {
@@ -27,10 +28,20 @@ class Login extends Component
             $this->addError('pin', 'Неверный PIN');
             return;
         }
-Auth::guard('driver')->login($driver->user);
-request()->session()->regenerate();
 
-return redirect('/driver/dashboard');
+        Auth::guard('driver')->login($driver->user);
+        request()->session()->regenerate();
+
+        // Пуш получателю (rvr@arguss.lv): водитель вошёл по PIN
+        $email = config('notifications.push_recipient_email');
+        if ($email) {
+            $recipient = \App\Models\User::where('email', $email)->whereHas('pushSubscriptions')->first();
+            if ($recipient) {
+                $recipient->notify(new DriverLoggedInNotification($driver));
+            }
+        }
+
+        return redirect('/driver/dashboard');
     }
 
     public function render()

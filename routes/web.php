@@ -61,6 +61,22 @@ Route::get('/test-push', function () {
 // === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
 
+    Route::post('/push/subscribe', function (\Illuminate\Http\Request $request) {
+        $data = $request->validate([
+            'endpoint' => 'required|string',
+            'public_key' => 'required|string',
+            'auth_token' => 'required|string',
+            'content_encoding' => 'required|string',
+        ]);
+        $request->user()->updatePushSubscription(
+            $data['endpoint'],
+            $data['public_key'],
+            $data['auth_token'],
+            $data['content_encoding']
+        );
+        return response()->json(['status' => 'subscribed']);
+    })->name('push.subscribe');
+
     Route::get('/dashboard', ExpiringDocumentsTable::class)->name('dashboard');
 
     // Drivers
