@@ -22,11 +22,24 @@ async function subscribeForPush() {
             msg("VAPID ключ не задан. Настройте .env и config:clear.");
             return false;
         }
-        msg("Запрос разрешения…");
-        var permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-            msg("Уведомления запрещены в браузере.");
+        var permission = Notification.permission;
+        if (permission === "denied") {
+            msg("Уведомления заблокированы. Разрешите в настройках: иконка замка в адресной строке → Настройки сайта → Уведомления → Разрешить.");
             return false;
+        }
+        if (permission !== "granted") {
+            msg("Запрос разрешения…");
+            permission = await Notification.requestPermission();
+            if (permission !== "granted") {
+                var hintFull = "Включите уведомления вручную:\n\n1. Нажмите значок замка (или «i») слева от адреса в адресной строке.\n2. Найдите «Уведомления» и выберите «Разрешить».\n3. Обновите страницу (F5) и снова нажмите «Включить уведомления».";
+                if (permission === "denied") {
+                    msg("Запрещено. Замок → Уведомления → Разрешить.");
+                } else {
+                    msg("Включите в настройках сайта (замок → Уведомления).");
+                }
+                alert(hintFull);
+                return false;
+            }
         }
         msg("Ожидание Service Worker…");
         var reg = await navigator.serviceWorker.ready;
