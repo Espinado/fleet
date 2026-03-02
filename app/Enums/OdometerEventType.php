@@ -3,7 +3,6 @@
 namespace App\Enums;
 
 use Illuminate\Support\Facades\Lang;
-use Illuminate\Support\Str;
 
 enum OdometerEventType: int
 {
@@ -15,7 +14,7 @@ enum OdometerEventType: int
 
     public function label(): string
     {
-        return Lang::get('app.enums.odometer_event_type.' . Str::snake($this->name));
+        return Lang::get('app.enums.odometer_event_type.' . strtolower($this->name));
     }
 
     public function badgeClass(): string

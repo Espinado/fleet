@@ -3,7 +3,6 @@
 namespace App\Enums;
 
 use Illuminate\Support\Facades\Lang;
-use Illuminate\Support\Str;
 
 enum DriverStatus: int
 {
@@ -14,7 +13,7 @@ enum DriverStatus: int
 
     public function label(): string
     {
-        return Lang::get('app.enums.driver_status.' . Str::snake($this->name));
+        return Lang::get('app.enums.driver_status.' . strtolower($this->name));
     }
 
     public function color(): string

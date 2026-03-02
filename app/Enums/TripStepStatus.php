@@ -3,7 +3,6 @@
 namespace App\Enums;
 
 use Illuminate\Support\Facades\Lang;
-use Illuminate\Support\Str;
 
 enum TripStepStatus: int
 {
@@ -15,7 +14,7 @@ enum TripStepStatus: int
 
     public function label(): string
     {
-        return Lang::get('app.enums.trip_step_status.' . Str::snake($this->name));
+        return Lang::get('app.enums.trip_step_status.' . strtolower($this->name));
     }
 
     public static function options(): array
