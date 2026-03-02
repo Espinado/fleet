@@ -5,6 +5,7 @@ namespace App\Services\Expenses;
 use App\Models\TripExpense;
 use App\Models\TruckOdometerEvent;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class ExpenseEventService
@@ -103,6 +104,14 @@ class ExpenseEventService
             } else {
                 // 3) Create new event
                 $event = TruckOdometerEvent::create($payload);
+
+                // Log creation of TYPE_EXPENSE event with key details
+                Log::info('TruckOdometerEvent TYPE_EXPENSE created', [
+                    'trip_id'     => $payload['trip_id'] ?? null,
+                    'driver_id'   => $payload['driver_id'] ?? null,
+                    'liters'      => $expense->liters ?? null,
+                    'odometer_km' => $payload['odometer_km'] ?? null,
+                ]);
             }
 
             // 4) Link back to expense (always keep in sync)
