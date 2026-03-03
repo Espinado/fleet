@@ -938,6 +938,7 @@
             Livewire.on('tripExpenseAdded', () => toast('{{ __("app.trip.show.toast_expense_saved") }}', 'bg-green-600'));
             Livewire.on('tripExpenseDeleted', () => toast('{{ __("app.trip.show.toast_expense_deleted") }}', 'bg-red-600'));
             Livewire.on('delaySaved', () => toast('{{ __("app.trip.show.toast_delay_saved") }}', 'bg-green-600'));
+            Livewire.on('delayRemoved', () => toast('{{ __("app.trip.show.toast_delay_removed") }}', 'bg-green-600'));
         </script>
     @endpush
 

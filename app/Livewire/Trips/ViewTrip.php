@@ -234,7 +234,7 @@ class ViewTrip extends Component
         $this->delayDays[$cargoId]    = '';
         $this->delayAmount[$cargoId]  = '';
         $this->reloadTrip();
-        $this->dispatch('delaySaved');
+        $this->dispatch('delayRemoved');
     }
 
     public function render()
