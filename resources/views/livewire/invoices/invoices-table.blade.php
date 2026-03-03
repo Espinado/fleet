@@ -238,7 +238,7 @@
                                             <div>
                                                 <input
                                                     type="date"
-                                                    wire:model.defer="payment_date"
+                                                    wire:model.blur="payment_date"
                                                     class="w-40 rounded-lg border-gray-300 text-xs"
                                                 >
                                                 @error('payment_date')
@@ -250,7 +250,7 @@
                                                 <input
                                                     type="number"
                                                     step="0.01"
-                                                    wire:model.defer="payment_amount"
+                                                    wire:model.blur="payment_amount"
                                                     class="w-40 rounded-lg border-gray-300 text-xs"
                                                     placeholder="{{ __('app.inv.payment.placeholder') }}"
                                                 >
@@ -445,7 +445,7 @@
                                         <label class="block text-[11px] text-gray-600 mb-1">Date</label>
                                         <input
                                             type="date"
-                                            wire:model.defer="payment_date"
+                                            wire:model.blur="payment_date"
                                             class="w-full rounded-lg border-gray-300 text-xs"
                                         >
                                         @error('payment_date')
@@ -457,7 +457,7 @@
                                         <input
                                             type="number"
                                             step="0.01"
-                                            wire:model.defer="payment_amount"
+                                            wire:model.blur="payment_amount"
                                             class="w-full rounded-lg border-gray-300 text-xs"
                                             placeholder="0.00"
                                         >

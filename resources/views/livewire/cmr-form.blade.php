@@ -13,12 +13,12 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block font-medium">Shipper *</label>
-                <input type="text" wire:model="shipper_name" class="w-full border rounded p-2">
+                <input type="text" wire:model.blur="shipper_name" class="w-full border rounded p-2">
                 @error('shipper_name') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block font-medium">Consignee *</label>
-                <input type="text" wire:model="consignee_name" class="w-full border rounded p-2">
+                <input type="text" wire:model.blur="consignee_name" class="w-full border rounded p-2">
                 @error('consignee_name') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
             </div>
         </div>
@@ -26,25 +26,25 @@
         <div class="grid grid-cols-2 gap-4">
             <div>
                 <label class="block font-medium">Loading Place *</label>
-                <input type="text" wire:model="loading_place" class="w-full border rounded p-2">
+                <input type="text" wire:model.blur="loading_place" class="w-full border rounded p-2">
                 @error('loading_place') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
             </div>
             <div>
                 <label class="block font-medium">Unloading Place *</label>
-                <input type="text" wire:model="unloading_place" class="w-full border rounded p-2">
+                <input type="text" wire:model.blur="unloading_place" class="w-full border rounded p-2">
                 @error('unloading_place') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
             </div>
         </div>
 
         <div>
             <label class="block font-medium">Carrier *</label>
-            <input type="text" wire:model="carrier" class="w-full border rounded p-2">
+            <input type="text" wire:model.blur="carrier" class="w-full border rounded p-2">
             @error('carrier') <p class="text-red-500 text-sm">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label class="block font-medium">Attached Documents</label>
-            <textarea wire:model="attached_documents" class="w-full border rounded p-2"></textarea>
+            <textarea wire:model.blur="attached_documents" class="w-full border rounded p-2"></textarea>
         </div>
 
         {{-- Таблица грузов --}}
@@ -65,12 +65,12 @@
                 <tbody>
                     @foreach($items as $i => $item)
                         <tr>
-                            <td class="border"><input type="text" wire:model="items.{{ $i }}.marks" class="w-full p-1 border-none"></td>
-                            <td class="border"><input type="number" wire:model="items.{{ $i }}.qty" class="w-full p-1 border-none"></td>
-                            <td class="border"><input type="text" wire:model="items.{{ $i }}.pack" class="w-full p-1 border-none"></td>
-                            <td class="border"><input type="text" wire:model="items.{{ $i }}.desc" class="w-full p-1 border-none"></td>
-                            <td class="border"><input type="number" wire:model="items.{{ $i }}.gross" class="w-full p-1 border-none"></td>
-                            <td class="border"><input type="number" wire:model="items.{{ $i }}.volume" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="text" wire:model.blur="items.{{ $i }}.marks" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model.blur="items.{{ $i }}.qty" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="text" wire:model.blur="items.{{ $i }}.pack" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="text" wire:model.blur="items.{{ $i }}.desc" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model.blur="items.{{ $i }}.gross" class="w-full p-1 border-none"></td>
+                            <td class="border"><input type="number" wire:model.blur="items.{{ $i }}.volume" class="w-full p-1 border-none"></td>
                             <td class="border text-center">
                                 <button type="button" wire:click="removeItem({{ $i }})" class="text-red-600 hover:underline">✖</button>
                             </td>

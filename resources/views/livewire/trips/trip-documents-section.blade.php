@@ -67,7 +67,7 @@
                     Dokumenta tips
                 </label>
 
-                <select wire:model="type"
+                <select wire:model.blur="type"
                         class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
                                text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">
 
@@ -119,7 +119,7 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nosaukums</label>
 
                 <input type="text"
-                       wire:model="name"
+                       wire:model.blur="name"
                        placeholder="Piemēram: CMR 09.11.2025"
                        class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
                               text-gray-800 dark:text-gray-100 rounded-xl focus:ring-indigo-500 focus:border-indigo-500">

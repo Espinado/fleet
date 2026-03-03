@@ -1,6 +1,6 @@
 {{-- resources/views/livewire/driver-app/dashboard.blade.php --}}
-
-<div class="space-y-6">
+{{-- flex-1 min-h-0: на больших экранах (Xiaomi 17 Pro и т.д.) контент заполняет высоту, внизу — гибкий блок вместо пустоты --}}
+<div class="flex flex-col min-h-0 flex-1 gap-6">
 
     {{-- Sveiciens --}}
     <div class="text-2xl font-bold">
@@ -188,6 +188,8 @@
         </div>
     @endif
 
+    {{-- Гибкий блок: забирает свободное место на больших экранах, убирает «пустую белую» зону внизу --}}
+    <div class="flex-1 min-h-[2rem]" aria-hidden="true"></div>
 
     {{-- ✅ Manual odometer modal (Dashboard only) --}}
     @if(!empty($showManualOdo) && $showManualOdo)
@@ -225,7 +227,7 @@
                         type="number"
                         inputmode="numeric"
                         step="1"
-                        wire:model.defer="manualOdoKm"
+                        wire:model.blur="manualOdoKm"
                         class="w-full border-gray-300 rounded-xl text-base p-3 mt-1"
                         placeholder="piem.: 123456"
                     >

@@ -329,7 +329,7 @@
                                     </label>
                                     <input
                                         type="text"
-                                        wire:model.defer="third_party_name"
+                                        wire:model.blur="third_party_name"
                                         list="third-party-carriers-list-edit"
                                         placeholder="{{ __('app.trip.edit.placeholder_carrier') }}"
                                         @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])
@@ -347,7 +347,7 @@
                                         {{ __('app.trip.edit.third_party_truck') }} {!! $reqBadge() !!}
                                     </label>
                                     <input type="text"
-                                           wire:model.defer="third_party_truck_plate"
+                                           wire:model.blur="third_party_truck_plate"
                                            placeholder="{{ __('app.trip.edit.placeholder_truck') }}"
                                            @class([$baseInput, $warnInput => $thirdPartyTruckWarn, $errInput => $errors->has($kThirdTruck), 'input-error' => $errors->has($kThirdTruck)])>
                                     @error('third_party_truck_plate') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
@@ -358,7 +358,7 @@
                                         {{ __('app.trip.edit.third_party_trailer') }} <span class="ml-2 text-[11px] text-gray-400">{{ __('app.trip.edit.third_party_trailer_opt') }}</span>
                                     </label>
                                     <input type="text"
-                                           wire:model.defer="third_party_trailer_plate"
+                                           wire:model.blur="third_party_trailer_plate"
                                            placeholder="{{ __('app.trip.edit.placeholder_trailer') }}"
                                            @class([$baseInput, $errInput => $errors->has($kThirdTrailer), 'input-error' => $errors->has($kThirdTrailer)])>
                                     @error('third_party_trailer_plate') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
@@ -371,7 +371,7 @@
                                     <div class="relative">
                                         <input type="number"
                                                step="0.01"
-                                               wire:model.defer="third_party_price"
+                                               wire:model.blur="third_party_price"
                                                placeholder="0.00"
                                                @class([$baseInput.' pr-10', $warnInput => $thirdPartyPriceWarn, $errInput => $errors->has($kThirdPrice), 'input-error' => $errors->has($kThirdPrice)])>
                                         <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-gray-400">EUR</div>
@@ -469,7 +469,7 @@
                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 {{ __('app.trip.edit.container_nr') }} {!! $reqBadge() !!}
                             </label>
-                            <input type="text" wire:model.defer="cont_nr" placeholder="{{ __('app.trip.edit.placeholder_cont') }}" class="{{ $baseInput }}">
+                            <input type="text" wire:model.blur="cont_nr" placeholder="{{ __('app.trip.edit.placeholder_cont') }}" class="{{ $baseInput }}">
                             @error('cont_nr') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                         </div>
 
@@ -477,7 +477,7 @@
                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                 {{ __('app.trip.edit.seal_nr') }} {!! $reqBadge() !!}
                             </label>
-                            <input type="text" wire:model.defer="seal_nr" placeholder="{{ __('app.trip.edit.placeholder_seal') }}" class="{{ $baseInput }}">
+                            <input type="text" wire:model.blur="seal_nr" placeholder="{{ __('app.trip.edit.placeholder_seal') }}" class="{{ $baseInput }}">
                             @error('seal_nr') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                         </div>
                     </div>
@@ -488,7 +488,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             {{ __('app.trip.edit.start_date') }} {!! $reqBadge() !!}
                         </label>
-                        <input type="date" wire:model.defer="start_date" class="{{ $baseInput }}">
+                        <input type="date" wire:model.blur="start_date" class="{{ $baseInput }}">
                         @error('start_date') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                     </div>
 
@@ -496,7 +496,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             {{ __('app.trip.edit.end_date') }} {!! $reqBadge() !!}
                         </label>
-                        <input type="date" wire:model.defer="end_date" class="{{ $baseInput }}">
+                        <input type="date" wire:model.blur="end_date" class="{{ $baseInput }}">
                         @error('end_date') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                     </div>
 
@@ -538,7 +538,7 @@
 
                         <input
                             type="text"
-                            wire:model.defer="customs_address"
+                            wire:model.blur="customs_address"
                             placeholder="{{ __('app.trip.edit.customs_placeholder') }}"
                             @class([$baseInput, $errInput => $errors->has('customs_address'), 'input-error' => $errors->has('customs_address')])
                         >
@@ -586,7 +586,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.type') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.defer="steps.{{ $index }}.type" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.type"), 'input-error' => $errors->has("steps.$index.type")])>
+                                <select wire:model.blur="steps.{{ $index }}.type" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.type"), 'input-error' => $errors->has("steps.$index.type")])>
                                     <option value="loading">{{ __('app.trip.edit.loading') }}</option>
                                     <option value="unloading">{{ __('app.trip.edit.unloading') }}</option>
                                 </select>
@@ -598,8 +598,8 @@
                                     {{ __('app.trip.edit.date_time') }} {!! $reqBadge() !!}
                                 </label>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <input type="date" wire:model.defer="steps.{{ $index }}.date" @class([$baseInput, $errInput => $errors->has("steps.$index.date"), 'input-error' => $errors->has("steps.$index.date")])>
-                                    <input type="time" wire:model.defer="steps.{{ $index }}.time" @class([$baseInput, $errInput => $errors->has("steps.$index.time"), 'input-error' => $errors->has("steps.$index.time")])>
+                                    <input type="date" wire:model.blur="steps.{{ $index }}.date" @class([$baseInput, $errInput => $errors->has("steps.$index.date"), 'input-error' => $errors->has("steps.$index.date")])>
+                                    <input type="time" wire:model.blur="steps.{{ $index }}.time" @class([$baseInput, $errInput => $errors->has("steps.$index.time"), 'input-error' => $errors->has("steps.$index.time")])>
                                 </div>
                                 @error("steps.$index.date") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
@@ -608,7 +608,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.order') }} {!! $reqBadge() !!}
                                 </label>
-                                <input type="number" wire:model.defer="steps.{{ $index }}.order" @class([$baseInput, $errInput => $errors->has("steps.$index.order"), 'input-error' => $errors->has("steps.$index.order")])>
+                                <input type="number" wire:model.blur="steps.{{ $index }}.order" @class([$baseInput, $errInput => $errors->has("steps.$index.order"), 'input-error' => $errors->has("steps.$index.order")])>
                                 @error("steps.$index.order") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -644,7 +644,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.address') }} {!! $reqBadge() !!}
                                 </label>
-                                <input type="text" wire:model.defer="steps.{{ $index }}.address" @class([$baseInput, $errInput => $errors->has("steps.$index.address"), 'input-error' => $errors->has("steps.$index.address")])>
+                                <input type="text" wire:model.blur="steps.{{ $index }}.address" @class([$baseInput, $errInput => $errors->has("steps.$index.address"), 'input-error' => $errors->has("steps.$index.address")])>
                                 @error("steps.$index.address") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -964,7 +964,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.payment_by') }}</label>
-                                <select wire:model.defer="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.blur="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs js-select2">
                                     @foreach([7, 14, 21, 30] as $days)
                                         <option value="{{ $days }}">{{ __('app.trip.edit.payment_days', ['days' => $days]) }}</option>
                                     @endforeach
@@ -989,13 +989,13 @@
                         <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.commercial_inv_nr') }}</label>
-                                <input type="text" wire:model.defer="cargos.{{ $index }}.commercial_invoice_nr" class="{{ $baseInput }} text-xs">
+                                <input type="text" wire:model.blur="cargos.{{ $index }}.commercial_invoice_nr" class="{{ $baseInput }} text-xs">
                                 @error("cargos.$index.commercial_invoice_nr") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
 
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.commercial_inv_amount') }}</label>
-                                <input type="text" wire:model.defer="cargos.{{ $index }}.commercial_invoice_amount" class="{{ $baseInput }} text-xs">
+                                <input type="text" wire:model.blur="cargos.{{ $index }}.commercial_invoice_amount" class="{{ $baseInput }} text-xs">
                                 @error("cargos.$index.commercial_invoice_amount") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -1033,7 +1033,7 @@
                                         <div class="sm:col-span-3">
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.description') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.description"
                                                    class="{{ $baseInput }} text-xs">
                                             @error("cargos.$index.items.$itemIndex.description")
                                                 <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div>
@@ -1043,7 +1043,7 @@
                                         <div class="sm:col-span-1">
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.hs_customs') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.customs_code"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.customs_code"
                                                    class="{{ $baseInput }} text-xs">
                                             @error("cargos.$index.items.$itemIndex.customs_code")
                                                 <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div>
@@ -1053,14 +1053,14 @@
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.packages') }}</label>
                                             <input type="number" step="1"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.packages"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.packages"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.pallets') }}</label>
                                             <input type="number" step="1"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.pallets"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.pallets"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
                                     </div>
@@ -1069,42 +1069,42 @@
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.units') }}</label>
                                             <input type="number" step="1"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.units"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.units"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.net_kg') }}</label>
                                             <input type="number" step="0.001"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.net_weight"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.net_weight"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.gross_kg') }}</label>
                                             <input type="number" step="0.001"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.gross_weight"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.gross_weight"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.tonnes') }}</label>
                                             <input type="number" step="0.001"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.tonnes"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.tonnes"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.volume') }}</label>
                                             <input type="number" step="0.001"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.volume"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.volume"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.lm') }}</label>
                                             <input type="number" step="0.001"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.loading_meters"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.loading_meters"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
                                     </div>
@@ -1113,21 +1113,21 @@
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.adr_hazmat') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.hazmat"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.temperature') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.temperature"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.temperature"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div class="flex items-end">
                                             <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
                                                 <input type="checkbox"
-                                                       wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.stackable"
+                                                       wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.stackable"
                                                        class="rounded border-gray-300">
                                                 {{ __('app.trip.edit.stackable') }}
                                             </label>
@@ -1138,14 +1138,14 @@
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.instructions') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.instructions"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.instructions"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
 
                                         <div>
                                             <label class="block text-[11px] text-gray-500 mb-1">{{ __('app.trip.edit.remarks') }}</label>
                                             <input type="text"
-                                                   wire:model.defer="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks"
+                                                   wire:model.blur="cargos.{{ $index }}.items.{{ $itemIndex }}.remarks"
                                                    class="{{ $baseInput }} text-xs">
                                         </div>
                                     </div>

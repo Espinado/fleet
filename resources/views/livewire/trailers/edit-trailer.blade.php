@@ -45,17 +45,17 @@
                 </div>
                 <div>
                     <label class="block font-medium">{{ __('app.trailers.col_brand') }} *</label>
-                    <input type="text" wire:model.defer="brand" autofocus class="border rounded px-3 py-2 w-full">
+                    <input type="text" wire:model.blur="brand" autofocus class="border rounded px-3 py-2 w-full">
                     @error('brand') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label class="block font-medium">{{ __('app.trailers.col_plate') }} *</label>
-                    <input type="text" wire:model.defer="plate" class="border rounded px-3 py-2 w-full">
+                    <input type="text" wire:model.blur="plate" class="border rounded px-3 py-2 w-full">
                     @error('plate') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label class="block font-medium">{{ __('app.truck.show.year') }} *</label>
-                    <input type="number" wire:model.defer="year" class="border rounded px-3 py-2 w-full">
+                    <input type="number" wire:model.blur="year" class="border rounded px-3 py-2 w-full">
                     @error('year') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -64,12 +64,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label>{{ __('app.truck.show.issued') }}</label>
-                    <input type="date" wire:model.defer="inspection_issued" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="inspection_issued" class="border rounded px-3 py-2 w-full">
                     @error('inspection_issued') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.expires') }}</label>
-                    <input type="date" wire:model.defer="inspection_expired" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="inspection_expired" class="border rounded px-3 py-2 w-full">
                     @error('inspection_expired') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -78,22 +78,22 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label>{{ __('app.truck.show.ins_company') }}</label>
-                    <input type="text" wire:model.defer="insurance_company" class="border rounded px-3 py-2 w-full">
+                    <input type="text" wire:model.blur="insurance_company" class="border rounded px-3 py-2 w-full">
                     @error('insurance_company') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.ins_number') }}</label>
-                    <input type="text" wire:model.defer="insurance_number" class="border rounded px-3 py-2 w-full">
+                    <input type="text" wire:model.blur="insurance_number" class="border rounded px-3 py-2 w-full">
                     @error('insurance_number') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.issued') }}</label>
-                    <input type="date" wire:model.defer="insurance_issued" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="insurance_issued" class="border rounded px-3 py-2 w-full">
                     @error('insurance_issued') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.expires') }}</label>
-                    <input type="date" wire:model.defer="insurance_expired" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="insurance_expired" class="border rounded px-3 py-2 w-full">
                     @error('insurance_expired') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -102,12 +102,12 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label>TIR izsniegts</label>
-                    <input type="date" wire:model.defer="tir_issued" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="tir_issued" class="border rounded px-3 py-2 w-full">
                     @error('tir_issued') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>TIR der līdz</label>
-                    <input type="date" wire:model.defer="tir_expired" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="tir_expired" class="border rounded px-3 py-2 w-full">
                     @error('tir_expired') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -115,7 +115,7 @@
             {{-- VIN --}}
             <div>
                 <label>VIN</label>
-                <input type="text" wire:model.defer="vin" class="border rounded px-3 py-2 w-full">
+                <input type="text" wire:model.blur="vin" class="border rounded px-3 py-2 w-full">
                 @error('vin') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
             </div>
 
@@ -123,17 +123,17 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label>{{ __('app.truck.show.tech_number') }}</label>
-                    <input type="text" wire:model.defer="tech_passport_nr" class="border rounded px-3 py-2 w-full">
+                    <input type="text" wire:model.blur="tech_passport_nr" class="border rounded px-3 py-2 w-full">
                     @error('tech_passport_nr') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.issued') }}</label>
-                    <input type="date" wire:model.defer="tech_passport_issued" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="tech_passport_issued" class="border rounded px-3 py-2 w-full">
                     @error('tech_passport_issued') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
                 <div>
                     <label>{{ __('app.truck.show.expires') }}</label>
-                    <input type="date" wire:model.defer="tech_passport_expired" class="border rounded px-3 py-2 w-full">
+                    <input type="date" wire:model.blur="tech_passport_expired" class="border rounded px-3 py-2 w-full">
                     @error('tech_passport_expired') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
                 </div>
             </div>

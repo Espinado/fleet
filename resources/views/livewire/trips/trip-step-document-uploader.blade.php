@@ -26,7 +26,7 @@
         {{-- Type --}}
         <div>
             <label class="block text-sm font-medium">Tips</label>
-          <select wire:model="type"
+          <select wire:model.blur="type"
         class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
 
     @foreach(\App\Enums\StepDocumentType::cases() as $case)
@@ -42,7 +42,7 @@
         {{-- Comment --}}
         <div>
             <label class="block text-sm font-medium">Komentārs</label>
-            <input type="text" wire:model="comment"
+            <input type="text" wire:model.blur="comment"
                    class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl">
         </div>
 

@@ -749,6 +749,26 @@ class EditTrip extends Component
 
         $this->third_party_price = $this->normNumString($this->third_party_price);
 
+        // ✅ Нормализация шагов: типы и форматы для валидации
+        foreach ($this->steps as $si => $step) {
+            $date = isset($step['date']) ? trim((string) $step['date']) : '';
+            if ($date !== '') {
+                if (preg_match('/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/', $date, $m)) {
+                    $this->steps[$si]['date'] = sprintf('%04d-%02d-%02d', (int) $m[3], (int) $m[2], (int) $m[1]);
+                } else {
+                    $this->steps[$si]['date'] = $date;
+                }
+            }
+            $this->steps[$si]['time'] = isset($step['time']) ? trim((string) $step['time']) : null;
+            $this->steps[$si]['address'] = isset($step['address']) ? trim((string) $step['address']) : '';
+            $cid = $step['country_id'] ?? null;
+            $this->steps[$si]['country_id'] = ($cid !== null && $cid !== '') ? (int) $cid : null;
+            $cityId = $step['city_id'] ?? null;
+            $this->steps[$si]['city_id'] = ($cityId !== null && $cityId !== '') ? (int) $cityId : null;
+            $ord = $step['order'] ?? null;
+            $this->steps[$si]['order'] = ($ord !== null && $ord !== '') ? (int) $ord : ($si + 1);
+        }
+
         // ✅ ensure status is string (enum-safe)
         $this->status = $this->statusToString($this->status, 'planned');
     }

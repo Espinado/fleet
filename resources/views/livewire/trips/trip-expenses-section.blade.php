@@ -59,7 +59,7 @@
             {{-- Category --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kategorija</label>
-                <select wire:model="category"
+                <select wire:model.blur="category"
                         class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
                                text-gray-800 dark:text-gray-100 rounded-xl">
                     @foreach($categories as $key => $label)
@@ -82,7 +82,7 @@
             {{-- Amount --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Summa (€)</label>
-                <input type="number" wire:model="amount" step="0.01"
+                <input type="number" wire:model.blur="amount" step="0.01"
                        class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
                               text-gray-800 dark:text-gray-100 rounded-xl">
                 @error('amount') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
@@ -91,7 +91,7 @@
             {{-- Date --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Datums</label>
-                <input type="date" wire:model="expense_date"
+                <input type="date" wire:model.blur="expense_date"
                        class="w-full border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800
                               text-gray-800 dark:text-gray-100 rounded-xl">
                 @error('expense_date') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror

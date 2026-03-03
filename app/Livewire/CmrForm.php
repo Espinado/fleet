@@ -58,9 +58,30 @@ class CmrForm extends Component
         ];
     }
 
+    /** Нормализация числовых полей перед валидацией (запятая → точка, пробелы). */
+    private function normalizeInputsForValidation(): void
+    {
+        foreach ($this->items as $i => $item) {
+            if (isset($this->items[$i]['qty']) && $this->items[$i]['qty'] !== null && $this->items[$i]['qty'] !== '') {
+                $v = trim((string) $this->items[$i]['qty']);
+                $v = str_replace(["\xc2\xa0", ' ', ','], ['', '', '.'], $v);
+                $this->items[$i]['qty'] = is_numeric($v) ? (int) $v : $this->items[$i]['qty'];
+            }
+            foreach (['gross', 'volume'] as $key) {
+                if (!isset($this->items[$i][$key]) || ($this->items[$i][$key] ?? '') === '') {
+                    continue;
+                }
+                $v = trim((string) $this->items[$i][$key]);
+                $v = str_replace(["\xc2\xa0", ' ', ','], ['', '', '.'], $v);
+                $this->items[$i][$key] = $v === '' ? null : $v;
+            }
+        }
+    }
+
     // === Генерация CMR ===
     public function generatePdf(): void
     {
+        $this->normalizeInputsForValidation();
         $this->validate();
 
         $data = [
@@ -103,6 +124,7 @@ class CmrForm extends Component
     public function generateInvoice(): void
     {
          try {
+        $this->normalizeInputsForValidation();
         $this->validate();
 
         $data = [

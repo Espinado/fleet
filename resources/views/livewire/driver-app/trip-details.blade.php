@@ -320,7 +320,7 @@
                     <input
                         type="number"
                         step="0.1"
-                        wire:model.defer="stepOdoKm"
+                        wire:model.blur="stepOdoKm"
                         class="w-full rounded-lg border-gray-300 text-sm"
                         placeholder="{{ __('app.driver.trip_details.odo_placeholder') }}"
                     >

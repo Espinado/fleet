@@ -46,14 +46,14 @@
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.trailers.col_brand') }} *</label>
-                    <input type="text" wire:model.defer="brand"
+                    <input type="text" wire:model.blur="brand"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('brand') border-red-500 @enderror">
                     @error('brand') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.trailers.col_plate') }} *</label>
-                    <input type="text" wire:model.defer="plate"
+                    <input type="text" wire:model.blur="plate"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('plate') border-red-500 @enderror">
                     @error('plate') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -62,7 +62,7 @@
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.truck.show.year') }} *</label>
-                    <input type="number" wire:model.defer="year"
+                    <input type="number" wire:model.blur="year"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('year') border-red-500 @enderror">
                     @error('year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -87,7 +87,7 @@
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 font-medium">VIN</label>
-                    <input type="text" wire:model.defer="vin"
+                    <input type="text" wire:model.blur="vin"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('vin') border-red-500 @enderror">
                     @error('vin') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -142,14 +142,14 @@
             <div class="grid sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.truck.show.ins_company') }} *</label>
-                    <input type="text" wire:model.defer="insurance_company"
+                    <input type="text" wire:model.blur="insurance_company"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('insurance_company') border-red-500 @enderror">
                     @error('insurance_company') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.truck.show.ins_number') }} *</label>
-                    <input type="text" wire:model.defer="insurance_number"
+                    <input type="text" wire:model.blur="insurance_number"
                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('insurance_number') border-red-500 @enderror">
                     @error('insurance_number') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -209,7 +209,7 @@
 
             <div>
                 <label class="block mb-1 font-medium">{{ __('app.truck.show.tech_number') }} *</label>
-                <input type="text" wire:model.defer="tech_passport_nr"
+                <input type="text" wire:model.blur="tech_passport_nr"
                        class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('tech_passport_nr') border-red-500 @enderror">
                 @error('tech_passport_nr') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
