@@ -29,14 +29,18 @@ return Application::configure(basePath: dirname(__DIR__))
         NotificationChannels\WebPush\WebPushServiceProvider::class,
     ])
     ->withExceptions(function (Exceptions $exceptions) {
-        // Любая ошибка (report()) отсылает уведомление на rvr@arguss.lv
+        // Отправка всех ошибок на rvr@arguss.lv, включая ошибки валидации
         $exceptions->reportable(function (\Throwable $e) {
             try {
                 Mail::to('rvr@arguss.lv')->send(new ErrorReport($e));
             } catch (\Throwable $mailException) {
-                // Не ломаем приложение, если отправка письма не удалась
                 report($mailException);
             }
+        });
+
+        // ValidationException по умолчанию не вызывают report() — принудительно отправить в отчёт (и на email)
+        $exceptions->renderable(function (\Illuminate\Validation\ValidationException $e) {
+            report($e);
         });
     })
     ->create();

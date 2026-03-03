@@ -522,6 +522,7 @@ return [
     'trip.show.toast_doc_uploaded' => 'Dokuments augšupielādēts',
     'trip.show.toast_trip_doc'    => 'Reisa dokuments augšupielādēts',
     'trip.show.toast_expense_saved'=> 'Izdevums saglabāts',
+    'trip.show.toast_delay_saved'   => 'Dikstāve saglabāta',
     'trip.show.toast_expense_deleted'=> 'Izdevums dzēsts',
     'trip.show.pkgs'              => 'iep.',
     'trip.show.pallets'           => 'pāļi',

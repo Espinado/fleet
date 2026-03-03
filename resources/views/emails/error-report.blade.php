@@ -9,6 +9,13 @@
 
 **Класс:** {{ get_class($exception) }}
 
+@if($exception instanceof \Illuminate\Validation\ValidationException)
+**Ошибки валидации:**
+@foreach($exception->errors() as $field => $messages)
+- **{{ $field }}:** {{ implode(', ', $messages) }}
+@endforeach
+@endif
+
 @if($exception->getPrevious())
 **Предыдущее исключение:** {{ $exception->getPrevious()->getMessage() }}
 @endif
