@@ -104,6 +104,7 @@ return [
     // Driver app: toast (action feedback)
     'driver.toast.success' => 'Izpildīts',
     'driver.toast.error'   => 'Kļūda! Sazinieties ar administratoru.',
+    'driver.toast.document_uploaded' => 'Dokuments augšupielādēts',
 
     // Driver app: offline (PWA)
     'driver.offline.title'   => 'Nav savienojuma',
@@ -539,6 +540,7 @@ return [
     'trip.show.units_short'       => 'vienīb.',
     'trip.show.gross_volume'      => 'Bruto / Tilpums',
     'trip.show.step_id'           => 'Soļa ID',
+    'trip.show.step_column'   => 'Solā',
 
     // Trip route editor
     'trip.route.title'            => 'Reisa maršruts',

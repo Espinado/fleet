@@ -49,13 +49,13 @@
 
         <form wire:submit.prevent="saveExpense"
              class="space-y-3"
-x-data="{ fileUploading: false, cancelTimeout: null }"
-     x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-     x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-     x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-     x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+x-data="{ fileUploading: false }"
+     x-on:livewire-upload-start="fileUploading = true"
+     x-on:livewire-upload-finish="fileUploading = false"
+     x-on:livewire-upload-error="fileUploading = false"
+     x-on:livewire-upload-cancel="fileUploading = false">
 
-            {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+            {{-- Спиннер только во время загрузки файла на сервер (после выбора файла) --}}
             <div x-show="fileUploading"
                  x-cloak
                  class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
@@ -203,7 +203,7 @@ x-data="{ fileUploading: false, cancelTimeout: null }"
                 @enderror
             </div>
 
-            {{-- Файл --}}
+            {{-- Файл (клиентское сжатие изображений перед загрузкой) --}}
             <div>
                 <label class="text-xs font-semibold">{{ __('app.driver.expenses.file') }}</label>
                 <input
@@ -212,8 +212,10 @@ x-data="{ fileUploading: false, cancelTimeout: null }"
                     accept="image/*,application/pdf"
                     capture="environment"
                     class="text-sm"
-                    x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)"
                 >
+                @if($file ?? null)
+                    <p class="text-xs text-gray-600 mt-1">📄 {{ $file->getClientOriginalName() }}</p>
+                @endif
                 <div wire:loading wire:target="file" class="text-xs text-gray-500 mt-1">{{ __('app.please_wait') }}</div>
                 @error('file')
                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>

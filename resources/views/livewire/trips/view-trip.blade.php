@@ -548,13 +548,6 @@
                                                         </span>
                                                     </div>
 
-                                                    <div class="ml-6">
-                                                        <livewire:trips.trip-step-document-uploader
-                                                            :step="$step"
-                                                            :key="'step-docs-'.$cargo->id.'-'.$step->id"
-                                                        />
-                                                    </div>
-
                                                 </div>
                                             @endif
                                         @endforeach

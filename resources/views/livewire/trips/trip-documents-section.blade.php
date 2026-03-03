@@ -213,14 +213,19 @@
                         {{-- info + actions --}}
                         <div class="min-w-0 flex-1">
                             <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                {{ $doc->name }}
+                                {{ $doc->name ?? '—' }}
                             </div>
 
                             <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
                                 <span class="inline-flex items-center rounded-full px-2 py-1
                                              bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
-                                    {{ $doc->type->label() }}
+                                    {{ $doc->type_label ?? '—' }}
                                 </span>
+                                @if(!empty($doc->step_label))
+                                    <span class="rounded-full px-2 py-1 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
+                                        {{ $doc->step_label }}
+                                    </span>
+                                @endif
                                 <span class="text-gray-500 dark:text-gray-400">
                                     {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
                                 </span>
@@ -263,6 +268,7 @@
                     <tr>
                         <th class="px-3 py-2 text-left">Tips</th>
                         <th class="px-3 py-2 text-left">Nosaukums</th>
+                        <th class="px-3 py-2 text-left">{{ __('app.trip.show.step_column') }}</th>
                         <th class="px-3 py-2 text-left">Datums</th>
                         <th class="px-3 py-2 text-left">Fails</th>
                     </tr>
@@ -272,15 +278,18 @@
                     @forelse($documents as $doc)
 
                         @php
-                            $url = $doc->file_url;
+                            $url = $doc->file_url ?? null;
                             $ext = $url ? strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION)) : null;
                             $isImage = in_array($ext, ['jpg','jpeg','png','gif','webp','bmp']);
                             $isPdf = $ext === 'pdf';
                         @endphp
 
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition">
-                            <td class="px-3 py-2">{{ $doc->type->label() }}</td>
-                            <td class="px-3 py-2">{{ $doc->name }}</td>
+                            <td class="px-3 py-2">{{ $doc->type_label ?? '—' }}</td>
+                            <td class="px-3 py-2">{{ $doc->name ?? '—' }}</td>
+                            <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
+                                {{ $doc->step_label ?? '—' }}
+                            </td>
                             <td class="px-3 py-2 text-gray-600 dark:text-gray-400">
                                 {{ $doc->uploaded_at?->format('d.m.Y H:i') ?? '—' }}
                             </td>
@@ -317,7 +326,7 @@
 
                     @empty
                         <tr>
-                            <td colspan="4" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
                                 Nav dokumentu
                             </td>
                         </tr>

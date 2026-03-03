@@ -2,17 +2,17 @@
 
 @include('components.upload-loading-overlay', ['targets' => 'file,saveDocument'])
 
-    {{-- Upload Form: блокируем кнопку на время загрузки файла (livewire-upload-*), чтобы срабатывало с первого клика --}}
+    {{-- Upload Form: спиннер только когда файл уже выбран и идёт загрузка на сервер --}}
     <form wire:submit.prevent="saveDocument"
           enctype="multipart/form-data"
           class="bg-gray-50 p-4 rounded-xl space-y-3 shadow"
-          x-data="{ fileUploading: false, cancelTimeout: null }"
-          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
-          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+          x-data="{ fileUploading: false }"
+          x-on:livewire-upload-start="fileUploading = true"
+          x-on:livewire-upload-finish="fileUploading = false"
+          x-on:livewire-upload-error="fileUploading = false"
+          x-on:livewire-upload-cancel="fileUploading = false">
 
-        {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+        {{-- Спиннер только во время загрузки файла на сервер (после выбора файла) --}}
         <div x-show="fileUploading"
              x-cloak
              class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
@@ -48,15 +48,17 @@
             @enderror
         </div>
 
-        {{-- FILE --}}
+        {{-- FILE (клиентское сжатие изображений перед загрузкой) --}}
         <div class="flex flex-col gap-1">
             <label class="text-xs font-semibold">{{ __('app.driver.step_docs.file') }}</label>
             <input type="file"
                    wire:model="file"
                    accept="image/*,application/pdf"
                    capture="environment"
-                   class="text-sm"
-                   x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
+                   class="text-sm">
+            @if($file ?? null)
+                <p class="text-xs text-gray-600 mt-1">📄 {{ $file->getClientOriginalName() }}</p>
+            @endif
             @error('file')
                 <p class="text-red-600 text-xs">{{ $message }}</p>
             @enderror

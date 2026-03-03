@@ -1,4 +1,7 @@
 import './bootstrap'
+import { compressImageFile } from './compress-image'
+
+window.driverCompressImageFile = compressImageFile
 
 // Register Driver Service Worker
 if ('serviceWorker' in navigator) {

@@ -48,11 +48,12 @@
         window.driverToastMessages = {
             success: @json(__('app.driver.toast.success')),
             error: @json(__('app.driver.toast.error')),
+            document_uploaded: @json(__('app.driver.toast.document_uploaded')),
         };
-        function showDriverToast(isError) {
+        function showDriverToast(isError, message) {
             const root = document.getElementById('driver-toast-root');
             if (!root) return;
-            const msg = isError ? window.driverToastMessages.error : window.driverToastMessages.success;
+            const msg = message ?? (isError ? window.driverToastMessages.error : window.driverToastMessages.success);
             const el = document.createElement('div');
             el.setAttribute('role', 'alert');
             el.className = (isError ? 'bg-red-600' : 'bg-green-600') + ' text-white text-sm font-medium px-4 py-3 rounded-lg shadow-lg';
@@ -65,6 +66,7 @@
         document.addEventListener('livewire:init', () => {
             Livewire.on('driver-toast-success', () => showDriverToast(false));
             Livewire.on('driver-toast-error', () => showDriverToast(true));
+            Livewire.on('driver-toast-document-uploaded', () => showDriverToast(false, window.driverToastMessages.document_uploaded));
         });
     </script>
 

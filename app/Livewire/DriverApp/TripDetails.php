@@ -15,6 +15,7 @@ use App\Services\Steps\StepStatusService;
 
 use App\Enums\TripStatus;
 use App\Enums\TripStepStatus;
+use Livewire\Attributes\On;
 
 class TripDetails extends Component
 {
@@ -54,6 +55,17 @@ class TripDetails extends Component
 
         $this->history = TripStatusHistory::where('trip_id', $trip->id)
             ->orderBy('time', 'desc')
+            ->get();
+    }
+
+    /** Обновить список шагов и документов после загрузки документа водителем */
+    #[On('step-document-uploaded')]
+    public function refreshStepsWithDocuments(): void
+    {
+        $this->steps = TripStep::where('trip_id', $this->trip->id)
+            ->with('stepDocuments')
+            ->orderBy('order')
+            ->orderBy('id')
             ->get();
     }
 

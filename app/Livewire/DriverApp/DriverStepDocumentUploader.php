@@ -70,15 +70,16 @@ class DriverStepDocumentUploader extends Component
                 'comment'            => $this->comment,
             ]);
 
-            $this->dispatch('driver-toast-success');
+            $this->dispatch('driver-toast-document-uploaded');
+            $this->dispatch('step-document-uploaded');
         } catch (\Throwable $e) {
             report($e);
             $this->dispatch('driver-toast-error');
             return;
         }
 
-        // обновляем связи и чистим форму
-        $this->step->refresh();
+        // сбрасываем кэш связи, чтобы список документов обновился сразу
+        $this->step->unsetRelation('stepDocuments');
         $this->reset(['file', 'comment']);
         $this->type = StepDocumentType::DeliveryNote->value;
     }

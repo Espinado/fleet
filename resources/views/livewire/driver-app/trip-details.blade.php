@@ -239,7 +239,9 @@
                 {{-- Documents --}}
                 @php $docCount = $step->stepDocuments->count(); @endphp
 
-                <div x-data="{ openUpload: @js($errors->isNotEmpty()), openList: false }" class="border-t pt-3 mt-3">
+                <div x-data="{ openUpload: @js($errors->isNotEmpty()), openList: false }"
+                     x-on:step-document-uploaded.window="openUpload = false"
+                     class="border-t pt-3 mt-3">
                     <button @click="openUpload = !openUpload"
                             class="w-full flex items-center justify-between px-3 py-2 bg-indigo-50 rounded-lg text-sm font-semibold">
                         📤 {{ __('app.driver.trip_details.add_document') }}

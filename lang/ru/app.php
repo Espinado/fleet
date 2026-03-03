@@ -35,10 +35,12 @@ return [
     // Driver app: toast (action feedback)
     'driver.toast.success' => 'Выполнено',
     'driver.toast.error'   => 'Ошибка! Свяжитесь с администратором.',
+    'driver.toast.document_uploaded' => 'Документ загружен',
 
     // Trip show (toasts)
     'trip.show.toast_deleted' => 'Удалено',
     'trip.show.toast_error'   => 'Ошибка!',
+    'trip.show.step_column'   => 'Шаг',
 
     // Driver app: offline (PWA)
     'driver.offline.title'   => 'Нет соединения',
