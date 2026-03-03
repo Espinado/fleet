@@ -46,35 +46,37 @@ class EditDriver extends Component
     public $photo, $license_photo, $medical_certificate_photo;
     public $old_photo, $old_license_photo, $old_medical_certificate_photo;
 
-    protected $rules = [
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'pers_code' => 'required|string|max:50',
+    protected function rules(): array
+    {
+        return [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'pers_code' => 'required|string|max:50',
 
-        // ✅ company_id
-        'company_id' => 'required|integer|exists:companies,id',
+            'company_id' => 'required|integer|exists:companies,id',
 
-        'email' => 'nullable|email',
-        'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string|max:50',
 
-        'license_number' => 'nullable|string|max:50',
-        'license_issued' => 'nullable|date',
-        'license_end' => 'nullable|date',
-        'code95_issued' => 'nullable|date',
-        'code95_end' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('code95_issued'), 'after:code95_issued')],
-        'permit_issued' => 'nullable|date',
-        'permit_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('permit_issued'), 'after:permit_issued')],
-        'medical_issued' => 'nullable|date',
-        'medical_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_issued'), 'after:medical_issued')],
-        'medical_exam_passed' => 'nullable|date',
-        'medical_exam_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_exam_passed'), 'after:medical_exam_passed')],
-        'declaration_issued' => 'nullable|date',
-        'declaration_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('declaration_issued'), 'after:declaration_issued')],
+            'license_number' => 'nullable|string|max:50',
+            'license_issued' => 'nullable|date',
+            'license_end' => 'nullable|date',
+            'code95_issued' => 'nullable|date',
+            'code95_end' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('code95_issued'), 'after:code95_issued')],
+            'permit_issued' => 'nullable|date',
+            'permit_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('permit_issued'), 'after:permit_issued')],
+            'medical_issued' => 'nullable|date',
+            'medical_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_issued'), 'after:medical_issued')],
+            'medical_exam_passed' => 'nullable|date',
+            'medical_exam_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_exam_passed'), 'after:medical_exam_passed')],
+            'declaration_issued' => 'nullable|date',
+            'declaration_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('declaration_issued'), 'after:declaration_issued')],
 
-        'photo' => 'nullable|image',
-        'license_photo' => 'nullable|image',
-        'medical_certificate_photo' => 'nullable|image',
-    ];
+            'photo' => 'nullable|image',
+            'license_photo' => 'nullable|image',
+            'medical_certificate_photo' => 'nullable|image',
+        ];
+    }
 
     public function mount(Driver $driver)
     {
