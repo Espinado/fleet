@@ -65,7 +65,7 @@ class CreateTruck extends Component
             'tech_passport_nr' => 'required|string|max:255',
             'tech_passport_issued' => 'required|date',
             'tech_passport_expired' => 'required|date|after_or_equal:tech_passport_issued',
-            'tech_passport_photo' => 'nullable|image|max:24096',
+            'tech_passport_photo' => 'nullable|image',
 
             'license_number' => 'nullable|string|max:50',
             'license_issued' => 'nullable|date',

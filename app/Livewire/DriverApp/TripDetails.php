@@ -194,7 +194,7 @@ public function saveOdoEnd(): void
     $end   = (int)$this->odo_end_km;
 
     if ($end < $start) {
-        $this->addError('odo_end_km', 'Beigu rādījums nevar būt mazāks par starta.');
+        $this->addError('odo_end_km', __('app.driver.odo.return_not_less_than_start'));
         return;
     }
 

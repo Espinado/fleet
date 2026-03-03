@@ -25,7 +25,7 @@ class UploadDocument extends Component
     public function upload()
     {
         $this->validate([
-            'file' => 'required|mimes:jpg,jpeg,png,pdf|max:10240',
+            'file' => 'required|mimes:jpg,jpeg,png,pdf',
         ]);
 
         // сохраняем файл

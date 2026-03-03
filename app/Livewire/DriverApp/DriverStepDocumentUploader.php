@@ -25,7 +25,7 @@ class DriverStepDocumentUploader extends Component
     protected function rules()
     {
         return [
-            'file'    => 'required|file|max:51200',
+            'file'    => 'required|file',
             'comment' => 'nullable|string|max:2000',
             'type'    => ['required', new Enum(StepDocumentType::class)],
         ];

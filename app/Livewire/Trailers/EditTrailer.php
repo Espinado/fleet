@@ -91,7 +91,7 @@ class EditTrailer extends Component
             'tech_passport_nr' => 'nullable|string|max:255',
             'tech_passport_issued'  => 'nullable|date|required_with:tech_passport_expired',
             'tech_passport_expired' => 'nullable|date|after_or_equal:tech_passport_issued',
-            'tech_passport_photo' => 'nullable|image|max:22048',
+            'tech_passport_photo' => 'nullable|image',
 
             'type_id' => 'required|integer|in:' . implode(',', array_keys(config('trailer-types.types'))),
         ];

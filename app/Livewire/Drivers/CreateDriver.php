@@ -95,9 +95,9 @@ class CreateDriver extends Component
             'declaration_expired'  => 'required|date|after:declaration_issued',
 
             // Фото
-            'photo'                     => 'nullable|image|max:22048',
-            'license_photo'             => 'nullable|image|max:22048',
-            'medical_certificate_photo' => 'nullable|image|max:22048',
+            'photo'                     => 'nullable|image',
+            'license_photo'             => 'nullable|image',
+            'medical_certificate_photo' => 'nullable|image',
         ];
     }
 

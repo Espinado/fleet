@@ -71,7 +71,7 @@ class ViewTrip extends Component
     public function uploadStepDocument(int $stepId)
     {
         $this->validate([
-            "stepDocFile.$stepId"    => 'required|file|max:8192|mimes:jpg,jpeg,png,gif,webp,pdf',
+            "stepDocFile.$stepId"    => 'required|file|mimes:jpg,jpeg,png,gif,webp,pdf',
             "stepDocType.$stepId"    => 'nullable|string|max:255',
             "stepDocComment.$stepId" => 'nullable|string|max:1000',
         ]);
@@ -193,7 +193,7 @@ class ViewTrip extends Component
         }
 
         $cargo = TripCargo::findOrFail($cargoId);
-        if ($cargo->trip_id !== $this->trip->id) {
+        if ((int) $cargo->trip_id !== (int) $this->trip->id) {
             abort(403);
         }
 

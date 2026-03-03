@@ -31,7 +31,7 @@ class Profile extends Component
         $this->validate([
             'phone' => 'required|string|max:32',
             'email' => 'nullable|email|max:255',
-            'photo' => 'nullable|image|max:20480'
+            'photo' => 'nullable|image'
         ]);
 
         if ($this->photo) {

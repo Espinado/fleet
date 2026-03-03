@@ -26,6 +26,9 @@ return [
     'driver.dashboard.open_details' => 'Открыть детали рейса',
     'driver.dashboard.no_active'    => 'Нет активного рейса',
 
+    // Driver app: odometer validation
+    'driver.odo.return_not_less_than_start' => 'Показание при возврате не может быть меньше, чем при выезде.',
+
     // Driver app: toast (action feedback)
     'driver.toast.success' => 'Выполнено',
     'driver.toast.error'   => 'Ошибка! Свяжитесь с администратором.',

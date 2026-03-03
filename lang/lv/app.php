@@ -95,6 +95,9 @@ return [
     'driver.dashboard.open_details' => 'Atvērt reisa detaļas',
     'driver.dashboard.no_active'    => 'Nav aktīva reisa',
 
+    // Driver app: odometer validation
+    'driver.odo.return_not_less_than_start' => 'Beigu rādījums nevar būt mazāks par starta.',
+
     // Driver app: toast (action feedback)
     'driver.toast.success' => 'Izpildīts',
     'driver.toast.error'   => 'Kļūda! Sazinieties ar administratoru.',

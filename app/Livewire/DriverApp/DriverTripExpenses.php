@@ -61,14 +61,13 @@ class DriverTripExpenses extends Component
             'description'  => ['nullable', 'string', 'max:2000'],
             'amount'       => ['required', 'numeric', 'min:0.01', 'max:99999'],
             'expense_date' => ['required', 'date'],
-            'file'         => ['nullable', 'file', 'max:51200'],
+            'file'         => ['nullable', 'file'],
 
             // Odometer only for fuel/adblue
             'manualOdometerKm' => [
                 'nullable',
                 'numeric',
                 'min:0',
-                'max:3000000',
                 'required_if:category,' . TripExpenseCategory::FUEL->value . ',' . TripExpenseCategory::ADBLUE->value,
                 'prohibited_unless:category,' . TripExpenseCategory::FUEL->value . ',' . TripExpenseCategory::ADBLUE->value,
             ],
@@ -93,7 +92,6 @@ class DriverTripExpenses extends Component
             'amount.numeric' => 'Summai jābūt skaitlim.',
             'expense_date.required' => 'Izvēlieties datumu.',
             'expense_date.date' => 'Nederīgs datums.',
-            'file.max' => 'Fails ir pārāk liels (max 50MB).',
 
             'manualOdometerKm.required_if' => 'Ievadiet odometru (km).',
             'manualOdometerKm.numeric' => 'Odometram jābūt skaitlim.',

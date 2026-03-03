@@ -172,7 +172,7 @@ class Dashboard extends Component
     public function saveManualOdo(): void
     {
         $this->validate([
-            'manualOdoKm' => ['required', 'integer', 'min:0', 'max:10000000'],
+            'manualOdoKm' => ['required', 'integer', 'min:0'],
         ]);
 
         if (!$this->trip || !$this->trip->truck_id) {
@@ -184,6 +184,12 @@ class Dashboard extends Component
         }
 
         $odo = (int) $this->manualOdoKm;
+
+        // Единственное условие: при возврате в гараж показание не может быть меньше, чем при выезде
+        if ($this->manualOdoMode === 'return' && $this->trip->odo_start_km !== null && $odo < (int) $this->trip->odo_start_km) {
+            $this->addError('manualOdoKm', __('app.driver.odo.return_not_less_than_start'));
+            return;
+        }
 
         try {
             DB::transaction(function () use ($odo) {
@@ -251,13 +257,7 @@ class Dashboard extends Component
                     ]);
 
                 } else {
-                    // ===== RETURN =====
-
-                    // защита: конец меньше старта
-                    if ($trip->odo_start_km !== null && $odo < (int) $trip->odo_start_km) {
-                        $this->addError('manualOdoKm', 'Beigu rādījums nevar būt mazāks par starta.');
-                        throw new \RuntimeException('odo_end_km < odo_start_km');
-                    }
+                    // ===== RETURN (проверка уже выполнена до транзакции) =====
 
                     // 1) VehicleRun CLOSE (по trip->vehicle_run_id, иначе fallback на openRun)
                     $runToClose = null;

@@ -25,7 +25,7 @@ class TripStepDocumentUploader extends Component
         return [
             'type'    => ['required', new Enum(StepDocumentType::class)],
             'comment' => 'nullable|string|max:2000',
-            'file'    => 'required|file|max:51200',
+            'file'    => 'required|file',
         ];
     }
 
