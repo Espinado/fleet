@@ -106,6 +106,10 @@ return [
     'driver.expenses.category_choose'   => '— Выберите категорию —',
     'driver.expenses.description'       => 'Описание',
     'driver.expenses.amount'            => 'Сумма (€)',
+    'driver.expenses.amount_placeholder' => 'необязательно',
+    'driver.expenses.overload'       => 'Перегрузка',
+    'driver.expenses.overload_placeholder' => 'необязательно',
+    'driver.expenses.optional'       => 'необязательно',
     'driver.expenses.liters_title'      => 'Введите количество (литры)',
     'driver.expenses.liters_label'      => 'Литры',
     'driver.expenses.liters_placeholder'=> 'напр.: 20.50',
@@ -127,6 +131,7 @@ return [
     'driver.expenses.total'             => 'Итого',
     'driver.expenses.liters_short'      => 'Литры',
     'driver.expenses.odo_short'         => 'Одометр',
+    'driver.expenses.overload_short' => 'Перегрузка',
 
     // Driver app: step document uploader
     'driver.step_docs.type'             => 'Тип',

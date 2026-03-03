@@ -16,9 +16,11 @@ class TripExpense extends Model
 
     protected $fillable = [
         'trip_id',
+        'trip_cargo_id',
         'supplier_company_id',
         'category',
         'description',
+        'overload_note',
         'amount',
         'currency',
         'file_path',
@@ -47,6 +49,11 @@ class TripExpense extends Model
     public function trip(): BelongsTo
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function tripCargo(): BelongsTo
+    {
+        return $this->belongsTo(TripCargo::class, 'trip_cargo_id');
     }
 
     public function creator(): BelongsTo

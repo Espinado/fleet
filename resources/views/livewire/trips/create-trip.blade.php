@@ -585,7 +585,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Тип {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.blur="steps.{{ $index }}.type" class="{{ $baseInput }}">
+                                <select wire:model.blur="steps.{{ $index }}.type" class="{{ $baseInput }} js-select2">
                                     <option value="loading">Погрузка</option>
                                     <option value="unloading">Разгрузка</option>
                                 </select>

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rules\Enum as EnumRule;
+use Illuminate\Validation\Rule;
 
 use App\Models\Trip;
 use App\Models\TripExpense;
@@ -25,7 +26,8 @@ class DriverTripExpenses extends Component
     /** Form */
     public string $category = ''; // placeholder option works
     public string $description = '';
-    public string $amount = ''; // keep string for Livewire input stability
+    public string $overload_note = '';
+    public string $amount = ''; // keep string for Livewire input stability (optional for driver — can be 0)
     public string $expense_date = '';
     public $file = null;
 
@@ -59,7 +61,8 @@ class DriverTripExpenses extends Component
         return [
             'category'     => ['required', new EnumRule(TripExpenseCategory::class)],
             'description'  => ['nullable', 'string', 'max:2000'],
-            'amount'       => ['required', 'numeric', 'min:0.01', 'max:99999'],
+            'amount'       => ['nullable', Rule::when(filled($this->amount), ['numeric', 'min:0', 'max:99999'])],
+            'overload_note' => ['nullable', 'string', 'max:500'],
             'expense_date' => ['required', 'date'],
             'file'         => ['nullable', 'file'],
 
@@ -88,7 +91,6 @@ class DriverTripExpenses extends Component
     {
         return [
             'category.required' => 'Izvēlieties kategoriju.',
-            'amount.required' => 'Ievadiet summu.',
             'amount.numeric' => 'Summai jābūt skaitlim.',
             'expense_date.required' => 'Izvēlieties datumu.',
             'expense_date.date' => 'Nederīgs datums.',
@@ -179,7 +181,10 @@ class DriverTripExpenses extends Component
                     'trip_id'      => $this->trip->id,
                     'category'     => $validated['category'],
                     'description'  => $validated['description'] ?? null,
-                    'amount'       => (float) $validated['amount'],
+                    'amount'       => isset($validated['amount']) && $validated['amount'] !== '' && $validated['amount'] !== null
+                        ? (float) $validated['amount']
+                        : 0,
+                    'overload_note' => isset($validated['overload_note']) ? trim($validated['overload_note']) : null,
                     'currency'     => 'EUR',
                     'file_path'    => $path,
                     'expense_date' => $validated['expense_date'],
@@ -261,7 +266,7 @@ class DriverTripExpenses extends Component
             return;
         }
 
-        $this->reset(['category', 'description', 'amount', 'expense_date', 'file', 'manualOdometerKm', 'liters']);
+        $this->reset(['category', 'description', 'overload_note', 'amount', 'expense_date', 'file', 'manualOdometerKm', 'liters']);
         $this->resetValidation();
 
         $this->dispatch('driver-toast-success');

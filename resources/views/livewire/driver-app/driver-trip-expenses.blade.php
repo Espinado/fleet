@@ -82,17 +82,32 @@
                 @enderror
             </div>
 
-            {{-- Сумма --}}
+            {{-- Сумма (необязательно) --}}
             <div>
-                <label class="text-xs font-semibold">{{ __('app.driver.expenses.amount') }}</label>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.amount') }} <span class="text-gray-500 font-normal">({{ __('app.driver.expenses.optional') }})</span></label>
                 <input
                     type="number"
                     step="0.01"
                     inputmode="decimal"
                     wire:model.live="amount"
                     class="w-full border-gray-300 rounded-lg text-sm p-2"
+                    placeholder="{{ __('app.driver.expenses.amount_placeholder') }}"
                 >
                 @error('amount')
+                    <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+
+            {{-- Перегрузка (необязательно) --}}
+            <div>
+                <label class="text-xs font-semibold">{{ __('app.driver.expenses.overload') }} <span class="text-gray-500 font-normal">({{ __('app.driver.expenses.optional') }})</span></label>
+                <input
+                    type="text"
+                    wire:model.live="overload_note"
+                    class="w-full border-gray-300 rounded-lg text-sm p-2"
+                    placeholder="{{ __('app.driver.expenses.overload_placeholder') }}"
+                >
+                @error('overload_note')
                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                 @enderror
             </div>
@@ -245,6 +260,9 @@
                         {{ $exp->expense_date?->format('d.m.Y') ?? '—' }}
                         @if($exp->description)
                             • {{ $exp->description }}
+                        @endif
+                        @if(!empty($exp->overload_note))
+                            <span class="block mt-0.5 text-gray-600">📦 {{ __('app.driver.expenses.overload_short') }}: {{ $exp->overload_note }}</span>
                         @endif
                     </div>
 

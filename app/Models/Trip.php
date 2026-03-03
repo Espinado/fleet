@@ -193,8 +193,9 @@ public function getSchemeKeyAttribute(): string
 {
     $carrier = $this->carrierCompany;
 
-    if ($this->driver_id) return 'own';
+    // Если перевозчик — третья сторона, это не собственный транспорт (показываем 3. PUSE, а не ĪPAŠUMS)
     if ($carrier?->is_third_party) return 'third_party';
+    if ($this->driver_id) return 'own';
     return 'resell';
 }
 public function getSchemeLabelAttribute(): string

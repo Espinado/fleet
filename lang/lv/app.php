@@ -791,6 +791,10 @@ return [
     'driver.expenses.category_choose'   => '— Izvēlieties kategoriju —',
     'driver.expenses.description'       => 'Apraksts',
     'driver.expenses.amount'            => 'Summa (€)',
+    'driver.expenses.amount_placeholder' => 'neobligāti',
+    'driver.expenses.overload'       => 'Pārgāde',
+    'driver.expenses.overload_placeholder' => 'neobligāti',
+    'driver.expenses.optional'       => 'neobligāti',
     'driver.expenses.liters_title'      => 'Ievadiet daudzumu (litri)',
     'driver.expenses.liters_label'      => 'Litri',
     'driver.expenses.liters_placeholder'=> 'piem.: 20.50',
@@ -812,6 +816,7 @@ return [
     'driver.expenses.total'             => 'Kopā',
     'driver.expenses.liters_short'      => 'Litri',
     'driver.expenses.odo_short'         => 'Odometrs',
+    'driver.expenses.overload_short' => 'Pārgāde',
 
     // Driver app: step document uploader
     'driver.step_docs.type'             => 'Tips',

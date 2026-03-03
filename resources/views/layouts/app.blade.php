@@ -213,36 +213,45 @@
     {{-- Livewire scripts --}}
     @livewireScripts
 
-    {{-- Select2 init (работает и с Livewire) --}}
+    {{-- Select2 init (работает и с Livewire). После каждого обновления Livewire переинициализируем Select2, чтобы селекты городов и др. не превращались обратно в обычные. --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const initSelect2 = () => {
                 $('.js-select2').each(function () {
                     const $el = $(this);
 
-                    if (!$el.data('select2')) {
-                        const $parent =
-                            $el.closest('.select2-parent').length
-                                ? $el.closest('.select2-parent')
-                                : $('body');
-
-                        $el.select2({
-                            width: 'resolve',
-                            placeholder: $el.data('placeholder') || undefined,
-                            allowClear: !!$el.data('allow-clear'),
-                            tags: !!$el.data('tags'),
-                            dropdownParent: $parent
-                        });
+                    // Если Select2 уже был инициализирован — уничтожаем (после смены страны опции городов обновились, виджет нужно пересоздать)
+                    if ($el.data('select2')) {
+                        try {
+                            $el.off('change.lwSelect2');
+                            $el.select2('destroy');
+                        } catch (e) {}
+                        $el.removeData('select2');
+                        $el.removeData('lw-select2-bound');
                     }
 
-                    // ✅ Жёсткая синхронизация с Livewire (expeditor / carrier и др.)
-                    if (window.Livewire && !$el.data('lw-select2-bound')) {
-                        $el.on('change', function (e) {
+                    const $parent =
+                        $el.closest('.select2-parent').length
+                            ? $el.closest('.select2-parent')
+                            : $('body');
+
+                    $el.select2({
+                        width: 'resolve',
+                        placeholder: $el.data('placeholder') || undefined,
+                        allowClear: !!$el.data('allow-clear'),
+                        tags: !!$el.data('tags'),
+                        dropdownParent: $parent
+                    });
+
+                    // Синхронизация с Livewire при смене значения
+                    if (window.Livewire) {
+                        $el.off('change.lwSelect2').on('change.lwSelect2', function (e) {
                             const el = e.target;
                             const model =
                                 el.getAttribute('wire:model.live') ||
                                 el.getAttribute('wire:model') ||
-                                el.getAttribute('wire:model.defer');
+                                el.getAttribute('wire:model.defer') ||
+                                el.getAttribute('wire:model.blur');
 
                             if (!model) return;
 
@@ -257,8 +266,6 @@
 
                             component.set(model, $el.val());
                         });
-
-                        $el.data('lw-select2-bound', true);
                     }
                 });
             };
