@@ -264,7 +264,7 @@
         [__('app.driver.docs.med_ovp'), ['medical_exam_passed','medical_exam_expired']],
         [__('app.driver.docs.declaration'), ['declaration_issued','declaration_expired']]
     ] as [$title, $fields])
-        <div class="border-t pt-4">
+        <div class="border-t pt-4 first:border-t-0 first:pt-0">
             <h4 class="font-semibold text-gray-700 mb-2">{{ $title }}</h4>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($fields as $field)

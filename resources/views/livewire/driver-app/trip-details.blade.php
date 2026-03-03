@@ -332,7 +332,8 @@
                 <div class="flex justify-end gap-2 pt-1">
                     <button
                         type="button"
-                        wire:click="$set('showStepOdoModal', false)"
+                        wire:click="cancelStepOdo"
+                        wire:loading.attr="disabled"
                         class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-xs font-semibold"
                     >
                         {{ __('app.driver.trip_details.cancel') }}

@@ -378,21 +378,34 @@ public function saveOdoStart(): void
         }
     }
 
+    /**
+     * Подтвердить смену статуса шага: одометр на шагах необязателен (пусто = null).
+     */
     public function confirmStepStatusWithOdo(StepStatusService $service): void
     {
+        $odo = $this->parseStepOdoInput($this->stepOdoKm);
+        $this->applyStepStatusWithOdo($service, $odo);
+    }
+
+    /**
+     * Отмена ввода одометра на шаге: переход к следующему шагу с null одометром.
+     */
+    public function cancelStepOdo(StepStatusService $service): void
+    {
+        $this->applyStepStatusWithOdo($service, null);
+    }
+
+    /**
+     * @param float|null $odometerKm null = не вводили, записываем как null
+     */
+    private function applyStepStatusWithOdo(StepStatusService $service, ?float $odometerKm): void
+    {
         if (!$this->stepOdoStepId || !$this->stepOdoTargetStatus) {
-            $this->showStepOdoModal = false;
+            $this->closeStepOdoModal();
             return;
         }
 
-        $this->validate([
-            'stepOdoKm' => ['required', 'numeric', 'min:0'],
-        ], [], [
-            'stepOdoKm' => 'odometra rādījums',
-        ]);
-
         $this->trip->refresh()->load('truck');
-
         $step = TripStep::findOrFail($this->stepOdoStepId);
         $newStatus = TripStepStatus::from($this->stepOdoTargetStatus);
 
@@ -400,7 +413,7 @@ public function saveOdoStart(): void
             $service->setStatus(
                 $step,
                 $newStatus,
-                (float) $this->stepOdoKm,
+                $odometerKm,
                 TruckOdometerEvent::SOURCE_MANUAL
             );
         } catch (\InvalidArgumentException $e) {
@@ -410,25 +423,42 @@ public function saveOdoStart(): void
             return;
         }
 
-        // закрываем модал и сбрасываем состояние
-        $this->showStepOdoModal = false;
-        $this->stepOdoStepId = null;
-        $this->stepOdoTargetStatus = null;
-        $this->stepOdoKm = null;
-
-        // обновляем шаги / историю / рейс
+        $this->closeStepOdoModal();
         $this->steps = TripStep::where('trip_id', $this->trip->id)
             ->orderBy('order')
             ->orderBy('id')
             ->get();
-
         $this->history = TripStatusHistory::where('trip_id', $this->trip->id)
             ->orderBy('time', 'desc')
             ->get();
-
         $this->trip->refresh()->load('truck');
-
         $this->dispatch('driver-toast-success');
+    }
+
+    /**
+     * Парсит ввод одометра: пусто → null, иначе валидация и float.
+     */
+    private function parseStepOdoInput(?string $value): ?float
+    {
+        $trimmed = $value !== null ? trim((string) $value) : '';
+        if ($trimmed === '') {
+            return null;
+        }
+        $this->validate([
+            'stepOdoKm' => ['required', 'numeric', 'min:0'],
+        ], [], [
+            'stepOdoKm' => 'odometra rādījums',
+        ]);
+        return (float) str_replace(',', '.', $trimmed);
+    }
+
+    private function closeStepOdoModal(): void
+    {
+        $this->showStepOdoModal = false;
+        $this->stepOdoStepId = null;
+        $this->stepOdoTargetStatus = null;
+        $this->stepOdoKm = null;
+        $this->resetErrorBag('stepOdoKm');
     }
 
     /**

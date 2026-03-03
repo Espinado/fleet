@@ -565,6 +565,22 @@ class EditTrip extends Component
         $this->trip_unloading_step_ids = array_values(array_unique($this->trip_unloading_step_ids));
     }
 
+    /**
+     * При смене страны в шаге — обновляем только список городов и сбрасываем город.
+     * Даты и остальные поля не трогаем, чтобы не сбрасывать форму.
+     */
+    public function updatedSteps($value, $key): void
+    {
+        $parts = explode('.', $key);
+        $stepIndex = (int) ($parts[0] ?? 0);
+        $field = $parts[1] ?? null;
+
+        if ($field === 'country_id' && isset($this->stepCities[$stepIndex])) {
+            $this->stepCities[$stepIndex]['cities'] = getCitiesByCountryId((int) $value) ?? [];
+            $this->steps[$stepIndex]['city_id'] = null;
+        }
+    }
+
     protected function hydrateCargosFromDb(): void
     {
         $cargos = TripCargo::where('trip_id', $this->trip->id)

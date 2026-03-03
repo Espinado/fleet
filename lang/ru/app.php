@@ -95,7 +95,7 @@ return [
     'driver.trip_details.add_document'      => 'Добавить документ',
     'driver.trip_details.step_documents'    => 'Документы шага',
     'driver.trip_details.odo_modal_title'   => 'Введите одометр (км)',
-    'driver.trip_details.odo_modal_hint'    => 'Показание одометра не должно быть меньше предыдущего шага.',
+    'driver.trip_details.odo_modal_hint'    => 'Необязательно. Показание одометра не должно быть меньше предыдущего шага.',
     'driver.trip_details.odo_placeholder'   => 'напр.: 123456.7',
     'driver.trip_details.cancel'            => 'Отмена',
     'driver.trip_details.save'              => 'Сохранить',

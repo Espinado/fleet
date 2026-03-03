@@ -778,7 +778,7 @@ return [
     'driver.trip_details.add_document'      => 'Pievienot dokumentu',
     'driver.trip_details.step_documents'    => 'Dokumenti solim',
     'driver.trip_details.odo_modal_title'   => 'Ievadiet odometru (km)',
-    'driver.trip_details.odo_modal_hint'    => 'Odometrs nedrīkst būt mazāks par iepriekšējo soli.',
+    'driver.trip_details.odo_modal_hint'    => 'Neobligāti. Odometrs nedrīkst būt mazāks par iepriekšējo soli.',
     'driver.trip_details.odo_placeholder'   => 'piem.: 123456.7',
     'driver.trip_details.cancel'            => 'Atcelt',
     'driver.trip_details.save'              => 'Saglabāt',

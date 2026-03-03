@@ -559,7 +559,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.type') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.defer="steps.{{ $index }}.type" class="{{ $baseInput }}">
+                                <select wire:model.defer="steps.{{ $index }}.type" class="{{ $baseInput }} js-select2">
                                     <option value="loading">{{ __('app.trip.edit.loading') }}</option>
                                     <option value="unloading">{{ __('app.trip.edit.unloading') }}</option>
                                 </select>

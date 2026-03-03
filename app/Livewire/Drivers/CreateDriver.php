@@ -79,20 +79,20 @@ class CreateDriver extends Component
             'actual_building'   => 'required|string|max:50',
             'actual_room'       => 'nullable|string|max:20',
 
-            // Документы
+            // Документы (95 kod, darba atlauja, medicinska izzina OVP, vaditaja deklaracija — neobligāti)
             'license_number'       => 'required|string|unique:drivers,license_number',
             'license_issued'       => 'required|date',
             'license_end'          => 'required|date|after:license_issued',
-            'code95_issued'        => 'required|date',
-            'code95_end'           => 'required|date|after:code95_issued',
-            'permit_issued'        => 'required|date',
-            'permit_expired'       => 'required|date|after:permit_issued',
-            'medical_issued'       => 'required|date',
-            'medical_expired'      => 'required|date|after:medical_issued',
-            'medical_exam_passed'  => 'required|date',
-            'medical_exam_expired' => 'required|date|after:medical_exam_passed',
-            'declaration_issued'   => 'required|date',
-            'declaration_expired'  => 'required|date|after:declaration_issued',
+            'code95_issued'        => 'nullable|date',
+            'code95_end'           => ['nullable', 'date', Rule::when(filled('code95_issued'), 'after:code95_issued')],
+            'permit_issued'        => 'nullable|date',
+            'permit_expired'       => ['nullable', 'date', Rule::when(filled('permit_issued'), 'after:permit_issued')],
+            'medical_issued'       => 'nullable|date',
+            'medical_expired'      => ['nullable', 'date', Rule::when(filled('medical_issued'), 'after:medical_issued')],
+            'medical_exam_passed'  => 'nullable|date',
+            'medical_exam_expired' => ['nullable', 'date', Rule::when(filled('medical_exam_passed'), 'after:medical_exam_passed')],
+            'declaration_issued'   => 'nullable|date',
+            'declaration_expired'  => ['nullable', 'date', Rule::when(filled('declaration_issued'), 'after:declaration_issued')],
 
             // Фото
             'photo'                     => 'nullable|image',
@@ -179,20 +179,20 @@ private function generateUniquePin(): string
                 'license_issued'      => $this->license_issued,
                 'license_end'         => $this->license_end,
 
-                'code95_issued'       => $this->code95_issued,
-                'code95_end'          => $this->code95_end,
+                'code95_issued'       => filled($this->code95_issued) ? $this->code95_issued : null,
+                'code95_end'          => filled($this->code95_end) ? $this->code95_end : null,
 
-                'permit_issued'       => $this->permit_issued,
-                'permit_expired'      => $this->permit_expired,
+                'permit_issued'       => filled($this->permit_issued) ? $this->permit_issued : null,
+                'permit_expired'      => filled($this->permit_expired) ? $this->permit_expired : null,
 
-                'medical_issued'      => $this->medical_issued,
-                'medical_expired'     => $this->medical_expired,
+                'medical_issued'      => filled($this->medical_issued) ? $this->medical_issued : null,
+                'medical_expired'     => filled($this->medical_expired) ? $this->medical_expired : null,
 
-                'medical_exam_passed' => $this->medical_exam_passed,
-                'medical_exam_expired'=> $this->medical_exam_expired,
+                'medical_exam_passed' => filled($this->medical_exam_passed) ? $this->medical_exam_passed : null,
+                'medical_exam_expired'=> filled($this->medical_exam_expired) ? $this->medical_exam_expired : null,
 
-                'declaration_issued'  => $this->declaration_issued,
-                'declaration_expired' => $this->declaration_expired,
+                'declaration_issued'  => filled($this->declaration_issued) ? $this->declaration_issued : null,
+                'declaration_expired' => filled($this->declaration_expired) ? $this->declaration_expired : null,
 
                 'company_id'           => $this->company_id,
 
