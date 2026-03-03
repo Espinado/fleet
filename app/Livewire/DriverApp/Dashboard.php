@@ -355,56 +355,30 @@ class Dashboard extends Component
             return;
         }
 
-        \Log::info('DriverApp syncGarageFlags', [
-            'trip_id' => $this->trip->id,
-            'truck_id' => $this->trip->truck_id,
-            'vehicle_run_id' => $this->trip->vehicle_run_id,
-        ]);
-
-        // если completed — блокируем всё
+        // Рейс завершён — обе кнопки неактивны
         if ($this->trip->status instanceof TripStatus && $this->trip->status === TripStatus::COMPLETED) {
             return;
         }
 
-        $truckId = (int) $this->trip->truck_id;
+        // Приоритет: по полям рейса (started_at / ended_at), чтобы кнопки не зависели от vehicle_run_id
+        $hasStarted = !empty($this->trip->started_at);
+        $hasEnded   = !empty($this->trip->ended_at);
 
-        // 1) основной индикатор — vehicle_run_id в Trip
-        $runOpenByTrip = !empty($this->trip->vehicle_run_id);
-
-        // 2) open VehicleRun по truck
-        $openRun = VehicleRun::query()
-            ->where('truck_id', $truckId)
-            ->where('status', 'open')
-            ->latest('id')
-            ->first();
-
-        $runOpenByRuns = (bool) $openRun;
-
-        // 3) fallback по последнему событию (departure/return)
-        $lastEvent = TruckOdometerEvent::query()
-            ->where('truck_id', $truckId)
-            ->orderByDesc('occurred_at')
-            ->first();
-
-        $runOpenByEvents = false;
-        if ($lastEvent) {
-            if ((int) $lastEvent->type === TruckOdometerEvent::TYPE_DEPARTURE) $runOpenByEvents = true;
-            if ((int) $lastEvent->type === TruckOdometerEvent::TYPE_RETURN)    $runOpenByEvents = false;
-        }
-
-        $isOpen = $runOpenByTrip || $runOpenByRuns || $runOpenByEvents;
-
-        $this->canDepart = !$isOpen;
-        $this->canReturn = $isOpen;
-
-        // 4) автовосстановление: если есть openRun, но Trip не привязан — привяжем
-        if (!$runOpenByTrip && $openRun) {
-            $this->trip->forceFill(['vehicle_run_id' => $openRun->id])->save();
-            $this->trip = Trip::query()->find($this->trip->id);
-
+        if ($hasStarted && !$hasEnded) {
+            // Водитель выехал, ещё не вернулся — только "Возврат в гараж"
             $this->canDepart = false;
             $this->canReturn = true;
+            return;
         }
+
+        if (!$hasStarted) {
+            // Ещё не выезжал — только "Выезд из гаража"
+            $this->canDepart = true;
+            $this->canReturn = false;
+            return;
+        }
+
+        // hasStarted && hasEnded при не COMPLETED — маловероятно; оставляем обе неактивными
     }
 
     public function render()

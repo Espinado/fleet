@@ -8,6 +8,7 @@ use Livewire\WithFileUploads;
 use App\Models\Trip;
 use App\Models\TripStepDocument;
 use App\Models\TripCargo;
+use App\Models\Invoice;
 use App\Http\Controllers\CmrController;
 use App\Helpers\CalculateTax;
 
@@ -200,7 +201,11 @@ class ViewTrip extends Component
             'has_delay'    => $checked,
             'delay_days'   => $days,
             'delay_amount' => $amount,
+            // Инвалидация инвойса: после изменения простоя PDF устарел — нужна перегенерация
+            'inv_file'       => null,
+            'inv_created_at' => null,
         ]);
+        Invoice::where('trip_cargo_id', $cargo->id)->update(['pdf_file' => null]);
 
         $this->reloadTrip();
         $this->dispatch('delaySaved');
