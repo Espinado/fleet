@@ -181,8 +181,8 @@
                     <td class="cell">
                         Dikstāve ({{ (int)$delay_days }} {{ (int)$delay_days === 1 ? 'diena' : 'dienas' }})
                     </td>
-                    <td class="cell text-center">—</td>
-                    <td class="cell text-center">—</td>
+                    <td class="cell text-center">Dienas</td>
+                    <td class="cell text-center">{{ (int)$delay_days }}</td>
                     <td class="cell amount">{{ number_format($delay_amount_no_vat, 2, '.', ' ') }}</td>
                     <td class="cell amount">{{ number_format($delay_amount_with_tax, 2, '.', ' ') }}</td>
                 </tr>
