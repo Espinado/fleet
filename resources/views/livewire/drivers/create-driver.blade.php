@@ -69,7 +69,7 @@
                 <h3 class="text-lg font-semibold text-gray-900">🧭 {{ __('app.driver.create.company') }}</h3>
                 <span class="text-gray-500 md:hidden" x-text="open ? '▼' : '▶'"></span>
             </button>
-            <div x-show="open" x-collapse class="px-0 md:block space-y-4 pt-4 md:pt-4">
+            <div x-show="open" x-collapse class="px-0 pt-4 md:pt-4 md:!block space-y-4">
                 <div>
                     <label class="block font-medium mb-1">{{ __('app.driver.create.company') }}</label>
                     <select wire:model="company_id"
@@ -91,7 +91,7 @@
                 <h3 class="text-lg font-semibold text-gray-900">👤 {{ __('app.driver.create.personal') }}</h3>
                 <span class="text-gray-500 md:hidden" x-text="open ? '▼' : '▶'"></span>
             </button>
-            <div x-show="open" x-collapse class="px-0 md:block space-y-4 pt-4 md:pt-4">
+            <div x-show="open" x-collapse class="px-0 pt-4 md:pt-4 md:!block space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block mb-1">{{ __('app.driver.create.first_name') }}</label>
@@ -151,7 +151,7 @@
                 <h3 class="text-lg font-semibold text-gray-900">📍 {{ __('app.driver.create.addresses') }}</h3>
                 <span class="text-gray-500 md:hidden" x-text="open ? '▼' : '▶'"></span>
             </button>
-            <div x-show="open" x-collapse class="px-0 md:block space-y-8 pt-4 md:pt-4">
+            <div x-show="open" x-collapse class="px-0 pt-4 md:pt-4 md:!block space-y-8">
             {{-- Declared --}}
             <div class="space-y-4">
                 <h4 class="font-semibold text-gray-700">{{ __('app.driver.create.declared') }}</h4>
@@ -255,7 +255,7 @@
                 <h3 class="text-lg font-semibold text-gray-900">📑 {{ __('app.driver.create.docs') }}</h3>
                 <span class="text-gray-500 md:hidden" x-text="open ? '▼' : '▶'"></span>
             </button>
-            <div x-show="open" x-collapse class="px-0 md:block space-y-6 pt-4 md:pt-4">
+            <div x-show="open" x-collapse class="px-0 pt-4 md:pt-4 md:!block space-y-6">
     @foreach([
         [__('app.driver.docs.license'), ['license_number','license_issued','license_end']],
         [__('app.driver.docs.code95'), ['code95_issued','code95_end']],
@@ -294,7 +294,7 @@
                 <h3 class="text-lg font-semibold text-gray-900">📸 {{ __('app.driver.create.photos') }}</h3>
                 <span class="text-gray-500 md:hidden" x-text="open ? '▼' : '▶'"></span>
             </button>
-            <div x-show="open" x-collapse class="px-0 md:block space-y-4 pt-4 md:pt-4">
+            <div x-show="open" x-collapse class="px-0 pt-4 md:pt-4 md:!block space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 @foreach([
                     ['photo', __('app.driver.create.photo_driver')],

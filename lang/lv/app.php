@@ -142,6 +142,7 @@ return [
     'driver.create.photo_driver' => 'Vadītāja foto',
     'driver.create.photo_license'=> 'Vadītāja apliecības foto',
     'driver.create.photo_med'    => 'Medicīniskā izziņa',
+    'driver.create.back'         => 'Atpakaļ',
     'driver.create.cancel'       => 'Atcelt',
     'driver.create.save'         => 'Saglabāt vadītāju',
     'driver.create.saving'       => 'Saglabā...',
