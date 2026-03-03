@@ -41,7 +41,7 @@ class TripExpensesSection extends Component
         $this->validate();
 
         $path = $this->expenseFile
-            ? $this->expenseFile->store("trip_expenses/trip_{$this->trip->id}", 'public')
+            ? \App\Helpers\ImageCompress::storeUpload($this->expenseFile, "trip_expenses/trip_{$this->trip->id}", 'public')
             : null;
 
         TripExpense::create([

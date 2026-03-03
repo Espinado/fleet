@@ -47,7 +47,22 @@
 
     {{-- 🧾 Forma --}}
     <form wire:submit.prevent="save"
-          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-6 md:space-y-10 relative">
+          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-6 md:space-y-10 relative"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        @include('components.upload-loading-overlay', ['targets' => 'save,photo,license_photo,medical_certificate_photo'])
+
+        {{-- Спиннер сразу при клике «Выбрать файл» --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
         {{-- 🔄 Глобальный лоадер --}}
         <div wire:loading.flex wire:target="save, photo, license_photo, medical_certificate_photo"
@@ -301,14 +316,31 @@
                     ['license_photo', __('app.driver.create.photo_license')],
                     ['medical_certificate_photo', __('app.driver.create.photo_med')],
                 ] as [$field, $label])
-                    @php $fileValue = $field === 'photo' ? $photo : ($field === 'license_photo' ? $license_photo : $medical_certificate_photo); @endphp
-                    <div>
+                    @php
+                        $fileValue = $field === 'photo' ? $photo : ($field === 'license_photo' ? $license_photo : $medical_certificate_photo);
+                        $isPdf = $fileValue && strtolower($fileValue->getClientOriginalExtension() ?? '') === 'pdf';
+                    @endphp
+                    <div x-data="{ previewUrl: null, isPdf: false }">
                         <label class="block text-sm font-medium mb-1">{{ $label }}</label>
-                        <input type="file" wire:model="{{ $field }}" accept="image/*,application/pdf"
-                               class="w-full border rounded-xl p-3 text-base min-h-[48px] file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-sm">
-                        @if($fileValue)
+                        <input type="file" wire:model.live="{{ $field }}" accept="image/*,application/pdf"
+                               class="w-full border rounded-xl p-3 text-base min-h-[48px] file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-sm"
+                               x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)"
+                               x-on:change="const f = $event.target.files[0]; previewUrl = null; isPdf = false; if (f) { isPdf = (f.type === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf')); if (!isPdf) { const r = new FileReader(); r.onload = () => { previewUrl = r.result }; r.readAsDataURL(f) } }">
+                        {{-- Мгновенное превью (FileReader) — показывается сразу при выборе файла --}}
+                        <template x-if="previewUrl">
+                            <img :src="previewUrl" class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt="">
+                        </template>
+                        <template x-if="!previewUrl && isPdf">
+                            <p class="mt-2 text-sm text-gray-600">📄 PDF</p>
+                        </template>
+                        {{-- После перерисовки Livewire (загрузка завершена) — превью с сервера --}}
+                        @if($fileValue && !$isPdf)
                             <img src="{{ $fileValue->temporaryUrl() }}"
-                                 class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt="">
+                                 class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt=""
+                                 x-show="!previewUrl">
+                        @endif
+                        @if($fileValue && $isPdf)
+                            <p class="mt-2 text-sm text-gray-600" x-show="!previewUrl">📄 PDF</p>
                         @endif
                     </div>
                 @endforeach

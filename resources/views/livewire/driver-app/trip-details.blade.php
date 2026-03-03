@@ -83,16 +83,19 @@
             </div>
         </div>
 
-        {{-- Status hint --}}
+        {{-- Status hint: «смена открыта» / «В пути» по факту выезда (started_at) и возврата (ended_at) --}}
+            @php
+                $driverOnRoad = $trip->started_at && !$trip->ended_at;
+            @endphp
             <div class="text-xs text-gray-500 flex items-center justify-between">
                 <span>
                     {{ __('app.driver.trip_details.shift') }}:
                     <span class="font-medium">
-                        {{ $trip->vehicle_run_id ? __('app.driver.trip_details.shift_open') : __('app.driver.trip_details.shift_closed') }}
+                        {{ $driverOnRoad ? __('app.driver.trip_details.shift_open') : __('app.driver.trip_details.shift_closed') }}
                     </span>
                 </span>
                 <span>
-                    {{ $trip->vehicle_run_id ? '🚚 ' . __('app.driver.trip_details.state_road') : '🏠 ' . __('app.driver.trip_details.state_garage') }}
+                    {{ $driverOnRoad ? '🚚 ' . __('app.driver.trip_details.state_road') : '🏠 ' . __('app.driver.trip_details.state_garage') }}
                 </span>
             </div>
 

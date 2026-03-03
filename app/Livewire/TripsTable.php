@@ -15,14 +15,14 @@ class TripsTable extends Component
     public string $status = '';
     public int    $perPage = 10;
     public string $sortField = 'start';
-    public string $sortDirection = 'asc';
+    public string $sortDirection = 'desc'; // по умолчанию: последние рейсы в начале
 
     protected $queryString = [
         'search'        => ['except' => ''],
         'status'        => ['except' => ''],
         'perPage'       => ['except' => 10],
         'sortField'     => ['except' => 'start'],
-        'sortDirection' => ['except' => 'asc'],
+        'sortDirection' => ['except' => 'desc'],
         'page'          => ['except' => 1],
     ];
 

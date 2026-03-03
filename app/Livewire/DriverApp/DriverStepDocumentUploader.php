@@ -57,7 +57,7 @@ class DriverStepDocumentUploader extends Component
         }
 
         try {
-            $path = $this->file->store("trip_steps/{$this->step->id}", 'public');
+            $path = \App\Helpers\ImageCompress::storeUpload($this->file, "trip_steps/{$this->step->id}", 'public');
 
             TripStepDocument::create([
                 'trip_step_id'       => $this->step->id,

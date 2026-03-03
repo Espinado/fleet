@@ -17,6 +17,17 @@ enum TripStepStatus: int
         return Lang::get('app.enums.trip_step_status.' . strtolower($this->name));
     }
 
+    public function color(): string
+    {
+        return match ($this) {
+            self::NOT_STARTED => 'bg-gray-100 text-gray-700',
+            self::ON_THE_WAY => 'bg-blue-100 text-blue-800',
+            self::ARRIVED => 'bg-sky-100 text-sky-800',
+            self::PROCESSING => 'bg-amber-100 text-amber-800',
+            self::COMPLETED => 'bg-green-100 text-green-800',
+        };
+    }
+
     public static function options(): array
     {
         return [

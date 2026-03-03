@@ -1,9 +1,24 @@
 <div class="space-y-6">
 
-    {{-- Upload Form --}}
+@include('components.upload-loading-overlay', ['targets' => 'file,saveDocument'])
+
+    {{-- Upload Form: блокируем кнопку на время загрузки файла (livewire-upload-*), чтобы срабатывало с первого клика --}}
     <form wire:submit.prevent="saveDocument"
           enctype="multipart/form-data"
-          class="bg-gray-50 p-4 rounded-xl space-y-3 shadow">
+          class="bg-gray-50 p-4 rounded-xl space-y-3 shadow"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
         {{-- TYPE --}}
         <div class="flex flex-col gap-1">
@@ -40,14 +55,18 @@
                    wire:model="file"
                    accept="image/*,application/pdf"
                    capture="environment"
-                   class="text-sm">
+                   class="text-sm"
+                   x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
             @error('file')
                 <p class="text-red-600 text-xs">{{ $message }}</p>
             @enderror
         </div>
 
         <button type="submit"
-                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold text-sm">
+                wire:loading.attr="disabled"
+                wire:target="file,saveDocument"
+                x-bind:disabled="fileUploading"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed">
             ⬆ {{ __('app.driver.step_docs.upload') }}
         </button>
 

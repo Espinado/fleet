@@ -158,16 +158,19 @@
                     </span>
                 </button>
 
-                {{-- Stāvokļa indikators --}}
+                {{-- Stāvokļa indikators: «смена открыта» и «В пути» — когда водитель выехал (started_at) и ещё не вернулся (ended_at). Не только vehicle_run_id, чтобы не показывать «В гараже» при статусе «В пути». --}}
+                @php
+                    $driverOnRoad = $trip->started_at && !$trip->ended_at;
+                @endphp
                 <div class="text-xs text-gray-500 flex items-center justify-between">
                     <span>
                         {{ __('app.driver.dashboard.shift') }}:
                         <span class="font-medium">
-                            {{ $trip->vehicle_run_id ? __('app.driver.dashboard.shift_open') : __('app.driver.dashboard.shift_closed') }}
+                            {{ $driverOnRoad ? __('app.driver.dashboard.shift_open') : __('app.driver.dashboard.shift_closed') }}
                         </span>
                     </span>
                     <span>
-                        {{ $trip->vehicle_run_id ? '🚚 '. __('app.driver.dashboard.state_road') : '🏠 '. __('app.driver.dashboard.state_garage') }}
+                        {{ $driverOnRoad ? '🚚 '. __('app.driver.dashboard.state_road') : '🏠 '. __('app.driver.dashboard.state_garage') }}
                     </span>
                 </div>
 

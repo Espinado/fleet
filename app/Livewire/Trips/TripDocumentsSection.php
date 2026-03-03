@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\TripDocument;
 use App\Enums\TripDocumentType;
+use App\Helpers\ImageCompress;
 use Illuminate\Support\Facades\Storage;
 
 class TripDocumentsSection extends Component
@@ -39,7 +40,7 @@ class TripDocumentsSection extends Component
     {
         $this->validate();
 
-        $path = $this->documentFile->store("trip_documents/trip_{$this->trip->id}", 'public');
+        $path = ImageCompress::storeUpload($this->documentFile, "trip_documents/trip_{$this->trip->id}", 'public');
 
         TripDocument::create([
             'trip_id'     => $this->trip->id,

@@ -174,7 +174,7 @@ class DriverTripExpenses extends Component
             $result = DB::transaction(function () use ($driver, $needsOdometer, $validated) {
 
                 $path = $this->file
-                    ? $this->file->store("trip_expenses/{$this->trip->id}", 'public')
+                    ? \App\Helpers\ImageCompress::storeUpload($this->file, "trip_expenses/{$this->trip->id}", 'public')
                     : null;
 
                 $expenseData = [

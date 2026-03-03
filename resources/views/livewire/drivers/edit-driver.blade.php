@@ -45,12 +45,21 @@
     @endif
 
     <form wire:submit.prevent="save"
-          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-6 md:space-y-10 relative">
+          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-6 md:space-y-10 relative"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
 
-        <div wire:loading.flex wire:target="save, photo, license_photo, medical_certificate_photo"
-             class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl">
-            <div class="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
-            <p class="text-blue-600 text-sm">{{ __('app.driver.edit.saving_title') }}</p>
+        @include('components.upload-loading-overlay', ['targets' => 'save,photo,license_photo,medical_certificate_photo'])
+
+        {{-- Спиннер сразу при клике «Выбрать файл» --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
         </div>
 
         <header class="hidden md:block">
@@ -278,17 +287,37 @@
                         @php
                             $fileValue = $field === 'photo' ? $photo : ($field === 'license_photo' ? $license_photo : $medical_certificate_photo);
                             $existingPath = $driver->$field ?? null;
+                            $isPdf = $fileValue ? (strtolower($fileValue->getClientOriginalExtension() ?? '') === 'pdf') : (($existingPath && str_ends_with(strtolower($existingPath), '.pdf')));
                         @endphp
-                        <div>
+                        <div x-data="{ previewUrl: null, isPdf: false }">
                             <label class="block text-sm font-medium mb-1">{{ $label }}</label>
-                            <input type="file" wire:model="{{ $field }}" accept="image/*,application/pdf"
-                                   class="w-full border rounded-xl p-3 text-base min-h-[48px] file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-sm">
-                            @if($fileValue)
+                            <input type="file" wire:model.live="{{ $field }}" accept="image/*,application/pdf"
+                                   class="w-full border rounded-xl p-3 text-base min-h-[48px] file:mr-2 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-100 file:text-sm"
+                                   x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)"
+                                   x-on:change="const f = $event.target.files[0]; previewUrl = null; isPdf = false; if (f) { isPdf = (f.type === 'application/pdf' || (f.name || '').toLowerCase().endsWith('.pdf')); if (!isPdf) { const r = new FileReader(); r.onload = () => { previewUrl = r.result }; r.readAsDataURL(f) } }">
+                            {{-- Мгновенное превью (FileReader) — сразу при выборе файла --}}
+                            <template x-if="previewUrl">
+                                <img :src="previewUrl" class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt="">
+                            </template>
+                            <template x-if="!previewUrl && isPdf">
+                                <p class="mt-2 text-sm text-gray-600">📄 PDF</p>
+                            </template>
+                            @if($fileValue && !$isPdf)
                                 <img src="{{ $fileValue->temporaryUrl() }}"
-                                     class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt="">
-                            @elseif($existingPath && Storage::disk('public')->exists($existingPath))
-                                <img src="{{ Storage::url($existingPath) }}"
-                                     class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt="">
+                                     class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt=""
+                                     x-show="!previewUrl">
+                            @endif
+                            @if($fileValue && $isPdf)
+                                <p class="mt-2 text-sm text-gray-600" x-show="!previewUrl">📄 PDF</p>
+                            @endif
+                            @if(!$fileValue && $existingPath && Storage::disk('public')->exists($existingPath))
+                                @if($isPdf)
+                                    <a href="{{ asset('storage/'.$existingPath) }}" target="_blank" rel="noopener" class="mt-2 inline-block text-sm text-blue-600" x-show="!previewUrl">📄 PDF</a>
+                                @else
+                                    <img src="{{ asset('storage/'.$existingPath) }}"
+                                         class="mt-2 w-full h-40 sm:h-48 object-cover rounded-xl shadow" alt=""
+                                         x-show="!previewUrl">
+                                @endif
                             @endif
                         </div>
                     @endforeach

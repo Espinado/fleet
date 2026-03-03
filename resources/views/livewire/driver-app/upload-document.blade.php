@@ -1,4 +1,17 @@
-<div class="p-6 space-y-6">
+<div class="p-6 space-y-6"
+     x-data="{ fileUploading: false, cancelTimeout: null }"
+     x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+    {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+    <div x-show="fileUploading"
+         x-cloak
+         class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+         aria-live="polite">
+        @include('components.upload-loading-spinner-box')
+    </div>
 
     {{-- HEADER --}}
     <div class="flex items-center gap-3">
@@ -28,6 +41,8 @@
         </div>
     @endif
 
+    @include('components.upload-loading-overlay', ['targets' => 'file,upload'])
+
     {{-- UPLOAD BOX --}}
     <div
         class="bg-white border-2 border-dashed border-gray-300 rounded-xl p-8 text-center space-y-4 shadow-sm">
@@ -37,7 +52,8 @@
         </div>
 
         <label
-            class="cursor-pointer inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition">
+            class="cursor-pointer inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition"
+            x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
             {{ __('app.driver.upload.choose_file') }}
             <input type="file" wire:model="file" class="hidden">
         </label>
@@ -60,7 +76,10 @@
     {{-- BUTTON --}}
     <button
         wire:click="upload"
-        class="w-full py-4 bg-green-600 text-white text-xl font-semibold rounded-xl shadow hover:bg-green-700 transition">
+        wire:loading.attr="disabled"
+        wire:target="file,upload"
+        x-bind:disabled="fileUploading"
+        class="w-full py-4 bg-green-600 text-white text-xl font-semibold rounded-xl shadow hover:bg-green-700 transition disabled:opacity-60 disabled:cursor-not-allowed">
         ⬆️ Загрузить документ
     </button>
 

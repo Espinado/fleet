@@ -17,9 +17,24 @@
         </div>
     @endif
 
-    {{-- Upload Form --}}
-  {{-- Upload Form --}}
-<form wire:submit.prevent="saveDocument" enctype="multipart/form-data">
+@include('components.upload-loading-overlay', ['targets' => 'file,saveDocument'])
+
+    {{-- Upload Form: блокируем кнопку на время загрузки файла (livewire-upload-*), чтобы срабатывало с первого клика --}}
+    <form wire:submit.prevent="saveDocument"
+          enctype="multipart/form-data"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
@@ -53,7 +68,8 @@
             <input type="file"
                    wire:model="file"
                    accept="image/*,application/pdf"
-                   class="block w-full text-sm">
+                   class="block w-full text-sm"
+                   x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
 
             @error('file')
                 <span class="text-red-500 text-xs">{{ $message }}</span>
@@ -65,9 +81,11 @@
     <div class="flex justify-end">
         <button type="submit"
                 wire:loading.attr="disabled"
-                class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 py-2">
-            <span wire:loading.remove>Augšupielādēt</span>
-            <span wire:loading class="animate-pulse">⏳ Lādē...</span>
+                wire:target="file,saveDocument"
+                x-bind:disabled="fileUploading"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-6 py-2 disabled:opacity-60 disabled:cursor-not-allowed">
+            <span wire:loading.remove wire:target="file,saveDocument">Augšupielādēt</span>
+            <span wire:loading wire:target="file,saveDocument" class="animate-pulse">⏳ Lādē...</span>
         </button>
     </div>
 </form>

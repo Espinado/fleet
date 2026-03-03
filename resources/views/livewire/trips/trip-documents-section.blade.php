@@ -38,15 +38,32 @@
         </div>
     @endif
 
-    {{-- Форма --}}
+    @include('components.upload-loading-overlay', ['targets' => 'documentFile,saveDocument'])
+
+    {{-- Форма: блокируем кнопку на время загрузки файла (livewire-upload-*), чтобы срабатывало с первого клика --}}
     <form wire:submit.prevent="saveDocument"
           enctype="multipart/form-data"
           wire:key="upload-form-{{ $trip->id }}"
-          class="space-y-4">
+          class="space-y-4"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
         <div class="flex justify-end">
             <button type="submit"
                     wire:loading.attr="disabled"
+                    wire:target="documentFile,saveDocument"
+                    x-bind:disabled="fileUploading"
                     class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]
                            text-white font-medium rounded-xl px-6 py-2 transition
                            disabled:opacity-60 disabled:cursor-not-allowed">
@@ -141,7 +158,8 @@
                               file:bg-indigo-50 dark:file:bg-indigo-900/40
                               file:text-indigo-700 dark:file:text-indigo-300
                               hover:file:bg-indigo-100 dark:hover:file:bg-indigo-800/50
-                              file:cursor-pointer">
+                              file:cursor-pointer"
+                       x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
 
                 @error('documentFile')
                     <span class="text-red-600 text-sm">{{ $message }}</span>

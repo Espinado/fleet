@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Общие (загрузка документов / расходов)
+    'please_wait'           => 'Пожалуйста, подождите.',
+
     // Driver app login
     'driver.login.title'    => 'Вход водителя',
     'driver.login.pin'      => 'PIN код',

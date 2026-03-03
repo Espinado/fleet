@@ -29,7 +29,7 @@ class UploadDocument extends Component
         ]);
 
         // сохраняем файл
-        $path = $this->file->store("driver_docs/trip_{$this->trip}/{$this->type}", 'public');
+        $path = \App\Helpers\ImageCompress::storeUpload($this->file, "driver_docs/trip_{$this->trip}/{$this->type}", 'public');
 
         session()->flash('success', 'Документ успешно загружен!');
 

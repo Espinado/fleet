@@ -222,6 +222,10 @@ class EditDriver extends Component
                 'medical_exam_expired' => filled($this->medical_exam_expired) ? $this->medical_exam_expired : null,
                 'declaration_issued' => filled($this->declaration_issued) ? $this->declaration_issued : null,
                 'declaration_expired' => filled($this->declaration_expired) ? $this->declaration_expired : null,
+
+                'photo' => $this->driver->photo,
+                'license_photo' => $this->driver->license_photo,
+                'medical_certificate_photo' => $this->driver->medical_certificate_photo,
             ]);
 
             // ✅ Синхронизируем users.company_id для связанного пользователя

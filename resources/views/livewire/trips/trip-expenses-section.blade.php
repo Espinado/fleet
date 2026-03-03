@@ -39,18 +39,37 @@
         </div>
     @endif
 
+    @include('components.upload-loading-overlay', ['targets' => 'expenseFile,saveExpense'])
+
     {{-- ============================================================ --}}
     {{-- FORM --}}
     {{-- ============================================================ --}}
     <form wire:submit.prevent="saveExpense"
           enctype="multipart/form-data"
-          class="space-y-4">
+          class="space-y-4"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
         <div class="flex justify-end">
             <button type="submit"
+                    wire:loading.attr="disabled"
+                    wire:target="expenseFile,saveExpense"
+                    x-bind:disabled="fileUploading"
                     class="flex-shrink-0 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98]
-                           text-white font-medium rounded-xl px-6 py-2 transition">
-                Pievienot
+                           text-white font-medium rounded-xl px-6 py-2 transition disabled:opacity-60 disabled:cursor-not-allowed">
+                <span wire:loading.remove wire:target="expenseFile,saveExpense">Pievienot</span>
+                <span wire:loading wire:target="expenseFile,saveExpense" class="animate-pulse">⏳ {{ __('app.please_wait') }}</span>
             </button>
         </div>
 
@@ -106,7 +125,12 @@
                        wire:model="expenseFile"
                        accept="image/*,application/pdf"
                        class="text-sm file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0
-                              file:bg-indigo-50 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-300">
+                              file:bg-indigo-50 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-300"
+                       x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
+                <div wire:loading wire:target="expenseFile" class="text-xs text-gray-500 dark:text-gray-400 mt-1 inline-flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    {{ __('app.please_wait') }}
+                </div>
                 @error('expenseFile') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
             </div>
 

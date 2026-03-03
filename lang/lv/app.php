@@ -1,6 +1,9 @@
 <?php
 
 return [
+    // Общие (загрузка документов / расходов)
+    'please_wait'           => 'Lūdzu, gaidiet.',
+
     // Stats / Trips stats
     'stats.title'           => 'Statistika',
     'stats.period_all'      => 'Periods: viss laiks',

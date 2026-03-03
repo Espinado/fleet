@@ -45,7 +45,23 @@
             </div>
         @enderror
 
-        <form wire:submit.prevent="saveExpense" class="space-y-3">
+        @include('components.upload-loading-overlay', ['targets' => 'file,saveExpense'])
+
+        <form wire:submit.prevent="saveExpense"
+             class="space-y-3"
+x-data="{ fileUploading: false, cancelTimeout: null }"
+     x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+     x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+            {{-- Спиннер сразу при выборе файла (пока файл загружается) --}}
+            <div x-show="fileUploading"
+                 x-cloak
+                 class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+                 aria-live="polite">
+                @include('components.upload-loading-spinner-box')
+            </div>
 
             {{-- Категория --}}
             <div>
@@ -196,10 +212,9 @@
                     accept="image/*,application/pdf"
                     capture="environment"
                     class="text-sm"
+                    x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)"
                 >
-                <div wire:loading wire:target="file" class="text-xs text-gray-500 mt-1">
-                    ⏳ {{ __('app.driver.expenses.file_uploading') }}
-                </div>
+                <div wire:loading wire:target="file" class="text-xs text-gray-500 mt-1">{{ __('app.please_wait') }}</div>
                 @error('file')
                     <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                 @enderror
@@ -209,6 +224,7 @@
                 type="submit"
                 wire:loading.attr="disabled"
                 wire:target="saveExpense,file"
+                x-bind:disabled="fileUploading"
                 class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-semibold text-sm
                        disabled:opacity-50 disabled:cursor-not-allowed"
             >

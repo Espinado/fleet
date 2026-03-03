@@ -22,7 +22,22 @@
             </div>
         @endif
 
-        <form wire:submit.prevent="update" class="space-y-6">
+        <form wire:submit.prevent="update" class="space-y-6"
+            x-data="{ fileUploading: false, cancelTimeout: null }"
+            x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+            x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+            x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+            x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
+
+        @include('components.upload-loading-overlay', ['targets' => 'update,tech_passport_photo'])
+
+        {{-- Спиннер сразу при клике «Выбрать файл» --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
+        </div>
 
             {{-- Pamatinformācija --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,14 +169,23 @@
             {{-- Tehniskās pases foto --}}
             <div>
                 <label>{{ __('app.truck.show.tech_passport_title') }} foto</label>
-                <input type="file" wire:model="tech_passport_photo" accept="image/*,application/pdf"  class="border rounded px-3 py-2 w-full">
+                <input type="file" wire:model.live="tech_passport_photo" accept="image/*,application/pdf" class="border rounded px-3 py-2 w-full"
+                       x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
                 @error('tech_passport_photo') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
 
                 <div class="mt-2">
                     @if($tech_passport_photo)
-                        <img src="{{ $tech_passport_photo->temporaryUrl() }}" class="h-48 object-contain rounded">
+                        @if(strtolower($tech_passport_photo->getClientOriginalExtension() ?? '') === 'pdf')
+                            <p class="text-sm text-gray-600">📄 PDF</p>
+                        @else
+                            <img src="{{ $tech_passport_photo->temporaryUrl() }}" class="h-48 object-contain rounded">
+                        @endif
                     @elseif($current_photo)
-                        <img src="{{ asset('storage/' . $current_photo) }}" class="h-48 object-contain rounded">
+                        @if(str_ends_with(strtolower($current_photo), '.pdf'))
+                            <a href="{{ asset('storage/' . $current_photo) }}" target="_blank" rel="noopener" class="text-sm text-blue-600">📄 PDF</a>
+                        @else
+                            <img src="{{ asset('storage/' . $current_photo) }}" class="h-48 object-contain rounded">
+                        @endif
                     @endif
                 </div>
             </div>

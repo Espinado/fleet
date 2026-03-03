@@ -21,13 +21,21 @@
 
     {{-- 🧾 Forma --}}
     <form wire:submit.prevent="save"
-          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-10 relative">
+          class="bg-white shadow-md rounded-2xl p-4 sm:p-6 space-y-10 relative"
+          x-data="{ fileUploading: false, cancelTimeout: null }"
+          x-on:livewire-upload-start="fileUploading = true; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-finish="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-error="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }"
+          x-on:livewire-upload-cancel="fileUploading = false; if(cancelTimeout) { clearTimeout(cancelTimeout); cancelTimeout = null }">
 
-        {{-- 🔄 Globālais ielādes indikators --}}
-        <div wire:loading.flex wire:target="save, tech_passport_photo"
-             class="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-20 rounded-2xl">
-            <div class="animate-spin h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-3"></div>
-            <p class="text-blue-600 text-sm">{{ __('app.trailer.create.saving_title') }}</p>
+        @include('components.upload-loading-overlay', ['targets' => 'save,tech_passport_photo'])
+
+        {{-- Спиннер сразу при клике «Выбрать файл» --}}
+        <div x-show="fileUploading"
+             x-cloak
+             class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+             aria-live="polite">
+            @include('components.upload-loading-spinner-box')
         </div>
 
         {{-- Virsraksts --}}
@@ -234,14 +242,19 @@
             <div>
                 <label class="block mb-1 font-medium">{{ __('app.truck.show.tech_passport_title') }} foto</label>
 
-                <input type="file" wire:model="tech_passport_photo" accept="image/*,application/pdf"
-                       class="w-full border rounded-lg px-4 py-3 text-sm @error('tech_passport_photo') border-red-500 @enderror">
+                <input type="file" wire:model.live="tech_passport_photo" accept="image/*,application/pdf"
+                       class="w-full border rounded-lg px-4 py-3 text-sm @error('tech_passport_photo') border-red-500 @enderror"
+                       x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
 
                 @error('tech_passport_photo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
 
                 @if($tech_passport_photo)
-                    <img src="{{ $tech_passport_photo->temporaryUrl() }}"
-                         class="mt-3 w-full h-48 object-contain rounded-xl shadow">
+                    @if(strtolower($tech_passport_photo->getClientOriginalExtension() ?? '') === 'pdf')
+                        <p class="mt-3 text-sm text-gray-600">📄 PDF</p>
+                    @else
+                        <img src="{{ $tech_passport_photo->temporaryUrl() }}"
+                             class="mt-3 w-full h-48 object-contain rounded-xl shadow">
+                    @endif
                 @endif
             </div>
 

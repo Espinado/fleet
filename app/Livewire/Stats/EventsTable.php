@@ -25,8 +25,8 @@ class EventsTable extends Component
     public ?string $dateTo = null;
     public array $ownCompanyIds = [1, 2];
 
-    // Table
-    public string $sortField = 'occurred_at';
+    // Table: по умолчанию по дате, последние сначала (как в /trips)
+    public string $sortField = 'timestamp';
     public string $sortDirection = 'desc';
     public int $perPage = 25;
 
@@ -44,7 +44,7 @@ class EventsTable extends Component
         'truckId' => ['except' => null],
         'dateFrom' => ['except' => null],
         'dateTo' => ['except' => null],
-        'sortField' => ['except' => 'occurred_at'],
+        'sortField' => ['except' => 'timestamp'],
         'sortDirection' => ['except' => 'desc'],
         'perPage' => ['except' => 25],
     ];

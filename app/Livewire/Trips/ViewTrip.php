@@ -77,7 +77,7 @@ class ViewTrip extends Component
         ]);
 
         $file = $this->stepDocFile[$stepId];
-        $path = $file->store("trip_steps/$stepId", 'public');
+        $path = \App\Helpers\ImageCompress::storeUpload($file, "trip_steps/$stepId", 'public');
 
         TripStepDocument::create([
             'trip_step_id'       => $stepId,

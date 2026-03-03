@@ -141,6 +141,11 @@
                         $clientsCount = $clientsAll->count();
 
                         $isOwn = $t->scheme_key === 'own';
+
+                        // Статус шага: первый незавершённый по order, иначе последний (completed)
+                        $stepsOrdered = $t->steps->sortBy('order')->values();
+                        $currentStepStatus = $stepsOrdered->first(fn($s) => $s->status !== \App\Enums\TripStepStatus::COMPLETED)?->status
+                            ?? $stepsOrdered->last()?->status;
                     @endphp
 
                     <tr class="border-b hover:bg-gray-50">
@@ -228,11 +233,18 @@
                             @endif
                         </td>
 
-                        {{-- Status --}}
+                        {{-- Status: рейс + статус шага (только от выезда из гаража до завершения рейса) --}}
                         <td class="px-3 py-2 text-sm">
-                            <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
-                                {{ __('app.trip.status.' . $t->status->value) }}
-                            </span>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
+                                    {{ __('app.trip.status.' . $t->status->value) }}
+                                </span>
+                                @if(in_array($t->status->value, ['in_progress', 'awaiting_garage'], true) && $currentStepStatus !== null)
+                                    <span class="px-2 py-1 rounded text-[11px] {{ $currentStepStatus->color() }}">
+                                        {{ $currentStepStatus->label() }}
+                                    </span>
+                                @endif
+                            </div>
                         </td>
 
                         {{-- Actions --}}
@@ -277,6 +289,10 @@
                     $clientsCount = $clientsAll->count();
 
                     $isOwn = $t->scheme_key === 'own';
+
+                    $stepsOrderedCard = $t->steps->sortBy('order')->values();
+                    $currentStepStatusCard = $stepsOrderedCard->first(fn($s) => $s->status !== \App\Enums\TripStepStatus::COMPLETED)?->status
+                        ?? $stepsOrderedCard->last()?->status;
                 @endphp
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex flex-col gap-2">
@@ -364,11 +380,16 @@
                         @endif
                     </div>
 
-                    {{-- Status --}}
-                    <div class="text-sm">
+                    {{-- Status: рейс + статус шага (только от выезда из гаража до завершения рейса) --}}
+                    <div class="text-sm flex flex-wrap items-center gap-1.5">
                         <span class="px-2 py-1 rounded text-xs {{ $t->status->color() }}">
                             {{ __('app.trip.status.' . $t->status->value) }}
                         </span>
+                        @if(in_array($t->status->value, ['in_progress', 'awaiting_garage'], true) && $currentStepStatusCard !== null)
+                            <span class="px-2 py-1 rounded text-[11px] {{ $currentStepStatusCard->color() }}">
+                                {{ $currentStepStatusCard->label() }}
+                            </span>
+                        @endif
                     </div>
 
                 </div>
