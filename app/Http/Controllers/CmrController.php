@@ -349,22 +349,27 @@ class CmrController extends Controller
 
     Storage::disk('public')->put("{$dir}/{$fileName}", $pdf->output());
 
-    // ✅ 1) кеш в trip_cargos (как раньше)
+    // Срок оплаты: payment_days (7, 14, 21, 30) с момента генерации инвойса
+    $paymentDays = (int) ($cargo->payment_days ?? 30);
+    $paymentDays = in_array($paymentDays, [7, 14, 21, 30], true) ? $paymentDays : 30;
+    $dueDate = $issuedAt->copy()->addDays($paymentDays);
+
+    // ✅ 1) кеш в trip_cargos (как раньше) + дата оплаты по срокам
     $cargo->update([
         'inv_file'       => "{$dir}/{$fileName}",
         'inv_created_at' => $issuedAt,
         'inv_nr'         => $invoiceNr,
+        'payment_terms'  => $dueDate,
     ]);
 
     // ✅ 2) ИСТИНА: запись в invoices (если модель уже создана)
-    // ВАЖНО: добавь "use App\Models\Invoice;" наверху файла
     \App\Models\Invoice::updateOrCreate(
         ['trip_cargo_id' => $cargo->id],
         [
             'trip_id'         => $trip->id,
             'invoice_no'      => $invoiceNr,
             'issued_at'       => $issuedAt,
-            'due_date'        => $cargo->payment_terms,
+            'due_date'        => $dueDate,
 
             'payer_type_id'   => $payerTypeId,
             'payer_client_id' => $payerClient->id ?? null,

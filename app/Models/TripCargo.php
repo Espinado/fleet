@@ -35,6 +35,7 @@ class TripCargo extends Model
         'price_with_tax',
         'currency',
         'payment_terms',
+        'payment_days',
         'payer_type_id',
         'commercial_invoice_nr',
         'commercial_invoice_amount',
@@ -47,6 +48,7 @@ class TripCargo extends Model
 
     protected $casts = [
         'payment_terms'    => 'date',
+        'payment_days'     => 'integer',
         'order_created_at' => 'datetime',
         'cmr_created_at'   => 'datetime',
         'inv_created_at'   => 'datetime',

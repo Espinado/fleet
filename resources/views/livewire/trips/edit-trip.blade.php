@@ -22,7 +22,7 @@
     // ⬇️ changed focus ring to amber (instead of blue)
     $baseInput = $baseInput ?? 'w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-300';
     $warnInput = $warnInput ?? 'border-amber-400 focus:ring-amber-300';
-    $errInput  = $errInput  ?? 'border-red-500 focus:ring-red-300';
+    $errInput  = $errInput  ?? 'border-2 border-red-500 bg-red-50/50 dark:bg-red-900/10 focus:ring-2 focus:ring-red-400 focus:border-red-500';
 
     $badgeError = $badgeError ?? 'inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-200';
     $badgeWarn  = $badgeWarn  ?? 'inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200';
@@ -89,6 +89,28 @@
         $expWarn || $bankWarn ||
         ($needsCarrier && $isBlank($carrier_company_select) && !$errors->has($kCarrierSelect)) ||
         $thirdPartyNameWarn || $thirdPartyTruckWarn || $thirdPartyPriceWarn;
+
+    // Human-readable field label for error list (steps.0.date → "Шаг 1, Дата")
+    $errorFieldLabel = $errorFieldLabel ?? function ($key) {
+        if (preg_match('/^steps\.(\d+)\.(.+)$/', $key, $m)) {
+            $num = (int)$m[1] + 1;
+            $field = $m[2];
+            $labels = ['type' => __('app.trip.edit.type'), 'date' => __('app.trip.edit.date_time'), 'time' => __('app.trip.edit.date_time'), 'order' => __('app.trip.edit.order'), 'country_id' => __('app.trip.edit.country'), 'city_id' => __('app.trip.edit.city'), 'address' => __('app.trip.edit.address'), 'notes' => __('app.trip.edit.notes')];
+            $stepLabel = str_replace(':n', (string)$num, __('app.trip.edit.step_n'));
+            return $stepLabel.', '.($labels[$field] ?? $field);
+        }
+        if (preg_match('/^cargos\.(\d+)\.(.+)$/', $key, $m)) {
+            $num = (int)$m[1] + 1;
+            $rest = $m[2];
+            $cargoLabel = str_replace(':n', (string)$num, __('app.trip.edit.cargo_n'));
+            if (preg_match('/^items\.(\d+)\.(.+)$/', $rest, $m2)) {
+                return $cargoLabel.', '.($m2[1]+1).'. '.$m2[2];
+            }
+            return $cargoLabel.', '.$rest;
+        }
+        $map = ['expeditor_id' => __('app.trip.edit.choose_expeditor'), 'bank_index' => __('app.trip.edit.bank_account'), 'carrier_company_select' => __('app.trip.edit.carrier'), 'driver_id' => __('app.trip.edit.driver'), 'truck_id' => __('app.trip.edit.truck'), 'trailer_id' => __('app.trip.edit.trailer'), 'start_date' => __('app.trip.edit.start_date'), 'end_date' => __('app.trip.edit.end_date'), 'trip_loading_step_ids' => __('app.trip.edit.loading_label'), 'trip_unloading_step_ids' => __('app.trip.edit.unloading_label')];
+        return $map[$key] ?? $key;
+    };
 @endphp
 
 <div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 select2-parent">
@@ -113,13 +135,18 @@
 
     <div class="max-w-6xl mx-auto px-3 sm:px-4 pt-4 space-y-6">
 
-        {{-- GLOBAL ERRORS --}}
+        {{-- GLOBAL ERRORS (field + message) --}}
         @if ($errors->any())
-            <div class="bg-red-50 border border-red-300 text-red-800 rounded-xl px-4 py-3 text-sm">
-                <div class="font-semibold mb-1">{{ __('app.trip.edit.errors') }}</div>
-                <ul class="list-disc pl-5 space-y-0.5">
-                    @foreach ($errors->all() as $error)
-                        <li>❗ {{ $error }}</li>
+            <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-400 text-red-800 dark:text-red-200 rounded-xl px-4 py-3 text-sm shadow-sm">
+                <div class="font-semibold mb-2">{{ __('app.trip.edit.errors') }}</div>
+                <ul class="list-none space-y-1.5">
+                    @foreach ($errors->messages() as $field => $messages)
+                        @foreach ($messages as $msg)
+                            <li class="flex items-start gap-2 rounded-lg bg-red-100/80 dark:bg-red-900/30 px-3 py-2">
+                                <span class="font-medium shrink-0">{{ $errorFieldLabel($field) }}:</span>
+                                <span>{{ $msg }}</span>
+                            </li>
+                        @endforeach
                     @endforeach
                 </ul>
             </div>
@@ -559,7 +586,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.type') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.defer="steps.{{ $index }}.type" class="{{ $baseInput }} js-select2">
+                                <select wire:model.defer="steps.{{ $index }}.type" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.type"), 'input-error' => $errors->has("steps.$index.type")])>
                                     <option value="loading">{{ __('app.trip.edit.loading') }}</option>
                                     <option value="unloading">{{ __('app.trip.edit.unloading') }}</option>
                                 </select>
@@ -571,8 +598,8 @@
                                     {{ __('app.trip.edit.date_time') }} {!! $reqBadge() !!}
                                 </label>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <input type="date" wire:model.defer="steps.{{ $index }}.date" class="{{ $baseInput }}">
-                                    <input type="time" wire:model.defer="steps.{{ $index }}.time" class="{{ $baseInput }}">
+                                    <input type="date" wire:model.defer="steps.{{ $index }}.date" @class([$baseInput, $errInput => $errors->has("steps.$index.date"), 'input-error' => $errors->has("steps.$index.date")])>
+                                    <input type="time" wire:model.defer="steps.{{ $index }}.time" @class([$baseInput, $errInput => $errors->has("steps.$index.time"), 'input-error' => $errors->has("steps.$index.time")])>
                                 </div>
                                 @error("steps.$index.date") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
@@ -581,7 +608,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.order') }} {!! $reqBadge() !!}
                                 </label>
-                                <input type="number" wire:model.defer="steps.{{ $index }}.order" class="{{ $baseInput }}">
+                                <input type="number" wire:model.defer="steps.{{ $index }}.order" @class([$baseInput, $errInput => $errors->has("steps.$index.order"), 'input-error' => $errors->has("steps.$index.order")])>
                                 @error("steps.$index.order") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -591,7 +618,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.country') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.country_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="steps.{{ $index }}.country_id" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.country_id"), 'input-error' => $errors->has("steps.$index.country_id")])>
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach($countries as $countryId => $country)
                                         <option value="{{ $countryId }}">{{ is_array($country) ? ($country['name'] ?? $country) : $country }}</option>
@@ -604,7 +631,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.city') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.city_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="steps.{{ $index }}.city_id" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.city_id"), 'input-error' => $errors->has("steps.$index.city_id")])>
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach(($stepCities[$index]['cities'] ?? []) as $cityId => $city)
                                         <option value="{{ $cityId }}">{{ is_array($city) ? ($city['name'] ?? ('#'.$cityId)) : $city }}</option>
@@ -617,7 +644,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.address') }} {!! $reqBadge() !!}
                                 </label>
-                                <input type="text" wire:model.defer="steps.{{ $index }}.address" class="{{ $baseInput }}">
+                                <input type="text" wire:model.defer="steps.{{ $index }}.address" @class([$baseInput, $errInput => $errors->has("steps.$index.address"), 'input-error' => $errors->has("steps.$index.address")])>
                                 @error("steps.$index.address") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
@@ -937,7 +964,14 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.payment_by') }}</label>
-                                <input type="date" wire:model.defer="cargos.{{ $index }}.payment_terms" class="{{ $baseInput }} text-xs">
+                                <select wire:model.defer="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs js-select2">
+                                    @foreach([7, 14, 21, 30] as $days)
+                                        <option value="{{ $days }}">{{ __('app.trip.edit.payment_days', ['days' => $days]) }}</option>
+                                    @endforeach
+                                </select>
+                                @if(isset($trip->cargos[$index]) && $trip->cargos[$index]->inv_created_at)
+                                    <div class="text-[10px] text-gray-500 mt-0.5">{{ __('app.trip.edit.payment_from_inv') }}</div>
+                                @endif
                             </div>
 
                             <div>

@@ -640,6 +640,8 @@ return [
     'trip.edit.vat_amount'         => 'PVN summa',
     'trip.edit.total_with_vat'     => 'Kopā ar PVN',
     'trip.edit.payment_by'         => 'Apmaksas termiņš',
+    'trip.edit.payment_days'       => ':days dienas no rēķina',
+    'trip.edit.payment_from_inv'   => 'Termiņš skaitās no rēķina izdošanas datuma.',
     'trip.edit.payer'              => 'Maksātājs',
     'trip.edit.payer_not_selected' => '— nav izvēlēts —',
     'trip.edit.commercial_inv_nr'   => 'Commercial invoice Nr.',

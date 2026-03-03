@@ -501,8 +501,8 @@ class EditTrip extends Component
                 'country_id' => $s->country_id,
                 'city_id'    => $s->city_id,
                 'address'    => $s->address,
-                'date'       => $s->date,
-                'time'       => $s->time,
+                'date'       => $s->date ? $s->date->format('Y-m-d') : null,
+                'time'       => $s->time !== null && $s->time !== '' ? (string) $s->time : null,
                 'order'      => $s->order,
                 'notes'      => $s->notes,
             ];
@@ -634,6 +634,7 @@ class EditTrip extends Component
                 'currency'         => 'EUR',
 
                 'payment_terms' => $cargo->payment_terms,
+                'payment_days'  => $cargo->payment_days ?? 30,
                 'payer_type_id' => $cargo->payer_type_id,
 
                 'commercial_invoice_nr'     => $cargo->commercial_invoice_nr,
@@ -674,6 +675,7 @@ class EditTrip extends Component
                 'price_with_tax' => 0,
                 'currency' => 'EUR',
                 'payment_terms' => null,
+                'payment_days' => 30,
                 'payer_type_id' => null,
                 'commercial_invoice_nr' => null,
                 'commercial_invoice_amount' => null,
@@ -868,14 +870,13 @@ class EditTrip extends Component
         if ($this->trip->truck_id) {
             $t = Truck::find($this->trip->truck_id);
             if ($t && (int) $t->company_id === (int) $companyId) {
-                $brand = trim((string) ($this->third_party_truck_brand ?? $t->brand ?? 'Unknown')) ?: 'Unknown';
-                $model = trim((string) ($this->third_party_truck_model ?? $t->model ?? 'Unknown')) ?: 'Unknown';
-
+                $brandRaw = trim((string) ($this->third_party_truck_brand ?? ''));
+                $modelRaw = trim((string) ($this->third_party_truck_model ?? ''));
                 $t->update([
                     'plate' => $plate ?: $t->plate,
-                    'brand' => $brand,
-                    'model' => $model,
-                    'year'  => $this->third_party_truck_year ?? $t->year ?? (int) date('Y'),
+                    'brand' => $brandRaw !== '' ? $brandRaw : $t->brand,
+                    'model' => $modelRaw !== '' ? $modelRaw : $t->model,
+                    'year'  => $this->third_party_truck_year ? (int) $this->third_party_truck_year : $t->year,
                     'is_active' => 1,
                 ]);
                 return $t;
@@ -889,15 +890,16 @@ class EditTrip extends Component
 
         if ($existing) return $existing;
 
-        $brand = trim((string) ($this->third_party_truck_brand ?? 'Unknown')) ?: 'Unknown';
-        $model = trim((string) ($this->third_party_truck_model ?? 'Unknown')) ?: 'Unknown';
+        $brand = trim((string) ($this->third_party_truck_brand ?? ''));
+        $model = trim((string) ($this->third_party_truck_model ?? ''));
 
         return Truck::create([
             'company_id'    => $companyId,
             'plate'         => $plate,
-            'brand'         => $brand,
-            'model'         => $model,
-            'year'          => $this->third_party_truck_year ?? (int) date('Y'),
+            'brand'         => $brand !== '' ? $brand : null,
+            'model'         => $model !== '' ? $model : null,
+            'year'          => $this->third_party_truck_year ? (int) $this->third_party_truck_year : null,
+            'vin'           => null,
             'can_available' => 0,
             'status'        => 1,
             'is_active'     => 1,
@@ -913,15 +915,13 @@ class EditTrip extends Component
         if ($this->trip->trailer_id) {
             $tr = Trailer::find($this->trip->trailer_id);
             if ($tr && (int) $tr->company_id === (int) $companyId) {
-                $brand = trim((string) ($this->third_party_trailer_brand ?? $tr->brand ?? 'Unknown')) ?: 'Unknown';
-                $vin   = trim((string) ($this->third_party_trailer_vin ?? $tr->vin ?? 'UNKNOWN')) ?: 'UNKNOWN';
-
+                $brandRaw = trim((string) ($this->third_party_trailer_brand ?? ''));
                 $tr->update([
                     'plate'   => $plate ?: $tr->plate,
-                    'brand'   => $brand,
-                    'type_id' => $this->third_party_trailer_type_id ?? $tr->type_id ?? 1,
-                    'year'    => $this->third_party_trailer_year ?? $tr->year ?? (int) date('Y'),
-                    'vin'     => $vin,
+                    'brand'   => $brandRaw !== '' ? $brandRaw : $tr->brand,
+                    'type_id' => $this->third_party_trailer_type_id ?: $tr->type_id,
+                    'year'    => $this->third_party_trailer_year ? (int) $this->third_party_trailer_year : $tr->year,
+                    'vin'     => null,
                     'is_active' => 1,
                 ]);
                 return $tr;
@@ -935,16 +935,15 @@ class EditTrip extends Component
 
         if ($existing) return $existing;
 
-        $brand = trim((string) ($this->third_party_trailer_brand ?? 'Unknown')) ?: 'Unknown';
-        $vin   = trim((string) ($this->third_party_trailer_vin ?? 'UNKNOWN')) ?: 'UNKNOWN';
+        $brand = trim((string) ($this->third_party_trailer_brand ?? ''));
 
         return Trailer::create([
             'company_id' => $companyId,
             'plate'      => $plate,
-            'brand'      => $brand,
-            'type_id'    => $this->third_party_trailer_type_id ?? 1,
-            'year'       => $this->third_party_trailer_year ?? (int) date('Y'),
-            'vin'        => $vin,
+            'brand'      => $brand !== '' ? $brand : null,
+            'type_id'    => $this->third_party_trailer_type_id ?: null,
+            'year'       => $this->third_party_trailer_year ? (int) $this->third_party_trailer_year : null,
+            'vin'        => null,
             'status'     => 1,
             'is_active'  => 1,
         ]);
@@ -1044,6 +1043,7 @@ class EditTrip extends Component
             'cargos.*.shipper_id'         => 'required|integer',
             'cargos.*.consignee_id'       => 'required|integer',
             'cargos.*.price'              => 'required|numeric',
+            'cargos.*.payment_days'       => 'nullable|integer|in:7,14,21,30',
             'cargos.*.tax_percent'        => 'required|numeric',
             'cargos.*.commercial_invoice_nr'     => 'nullable|string|max:64',
             'cargos.*.commercial_invoice_amount' => 'nullable|numeric|min:0',
@@ -1109,7 +1109,8 @@ class EditTrip extends Component
 
             foreach ($this->cargos as $cargoIndex => $cargo) {
                 foreach (($cargo['items'] ?? []) as $itemIndex => $item) {
-                    $hasAny =
+                    $hasDescOrCode = trim((string)($item['description'] ?? '')) !== '' || trim((string)($item['customs_code'] ?? '')) !== '';
+                    $hasMeasurement =
                         ($this->toFloat($item['packages'] ?? null, 0) > 0) ||
                         ($this->toFloat($item['pallets'] ?? null, 0) > 0) ||
                         ($this->toFloat($item['units'] ?? null, 0) > 0) ||
@@ -1119,7 +1120,7 @@ class EditTrip extends Component
                         ($this->toFloat($item['volume'] ?? null, 0) > 0) ||
                         ($this->toFloat($item['loading_meters'] ?? null, 0) > 0);
 
-                    if (!$hasAny) {
+                    if (!$hasDescOrCode && !$hasMeasurement) {
                         $validator->errors()->add(
                             "cargos.$cargoIndex.items.$itemIndex.measurements",
                             __('app.trip.edit.err_item_measure', ['n' => $itemIndex + 1])
@@ -1294,7 +1295,8 @@ class EditTrip extends Component
                     'price_with_tax'   => $tax['price_with_tax'],
 
                     'currency'      => 'EUR',
-                    'payment_terms' => $cargoData['payment_terms'] ?? null,
+                    'payment_terms' => $cargo->payment_terms,
+                    'payment_days'  => in_array((int)($cargoData['payment_days'] ?? 30), [7, 14, 21, 30], true) ? (int)$cargoData['payment_days'] : 30,
                     'payer_type_id' => $cargoData['payer_type_id'] ?? null,
 
                     'commercial_invoice_nr'     => $cargoData['commercial_invoice_nr'] ?? null,
