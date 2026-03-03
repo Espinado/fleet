@@ -595,55 +595,68 @@
                                     </div>
                                 </div>
 
-                                {{-- DELAY (Dikstāve) — per cargo: при снятии галочки поля сразу скрываются (x-show) --}}
-                                <div class="bg-white dark:bg-gray-900 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700"
-                                     x-data="{ delayChecked: @entangle('delayChecked.'.$cargo->id) }">
-                                    <div class="flex items-center gap-3 flex-wrap">
-                                        <label class="inline-flex items-center gap-2 cursor-pointer">
-                                            <input type="checkbox"
-                                                   x-model="delayChecked"
-                                                   @change="!delayChecked && $wire.saveDelay({{ $cargo->id }})"
-                                                   class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
-                                            <span class="font-semibold text-sm">{{ __('app.trip.show.delay') }}</span>
-                                        </label>
-                                        <div class="flex flex-wrap items-center gap-3" x-show="delayChecked" x-cloak x-collapse>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 dark:text-gray-400">{{ __('app.trip.show.delay_days') }}</label>
-                                                <input type="number"
-                                                       wire:model.blur="delayDays.{{ $cargo->id }}"
-                                                       min="1" max="365"
-                                                       class="w-20 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
-                                                @error('delayDays.'.$cargo->id)
-                                                    <div class="text-[11px] text-red-600 mt-0.5">{{ $message }}</div>
-                                                @enderror
-                                            </div>
-                                            <div>
-                                                <label class="block text-xs text-gray-500 dark:text-gray-400">{{ __('app.trip.show.delay_amount') }}</label>
-                                                <input type="number"
-                                                       wire:model.blur="delayAmount.{{ $cargo->id }}"
-                                                       step="0.01" min="0"
-                                                       class="w-28 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
-                                                @error('delayAmount.'.$cargo->id)
-                                                    <div class="text-[11px] text-red-600 mt-0.5">{{ $message }}</div>
-                                                @enderror
+                                {{-- DELAY (Dikstāve) — если простой был введён ранее: строка с данными + удалить; иначе: чекбокс и поля --}}
+                                @php
+                                    $hasSavedDelay = !empty($cargo->has_delay) && $cargo->delay_days !== null && $cargo->delay_amount !== null;
+                                @endphp
+                                <div class="bg-white dark:bg-gray-900 px-3 py-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    @if($hasSavedDelay)
+                                        {{-- Сохранённый простой: строка с информацией + кнопка удалить --}}
+                                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                                            <div class="text-sm">
+                                                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ __('app.trip.show.delay') }}:</span>
+                                                <span class="text-gray-700 dark:text-gray-300">
+                                                    {{ (int)$cargo->delay_days }} {{ (int)$cargo->delay_days === 1 ? __('app.trip.show.delay_day') : __('app.trip.show.delay_days_unit') }},
+                                                    €{{ number_format((float)$cargo->delay_amount, 2, '.', ' ') }} ({{ __('app.trip.show.no_vat') }})
+                                                </span>
                                             </div>
                                             <button type="button"
-                                                    wire:click="saveDelay({{ $cargo->id }})"
-                                                    class="self-end px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
-                                                {{ __('app.trip.show.delay_save') }}
+                                                    wire:click="removeDelay({{ $cargo->id }})"
+                                                    wire:confirm="{{ __('app.trip.show.delay_remove_confirm') }}"
+                                                    class="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 dark:border-red-600 dark:text-red-300 dark:bg-red-900/20 dark:hover:bg-red-900/30">
+                                                {{ __('app.trip.show.delay_remove') }}
                                             </button>
                                         </div>
-                                    </div>
-                                    @if($delayChecked[$cargo->id] ?? false)
-                                        @php
-                                            $delayDaysVal = (int)($cargo->delay_days ?? 0);
-                                            $delayAmt = (float)($cargo->delay_amount ?? 0);
-                                        @endphp
-                                        @if($delayDaysVal > 0 && $delayAmt > 0)
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                                                {{ $delayDaysVal }} {{ $delayDaysVal === 1 ? 'diena' : 'dienas' }}, €{{ number_format($delayAmt, 2, '.', ' ') }} (bez PVN)
-                                            </p>
-                                        @endif
+                                    @else
+                                        {{-- Нет сохранённого простоя: чекбокс и поля --}}
+                                        <div x-data="{ delayChecked: @entangle('delayChecked.'.$cargo->id) }">
+                                            <div class="flex items-center gap-3 flex-wrap">
+                                                <label class="inline-flex items-center gap-2 cursor-pointer">
+                                                    <input type="checkbox"
+                                                           x-model="delayChecked"
+                                                           @change="!delayChecked && $wire.saveDelay({{ $cargo->id }})"
+                                                           class="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500">
+                                                    <span class="font-semibold text-sm">{{ __('app.trip.show.delay') }}</span>
+                                                </label>
+                                                <div class="flex flex-wrap items-center gap-3" x-show="delayChecked" x-cloak x-collapse>
+                                                    <div>
+                                                        <label class="block text-xs text-gray-500 dark:text-gray-400">{{ __('app.trip.show.delay_days') }}</label>
+                                                        <input type="number"
+                                                               wire:model.blur="delayDays.{{ $cargo->id }}"
+                                                               min="1" max="365"
+                                                               class="w-20 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
+                                                        @error('delayDays.'.$cargo->id)
+                                                            <div class="text-[11px] text-red-600 mt-0.5">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                    <div>
+                                                        <label class="block text-xs text-gray-500 dark:text-gray-400">{{ __('app.trip.show.delay_amount') }}</label>
+                                                        <input type="number"
+                                                               wire:model.blur="delayAmount.{{ $cargo->id }}"
+                                                               step="0.01" min="0"
+                                                               class="w-28 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
+                                                        @error('delayAmount.'.$cargo->id)
+                                                            <div class="text-[11px] text-red-600 mt-0.5">{{ $message }}</div>
+                                                        @enderror
+                                                    </div>
+                                                    <button type="button"
+                                                            wire:click="saveDelay({{ $cargo->id }})"
+                                                            class="self-end px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold">
+                                                        {{ __('app.trip.show.delay_save') }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     @endif
                                 </div>
 

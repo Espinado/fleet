@@ -211,6 +211,32 @@ class ViewTrip extends Component
         $this->dispatch('delaySaved');
     }
 
+    /**
+     * Удалить Dikstāve по грузу: очистить данные и инвалидировать инвойс.
+     */
+    public function removeDelay(int $cargoId): void
+    {
+        $cargo = TripCargo::findOrFail($cargoId);
+        if ((int) $cargo->trip_id !== (int) $this->trip->id) {
+            abort(403);
+        }
+
+        $cargo->update([
+            'has_delay'       => false,
+            'delay_days'      => null,
+            'delay_amount'    => null,
+            'inv_file'        => null,
+            'inv_created_at'  => null,
+        ]);
+        Invoice::where('trip_cargo_id', $cargo->id)->update(['pdf_file' => null]);
+
+        $this->delayChecked[$cargoId] = false;
+        $this->delayDays[$cargoId]    = '';
+        $this->delayAmount[$cargoId]  = '';
+        $this->reloadTrip();
+        $this->dispatch('delaySaved');
+    }
+
     public function render()
     {
         return view('livewire.trips.view-trip', [
