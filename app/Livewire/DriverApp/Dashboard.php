@@ -80,8 +80,12 @@ class Dashboard extends Component
             ->latest('id')
             ->first();
 
-        // 2) Если таких рейсов нет, показываем ближайший PLANNED,
-        //    чтобы водитель сразу видел следующий рейс.
+        // 2) Завершённый рейс никогда не показываем как активный — только в пути или ожидание гаража
+        if ($trip && $trip->status instanceof TripStatus && $trip->status === TripStatus::COMPLETED) {
+            $trip = null;
+        }
+
+        // 3) Если активного рейса нет, показываем ближайший PLANNED
         if (!$trip) {
             $trip = Trip::withoutGlobalScopes()
                 ->where('driver_id', $this->driver->id)
