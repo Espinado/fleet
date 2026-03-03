@@ -171,11 +171,17 @@ class ViewTrip extends Component
     }
 
     /**
-     * Save delay (Dikstāve) for a cargo. If checkbox unchecked, clears delay fields.
+     * Save delay (Dikstāve) for a cargo. Saves only when checkbox is checked and days/amount are filled.
+     * When checkbox is unchecked: updates DB only if there was saved delay data to clear.
      */
     public function saveDelay(int $cargoId): void
     {
         $checked = (bool) ($this->delayChecked[$cargoId] ?? false);
+
+        $cargo = TripCargo::findOrFail($cargoId);
+        if ((int) $cargo->trip_id !== (int) $this->trip->id) {
+            abort(403);
+        }
 
         if ($checked) {
             $this->validate([
@@ -188,13 +194,15 @@ class ViewTrip extends Component
             $days = (int) $this->delayDays[$cargoId];
             $amount = (float) str_replace(',', '.', (string) $this->delayAmount[$cargoId]);
         } else {
+            // Сняли галочку: сохраняем в БД только если был сохранённый простой (есть что очищать)
+            $hadDelay = (bool) ($cargo->has_delay ?? false)
+                || $cargo->delay_days !== null
+                || $cargo->delay_amount !== null;
+            if (!$hadDelay) {
+                return; // Ничего не было сохранено — не пишем в БД и не показываем тост
+            }
             $days = null;
             $amount = null;
-        }
-
-        $cargo = TripCargo::findOrFail($cargoId);
-        if ((int) $cargo->trip_id !== (int) $this->trip->id) {
-            abort(403);
         }
 
         $cargo->update([
@@ -208,7 +216,7 @@ class ViewTrip extends Component
         Invoice::where('trip_cargo_id', $cargo->id)->update(['pdf_file' => null]);
 
         $this->reloadTrip();
-        $this->dispatch('delaySaved');
+        $this->dispatch($checked ? 'delaySaved' : 'delayRemoved');
     }
 
     /**
