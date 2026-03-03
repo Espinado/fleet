@@ -48,34 +48,46 @@ class EditDriver extends Component
 
     protected function rules(): array
     {
-        return [
+        $r = [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'pers_code' => 'required|string|max:50',
-
             'company_id' => 'required|integer|exists:companies,id',
-
             'email' => 'nullable|email',
             'phone' => 'nullable|string|max:50',
-
             'license_number' => 'nullable|string|max:50',
             'license_issued' => 'nullable|date',
             'license_end' => 'nullable|date',
             'code95_issued' => 'nullable|date',
-            'code95_end' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('code95_issued'), 'after:code95_issued')],
+            'code95_end' => 'nullable|date',
             'permit_issued' => 'nullable|date',
-            'permit_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('permit_issued'), 'after:permit_issued')],
+            'permit_expired' => 'nullable|date',
             'medical_issued' => 'nullable|date',
-            'medical_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_issued'), 'after:medical_issued')],
+            'medical_expired' => 'nullable|date',
             'medical_exam_passed' => 'nullable|date',
-            'medical_exam_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('medical_exam_passed'), 'after:medical_exam_passed')],
+            'medical_exam_expired' => 'nullable|date',
             'declaration_issued' => 'nullable|date',
-            'declaration_expired' => ['nullable', 'date', \Illuminate\Validation\Rule::when(filled('declaration_issued'), 'after:declaration_issued')],
-
+            'declaration_expired' => 'nullable|date',
             'photo' => 'nullable|image',
             'license_photo' => 'nullable|image',
             'medical_certificate_photo' => 'nullable|image',
         ];
+        if (filled($this->code95_issued ?? null)) {
+            $r['code95_end'] = ['nullable', 'date', 'after:code95_issued'];
+        }
+        if (filled($this->permit_issued ?? null)) {
+            $r['permit_expired'] = ['nullable', 'date', 'after:permit_issued'];
+        }
+        if (filled($this->medical_issued ?? null)) {
+            $r['medical_expired'] = ['nullable', 'date', 'after:medical_issued'];
+        }
+        if (filled($this->medical_exam_passed ?? null)) {
+            $r['medical_exam_expired'] = ['nullable', 'date', 'after:medical_exam_passed'];
+        }
+        if (filled($this->declaration_issued ?? null)) {
+            $r['declaration_expired'] = ['nullable', 'date', 'after:declaration_issued'];
+        }
+        return $r;
     }
 
     public function mount(Driver $driver)
