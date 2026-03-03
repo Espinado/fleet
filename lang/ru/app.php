@@ -33,6 +33,10 @@ return [
     'driver.toast.success' => 'Выполнено',
     'driver.toast.error'   => 'Ошибка! Свяжитесь с администратором.',
 
+    // Trip show (toasts)
+    'trip.show.toast_deleted' => 'Удалено',
+    'trip.show.toast_error'   => 'Ошибка!',
+
     // Driver app: offline (PWA)
     'driver.offline.title'   => 'Нет соединения',
     'driver.offline.message' => 'Вы в офлайне. Проверьте интернет и попробуйте снова.',

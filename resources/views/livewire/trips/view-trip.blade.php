@@ -612,7 +612,6 @@
                                             </div>
                                             <button type="button"
                                                     wire:click="removeDelay({{ $cargo->id }})"
-                                                    wire:confirm="{{ __('app.trip.show.delay_remove_confirm') }}"
                                                     class="px-3 py-1.5 text-sm font-medium rounded-lg border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 dark:border-red-600 dark:text-red-300 dark:bg-red-900/20 dark:hover:bg-red-900/30">
                                                 {{ __('app.trip.show.delay_remove') }}
                                             </button>
@@ -938,7 +937,8 @@
             Livewire.on('tripExpenseAdded', () => toast('{{ __("app.trip.show.toast_expense_saved") }}', 'bg-green-600'));
             Livewire.on('tripExpenseDeleted', () => toast('{{ __("app.trip.show.toast_expense_deleted") }}', 'bg-red-600'));
             Livewire.on('delaySaved', () => toast('{{ __("app.trip.show.toast_delay_saved") }}', 'bg-green-600'));
-            Livewire.on('delayRemoved', () => toast('{{ __("app.trip.show.toast_delay_removed") }}', 'bg-green-600'));
+            Livewire.on('delayRemoved', () => toast('{{ __("app.trip.show.toast_deleted") }}', 'bg-green-600'));
+            Livewire.on('delayRemoveError', () => toast('{{ __("app.trip.show.toast_error") }}', 'bg-red-600'));
         </script>
     @endpush
 

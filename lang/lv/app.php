@@ -518,6 +518,8 @@ return [
     'trip.show.delay_remove'          => 'Dzēst',
     'trip.show.delay_remove_confirm'   => 'Dzēst Dikstāve no šīs kravas?',
     'trip.show.toast_delay_removed'   => 'Dikstāve dzēsta',
+    'trip.show.toast_deleted'          => 'Dzēsts',
+    'trip.show.toast_error'           => 'Kļūda!',
     'trip.show.documents_trip'   => 'Dokumenti par reisu',
     'trip.show.expenses_trip'     => 'Izdevumi par reisu',
     'trip.show.toast_cmr'         => 'CMR ģenerēts!',

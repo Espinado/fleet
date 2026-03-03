@@ -216,25 +216,30 @@ class ViewTrip extends Component
      */
     public function removeDelay(int $cargoId): void
     {
-        $cargo = TripCargo::findOrFail($cargoId);
-        if ((int) $cargo->trip_id !== (int) $this->trip->id) {
-            abort(403);
+        try {
+            $cargo = TripCargo::findOrFail($cargoId);
+            if ((int) $cargo->trip_id !== (int) $this->trip->id) {
+                abort(403);
+            }
+
+            $cargo->update([
+                'has_delay'       => false,
+                'delay_days'      => null,
+                'delay_amount'    => null,
+                'inv_file'        => null,
+                'inv_created_at'  => null,
+            ]);
+            Invoice::where('trip_cargo_id', $cargo->id)->update(['pdf_file' => null]);
+
+            $this->delayChecked[$cargoId] = false;
+            $this->delayDays[$cargoId]    = '';
+            $this->delayAmount[$cargoId]  = '';
+            $this->reloadTrip();
+            $this->dispatch('delayRemoved');
+        } catch (\Throwable $e) {
+            report($e);
+            $this->dispatch('delayRemoveError');
         }
-
-        $cargo->update([
-            'has_delay'       => false,
-            'delay_days'      => null,
-            'delay_amount'    => null,
-            'inv_file'        => null,
-            'inv_created_at'  => null,
-        ]);
-        Invoice::where('trip_cargo_id', $cargo->id)->update(['pdf_file' => null]);
-
-        $this->delayChecked[$cargoId] = false;
-        $this->delayDays[$cargoId]    = '';
-        $this->delayAmount[$cargoId]  = '';
-        $this->reloadTrip();
-        $this->dispatch('delayRemoved');
     }
 
     public function render()
