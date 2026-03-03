@@ -61,7 +61,7 @@ class DriverTripExpenses extends Component
         return [
             'category'     => ['required', new EnumRule(TripExpenseCategory::class)],
             'description'  => ['nullable', 'string', 'max:2000'],
-            'amount'       => ['nullable', Rule::when(filled($this->amount), ['numeric', 'min:0', 'max:99999'])],
+            'amount'       => ['nullable', Rule::when(filled($this->amount), ['numeric', 'min:0'])],
             'overload_note' => ['nullable', 'string', 'max:500'],
             'expense_date' => ['required', 'date'],
             'file'         => ['nullable', 'file'],
@@ -80,7 +80,6 @@ class DriverTripExpenses extends Component
                 'nullable',
                 'numeric',
                 'min:0.01',
-                'max:2000',
                 'required_if:category,' . TripExpenseCategory::FUEL->value . ',' . TripExpenseCategory::ADBLUE->value . ',' . TripExpenseCategory::WASHER_FLUID->value,
                 'prohibited_unless:category,' . TripExpenseCategory::FUEL->value . ',' . TripExpenseCategory::ADBLUE->value . ',' . TripExpenseCategory::WASHER_FLUID->value,
             ],
