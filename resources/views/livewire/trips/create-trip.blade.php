@@ -50,6 +50,14 @@
 
     $carrier_company_select = $carrier_company_select ?? '';
     $thirdPartySelected     = ($carrier_company_select === '__third_party__');
+    $thirdPartyOptionLabel   = null;
+    if ($thirdPartySelected) {
+        $name = trim((string)($third_party_name ?? ''));
+        $plate = trim((string)($third_party_truck_plate ?? ''));
+        if ($name !== '' || $plate !== '') {
+            $thirdPartyOptionLabel = __('app.trip.edit.third_party') . ': ' . ($name ?: '—') . ' — ' . ($plate ?: '—');
+        }
+    }
 
     // keys
     $kExp  = 'expeditor_id';
@@ -245,7 +253,7 @@
                                 ])
                             >
                                 <option value="">— выберите перевозчика —</option>
-                                <option value="__third_party__">➕ Третья сторона</option>
+                                <option value="__third_party__">➕ {{ $thirdPartyOptionLabel ?? __('app.trip.edit.third_party') }}</option>
 
                                 @foreach(($carrierCompanies ?? []) as $c)
                                     <option value="{{ $c->id }}">
