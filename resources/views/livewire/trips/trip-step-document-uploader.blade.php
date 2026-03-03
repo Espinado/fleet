@@ -82,7 +82,6 @@
                 <th class="px-3 py-2 text-left">Komentārs</th>
                 <th class="px-3 py-2 text-left">Datums</th>
                 <th class="px-3 py-2 text-left">Fails</th>
-                <th class="px-3 py-2 text-right">Darbības</th>
             </tr>
             </thead>
 
@@ -114,17 +113,11 @@
                         @endif
                     </td>
 
-                    <td class="px-3 py-2 text-right">
-                        <button wire:click="delete({{ $doc->id }})"
-                                class="text-red-600 hover:text-red-800">
-                            Dzēst
-                        </button>
-                    </td>
                 </tr>
 
             @empty
                 <tr>
-                    <td colspan="5" class="px-3 py-3 text-center text-gray-500">
+                    <td colspan="4" class="px-3 py-3 text-center text-gray-500">
                         Nav dokumentu
                     </td>
                 </tr>

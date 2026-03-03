@@ -224,14 +224,6 @@
                                         —
                                     </button>
                                 @endif
-
-                                <button wire:click="delete({{ $doc->id }})"
-                                        wire:confirm="Vai tiešām dzēst šo dokumentu?"
-                                        class="inline-flex items-center justify-center rounded-xl px-3 py-2
-                                               text-sm font-semibold bg-red-50 dark:bg-red-900/30
-                                               text-red-700 dark:text-red-200 active:scale-[0.98]">
-                                    Dzēst
-                                </button>
                             </div>
                         </div>
 
@@ -255,7 +247,6 @@
                         <th class="px-3 py-2 text-left">Nosaukums</th>
                         <th class="px-3 py-2 text-left">Datums</th>
                         <th class="px-3 py-2 text-left">Fails</th>
-                        <th class="px-3 py-2 text-right">Darbības</th>
                     </tr>
                 </thead>
 
@@ -304,19 +295,11 @@
                                 @endif
                             </td>
 
-                            {{-- Delete --}}
-                            <td class="px-3 py-2 text-right">
-                                <button wire:click="delete({{ $doc->id }})"
-                                        wire:confirm="Vai tiešām dzēst šo dokumentu?"
-                                        class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm">
-                                    Dzēst
-                                </button>
-                            </td>
                         </tr>
 
                     @empty
                         <tr>
-                            <td colspan="5" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="4" class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
                                 Nav dokumentu
                             </td>
                         </tr>

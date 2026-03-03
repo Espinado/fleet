@@ -9,12 +9,12 @@ use Tests\TestCase;
 class CreateDriverTest extends TestCase
 {
     /**
-     * A basic feature test example.
+     * Home redirects to dashboard.
      */
-    public function test_example(): void
+    public function test_home_redirects_to_dashboard(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(200);
+        $response->assertRedirect('/dashboard');
     }
 }

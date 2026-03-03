@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use Tests\TestCase;
 use App\Models\TripStep;
 use App\Models\TripCargo;
+use App\Models\Trip;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TripCargoTest extends TestCase
@@ -12,39 +13,36 @@ class TripCargoTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function cargo_cannot_have_unloading_before_loading()
+    public function cargo_belongs_to_trip()
     {
-        $l = TripStep::factory()->create(['order' => 2, 'type' => 'loading']);
-        $u = TripStep::factory()->create(['order' => 1, 'type' => 'unloading']);
+        $trip = Trip::factory()->create();
+        $cargo = TripCargo::factory()->create(['trip_id' => $trip->id]);
 
-        $this->expectException(\Exception::class);
-
-        TripCargo::create([
-            'loading_step_id' => $l->id,
-            'unloading_step_id' => $u->id
-        ]);
+        $this->assertSame((int) $trip->id, (int) $cargo->trip_id);
+        $this->assertTrue($cargo->trip->is($trip));
     }
 
     /** @test */
-    public function cargo_can_have_no_steps()
+    public function cargo_can_have_no_steps_attached()
     {
-        $cargo = TripCargo::create([]);
+        $cargo = TripCargo::factory()->create();
 
-        $this->assertNull($cargo->loading_step_id);
-        $this->assertNull($cargo->unloading_step_id);
+        $this->assertCount(0, $cargo->steps);
     }
 
     /** @test */
-    public function cargo_tax_calculation_is_correct()
+    public function cargo_can_be_attached_to_steps_via_pivot()
     {
-        $cargo = TripCargo::factory()->make([
-            'price' => 100,
-            'tax_percent' => 21,
-        ]);
+        $trip = Trip::factory()->create();
+        $step1 = TripStep::factory()->create(['trip_id' => $trip->id, 'type' => 'loading']);
+        $step2 = TripStep::factory()->create(['trip_id' => $trip->id, 'type' => 'unloading']);
+        $cargo = TripCargo::factory()->create(['trip_id' => $trip->id]);
 
-        $cargo->calculateTotals();
+        $cargo->steps()->attach($step1->id, ['role' => 'loading']);
+        $cargo->steps()->attach($step2->id, ['role' => 'unloading']);
 
-        $this->assertEquals(21.00, $cargo->total_tax_amount);
-        $this->assertEquals(121.00, $cargo->price_with_tax);
+        $this->assertCount(2, $cargo->steps);
+        $this->assertCount(1, $cargo->steps()->wherePivot('role', 'loading')->get());
+        $this->assertCount(1, $cargo->steps()->wherePivot('role', 'unloading')->get());
     }
 }

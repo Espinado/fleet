@@ -9,7 +9,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // --- безопасное удаление всех возможных FK ---
+        // SQLite: нельзя просто DROP COLUMN при наличии FK (нет DROP FOREIGN KEY).
+        // Для тестов оставляем колонки; приложение использует pivot trip_cargo_step.
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
+        // --- безопасное удаление всех возможных FK (MySQL) ---
         $fks = [
             'tc_load_fk',
             'tc_unload_fk',

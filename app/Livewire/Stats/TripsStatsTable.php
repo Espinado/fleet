@@ -87,7 +87,7 @@ class TripsStatsTable extends Component
     private function query(): Builder
     {
         $q = Trip::query()
-            ->with(['truck', 'driver'])
+            ->with(['truck', 'driver', 'trailer', 'carrierCompany'])
             ->select('trips.*');
 
         // 🔎 Фильтр по датам

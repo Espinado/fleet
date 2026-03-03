@@ -289,14 +289,6 @@
                                         </span>
                                     </div>
                                 </div>
-
-                                <button type="button"
-                                        wire:click="delete({{ $exp->id }})"
-                                        class="shrink-0 inline-flex items-center justify-center rounded-xl px-3 py-2
-                                               text-sm font-semibold bg-red-50 dark:bg-red-900/30
-                                               text-red-700 dark:text-red-200 active:scale-[0.98]">
-                                    Dzēst
-                                </button>
                             </div>
 
                             {{-- Details: liters/odo/description --}}
@@ -385,7 +377,6 @@
                             </th>
 
                             <th class="px-3 py-2">Fails</th>
-                            <th class="px-3 py-2 text-right">Darbības</th>
                         </tr>
                     </thead>
 
@@ -496,19 +487,11 @@
                                         <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
-
-                                <td class="px-3 py-2 text-right whitespace-nowrap">
-                                    <button type="button"
-                                            wire:click="delete({{ $exp->id }})"
-                                            class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 text-sm font-semibold">
-                                        Dzēst
-                                    </button>
-                                </td>
                             </tr>
 
                         @empty
                             <tr>
-                                <td colspan="6"
+                                <td colspan="5"
                                     class="px-3 py-3 text-center text-gray-500 dark:text-gray-400">
                                     Nav izdevumu
                                 </td>

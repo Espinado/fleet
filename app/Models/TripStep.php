@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Enums\TripStepStatus;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TripStep extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'trip_id',
         'type',        // loading | unloading
@@ -64,6 +67,22 @@ class TripStep extends Model
     return $this->belongsToMany(TripCargo::class, 'trip_cargo_step')
         ->withPivot(['role']);
 }
+
+    /** Грузы, загружаемые на этом шаге (pivot role = loading) */
+    public function cargosLoadedHere()
+    {
+        return $this->belongsToMany(TripCargo::class, 'trip_cargo_step')
+            ->withPivot('role')
+            ->wherePivot('role', 'loading');
+    }
+
+    /** Грузы, разгружаемые на этом шаге (pivot role = unloading) */
+    public function cargosUnloadedHere()
+    {
+        return $this->belongsToMany(TripCargo::class, 'trip_cargo_step')
+            ->withPivot('role')
+            ->wherePivot('role', 'unloading');
+    }
 
 
 

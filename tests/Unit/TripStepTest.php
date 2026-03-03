@@ -16,20 +16,20 @@ class TripStepTest extends TestCase
     public function step_relations_work()
     {
         $step = TripStep::factory()->create(['type' => 'loading']);
+        $cargo = TripCargo::factory()->create(['trip_id' => $step->trip_id]);
 
-        $cargo = TripCargo::factory()->create([
-            'loading_step_id' => $step->id
-        ]);
+        $step->cargos()->attach($cargo->id, ['role' => 'loading']);
 
-        $this->assertCount(1, $step->cargosLoadedHere);
+        $this->assertCount(1, $step->cargosLoadedHere->get());
         $this->assertEquals($cargo->id, $step->cargosLoadedHere->first()->id);
     }
 
     /** @test */
     public function order_field_is_respected()
     {
-        $step1 = TripStep::factory()->create(['order' => 1]);
-        $step2 = TripStep::factory()->create(['order' => 2]);
+        $trip = \App\Models\Trip::factory()->create();
+        $step1 = TripStep::factory()->create(['trip_id' => $trip->id, 'order' => 1]);
+        $step2 = TripStep::factory()->create(['trip_id' => $trip->id, 'order' => 2]);
 
         $this->assertEquals(1, $step1->order);
         $this->assertEquals(2, $step2->order);

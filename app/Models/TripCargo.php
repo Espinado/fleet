@@ -37,7 +37,12 @@ class TripCargo extends Model
         'payment_terms',
         'payer_type_id',
         'commercial_invoice_nr',
-'commercial_invoice_amount',
+        'commercial_invoice_amount',
+
+        // Delay (downtime)
+        'has_delay',
+        'delay_days',
+        'delay_amount',
     ];
 
     protected $casts = [
@@ -49,7 +54,10 @@ class TripCargo extends Model
         'tax_percent'      => 'float',
         'total_tax_amount' => 'float',
         'price_with_tax'   => 'float',
-       'commercial_invoice_amount' => 'decimal:2',
+        'commercial_invoice_amount' => 'decimal:2',
+        'has_delay'                 => 'boolean',
+        'delay_days'                => 'integer',
+        'delay_amount'              => 'float',
     ];
 
     protected $with = ['customer', 'shipper', 'consignee', 'items'];

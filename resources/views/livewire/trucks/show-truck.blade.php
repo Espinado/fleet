@@ -24,8 +24,6 @@
                 ✏️ {{ __('app.truck.show.edit') }}
             </a>
 
-            {{-- Кнопка удаления --}}
-
         </div>
     </div>
 
@@ -227,19 +225,11 @@
         </div>
     </div>
 
-    {{-- Poga "Atpakaļ" un dzēšana --}}
     <div class="mt-10 flex justify-between items-center">
         <a href="{{ route('trucks.index') }}"
            class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
             ← {{ __('app.truck.show.back') }}
         </a>
-         {{-- Кнопка удаления --}}
-        <button type="button"
-                wire:click="destroy"
-                onclick="confirm('{{ __('app.truck.show.delete_confirm') }}') || event.stopImmediatePropagation()"
-                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
-            🗑 {{ __('app.truck.show.delete') }}
-        </button>
     </div>
 </div>
 

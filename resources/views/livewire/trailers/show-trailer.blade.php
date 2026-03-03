@@ -102,13 +102,6 @@
        class="px-6 py-2 bg-gray-200 text-gray-800 font-semibold rounded-xl hover:bg-gray-300 transition shadow-md">
         ← {{ __('app.trailer.show.back') }}
     </a>
-
-    <button type="button"
-        wire:click="destroy"
-        onclick="confirm('{{ __('app.trailer.show.delete_confirm') }}') || event.stopImmediatePropagation()"
-        class="px-4 py-2 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition shadow-md">
-        🗑 {{ __('app.trailer.show.delete') }}
-    </button>
 </div>
 
     </div>

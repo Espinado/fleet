@@ -9,6 +9,7 @@ use App\Models\Trip;
 use App\Models\TripStepDocument;
 use App\Models\TripCargo;
 use App\Http\Controllers\CmrController;
+use App\Helpers\CalculateTax;
 
 class ViewTrip extends Component
 {
@@ -26,18 +27,26 @@ class ViewTrip extends Component
     public array $orderNr = []; // cargo_id => string
     public array $invNr = [];   // cargo_id => string
 
+    // ✅ Dikstāve (delay) per cargo
+    public array $delayChecked = []; // cargo_id => bool
+    public array $delayDays = [];    // cargo_id => int|string
+    public array $delayAmount = [];  // cargo_id => float|string (without VAT)
+
     public function mount($trip)
     {
         $this->trip = $trip instanceof Trip ? $trip : Trip::findOrFail($trip);
 
         $this->reloadTrip();
 
-        // заполнить поля ввода номеров из БД
+        // заполнить поля ввода номеров и delay из БД
         foreach ($this->trip->cargos as $cargo) {
             $cid = (int) $cargo->id;
             $this->cmrNr[$cid]   = (string)($cargo->cmr_nr ?? '');
             $this->orderNr[$cid] = (string)($cargo->order_nr ?? '');
             $this->invNr[$cid]   = (string)($cargo->inv_nr ?? '');
+            $this->delayChecked[$cid] = (bool) ($cargo->has_delay ?? false);
+            $this->delayDays[$cid]    = $cargo->delay_days !== null ? (string) $cargo->delay_days : '';
+            $this->delayAmount[$cid]  = $cargo->delay_amount !== null ? (string) $cargo->delay_amount : '';
         }
     }
 
@@ -158,6 +167,43 @@ class ViewTrip extends Component
 
         $this->reloadTrip();
         $this->dispatch('invoiceGenerated', url: $url);
+    }
+
+    /**
+     * Save delay (Dikstāve) for a cargo. If checkbox unchecked, clears delay fields.
+     */
+    public function saveDelay(int $cargoId): void
+    {
+        $checked = (bool) ($this->delayChecked[$cargoId] ?? false);
+
+        if ($checked) {
+            $this->validate([
+                "delayDays.{$cargoId}"   => 'required|integer|min:1|max:365',
+                "delayAmount.{$cargoId}" => 'required|numeric|min:0',
+            ], [
+                "delayDays.{$cargoId}.required"   => __('app.trip.show.delay_days_required'),
+                "delayAmount.{$cargoId}.required" => __('app.trip.show.delay_amount_required'),
+            ]);
+            $days = (int) $this->delayDays[$cargoId];
+            $amount = (float) str_replace(',', '.', (string) $this->delayAmount[$cargoId]);
+        } else {
+            $days = null;
+            $amount = null;
+        }
+
+        $cargo = TripCargo::findOrFail($cargoId);
+        if ($cargo->trip_id !== $this->trip->id) {
+            abort(403);
+        }
+
+        $cargo->update([
+            'has_delay'    => $checked,
+            'delay_days'   => $days,
+            'delay_amount' => $amount,
+        ]);
+
+        $this->reloadTrip();
+        $this->dispatch('delaySaved');
     }
 
     public function render()

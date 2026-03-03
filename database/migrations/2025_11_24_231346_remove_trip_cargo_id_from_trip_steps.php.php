@@ -9,6 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // SQLite: нельзя DROP COLUMN при наличии FK (нет DROP FOREIGN KEY).
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         // --- удаляем все возможные FK, связанные с trip_cargo_id ---
         $fks = [
             'ts_cargo_fk',

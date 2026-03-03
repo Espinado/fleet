@@ -175,6 +175,18 @@
                     <td class="cell amount">{{ number_format($cg->price, 2, '.', ' ') }}</td>
                     <td class="cell amount">{{ number_format($cg->price, 2, '.', ' ') }}</td>
                 </tr>
+                @if(!empty($delay_days) && (float)($delay_amount_no_vat ?? 0) > 0)
+                <tr>
+                    <td class="cell text-center">{{ $nr++ }}</td>
+                    <td class="cell">
+                        Dikstāve ({{ (int)$delay_days }} {{ (int)$delay_days === 1 ? 'diena' : 'dienas' }})
+                    </td>
+                    <td class="cell text-center">—</td>
+                    <td class="cell text-center">—</td>
+                    <td class="cell amount">{{ number_format($delay_amount_no_vat, 2, '.', ' ') }}</td>
+                    <td class="cell amount">{{ number_format($delay_amount_with_tax, 2, '.', ' ') }}</td>
+                </tr>
+                @endif
             @endforeach
 
             {{-- ✅ TOTALS без rowspan и без огромной пустоты --}}

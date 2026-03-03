@@ -122,15 +122,19 @@
                     $expenses = (float)($trip->expenses_total ?? 0);
                     $profit   = (float)($trip->profit ?? ($freight - $expenses));
                     $cur      = $trip->currency ?? '';
+                    $isThirdPartyMobile = $trip->carrierCompany?->is_third_party ?? false;
                 @endphp
 
-                <div class="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden">
+                <div class="bg-white rounded-2xl shadow border border-gray-200 overflow-hidden {{ $isThirdPartyMobile ? 'ring-1 ring-amber-300' : '' }}">
                     <div class="p-4">
 
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <div class="font-semibold text-gray-900">
+                                <div class="font-semibold text-gray-900 flex items-center gap-2">
                                     #{{ $trip->id }}
+                                    @if($isThirdPartyMobile)
+                                        <span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-semibold">3rd party</span>
+                                    @endif
                                 </div>
                                 <div class="text-xs text-gray-500">
                                     {{ \Carbon\Carbon::parse($trip->start_date)->format('d.m.Y') }}
@@ -149,18 +153,30 @@
                         </div>
 
                         <div class="mt-3 rounded-xl bg-gray-50 border border-gray-200 p-3">
-                            <div class="font-semibold text-gray-900">
-                                🚚 {{ $trip->truck?->plate ?? '—' }}
-                                <span class="text-gray-500 font-normal">
-                                    {{ $trip->truck?->brand ?? '' }} {{ $trip->truck?->model ?? '' }}
-                                </span>
-                            </div>
-                            <div class="text-sm text-gray-700 mt-1">
-                                👤 {{ $trip->driver?->full_name ?? '—' }}
-                                @if($trip->driver?->pers_code)
-                                    <span class="text-gray-400">• {{ $trip->driver->pers_code }}</span>
-                                @endif
-                            </div>
+                            @if($isThirdPartyMobile)
+                                <div class="font-semibold text-gray-900">
+                                    {{ $trip->carrierCompany?->name ?? '—' }}
+                                </div>
+                                <div class="text-sm text-gray-700 mt-1">
+                                    {{ $trip->truck?->plate ?? '—' }}
+                                    @if($trip->trailer?->plate)
+                                        / {{ $trip->trailer->plate }}
+                                    @endif
+                                </div>
+                            @else
+                                <div class="font-semibold text-gray-900">
+                                    🚚 {{ $trip->truck?->plate ?? '—' }}
+                                    <span class="text-gray-500 font-normal">
+                                        {{ $trip->truck?->brand ?? '' }} {{ $trip->truck?->model ?? '' }}
+                                    </span>
+                                </div>
+                                <div class="text-sm text-gray-700 mt-1">
+                                    👤 {{ $trip->driver?->full_name ?? '—' }}
+                                    @if($trip->driver?->pers_code)
+                                        <span class="text-gray-400">• {{ $trip->driver->pers_code }}</span>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
 
                         {{-- Money row --}}
@@ -276,7 +292,7 @@
                                     </button>
                                 </th>
 
-                                <th class="px-4 py-3 text-left whitespace-nowrap">Kravas auto / Vadītājs</th>
+                                <th class="px-4 py-3 text-left whitespace-nowrap">Mašīna / Vadītājs</th>
 
                                 <th class="px-4 py-3 text-left whitespace-nowrap">
                                     <button wire:click="sortBy('departure_at')" class="font-semibold hover:underline">
@@ -319,9 +335,15 @@
                                     $cur      = $trip->currency ?? '';
                                 @endphp
 
-                                <tr class="hover:bg-gray-50">
+                                @php
+                                    $isThirdParty = $trip->carrierCompany?->is_third_party ?? false;
+                                @endphp
+                                <tr class="hover:bg-gray-50 {{ $isThirdParty ? 'bg-amber-50/70' : '' }}">
                                     <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-900">
                                         {{ $trip->id }}
+                                        @if($isThirdParty)
+                                            <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[10px] font-semibold">3rd party</span>
+                                        @endif
                                         <div class="text-xs text-gray-500">
                                             {{ \Carbon\Carbon::parse($trip->start_date)->format('d.m.Y') }}
                                             →
@@ -330,18 +352,30 @@
                                     </td>
 
                                     <td class="px-4 py-3 whitespace-nowrap text-gray-900">
-                                        <div class="font-semibold">
-                                            {{ $trip->truck?->plate ?? '—' }}
-                                            <span class="text-gray-500 font-normal">
-                                                {{ $trip->truck?->brand ?? '' }} {{ $trip->truck?->model ?? '' }}
-                                            </span>
-                                        </div>
-                                        <div class="text-xs text-gray-600">
-                                            👤 {{ $trip->driver?->full_name ?? '—' }}
-                                            @if($trip->driver?->pers_code)
-                                                <span class="text-gray-400">• {{ $trip->driver?->pers_code }}</span>
-                                            @endif
-                                        </div>
+                                        @if($isThirdParty)
+                                            <div class="font-semibold">
+                                                {{ $trip->carrierCompany?->name ?? '—' }}
+                                            </div>
+                                            <div class="text-xs text-gray-600">
+                                                {{ $trip->truck?->plate ?? '—' }}
+                                                @if($trip->trailer?->plate)
+                                                    / {{ $trip->trailer->plate }}
+                                                @endif
+                                            </div>
+                                        @else
+                                            <div class="font-semibold">
+                                                {{ $trip->truck?->plate ?? '—' }}
+                                                <span class="text-gray-500 font-normal">
+                                                    {{ $trip->truck?->brand ?? '' }} {{ $trip->truck?->model ?? '' }}
+                                                </span>
+                                            </div>
+                                            <div class="text-xs text-gray-600">
+                                                👤 {{ $trip->driver?->full_name ?? '—' }}
+                                                @if($trip->driver?->pers_code)
+                                                    <span class="text-gray-400">• {{ $trip->driver?->pers_code }}</span>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </td>
 
                                     <td class="px-4 py-3 whitespace-nowrap text-gray-900">

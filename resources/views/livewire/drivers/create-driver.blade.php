@@ -58,7 +58,7 @@
                         <option value="{{ $id }}">{{ is_array($comp) ? $comp['name'] : $comp }}</option>
                     @endforeach
                 </select>
-                @error('company') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                @error('company_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
         </section>
 

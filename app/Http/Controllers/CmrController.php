@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\CalculateTax;
 use App\Models\TripCargo;
 use App\Models\TripStep;
 use App\Models\TripExpense;
@@ -233,6 +234,24 @@ class CmrController extends Controller
         $total = round($subtotal + $vat, 2);
     }
 
+    // ✅ Dikstāve (delay): add to subtotal/vat/total if set
+    $delayDays = null;
+    $delayAmountNoVat = null;
+    $delayVat = null;
+    $delayAmountWithTax = null;
+    if (!empty($cargo->has_delay) && (int)($cargo->delay_days ?? 0) > 0 && (float)($cargo->delay_amount ?? 0) > 0) {
+        $delayAmountNoVat = (float) $cargo->delay_amount;
+        $taxPct = $taxPercent !== null ? (float) $taxPercent : 21;
+        $delayTax = CalculateTax::calculate($delayAmountNoVat, $taxPct);
+        $delayVat = $delayTax['tax_amount'];
+        $delayAmountWithTax = $delayTax['price_with_tax'];
+        $delayDays = (int) $cargo->delay_days;
+        $subtotal += $delayAmountNoVat;
+        $vat += $delayVat;
+        $total += $delayAmountWithTax;
+    }
+
+    $sumInWords = $this->moneyToWordsLv((float) $total);
     $currency = (string)($cargo->currency ?: 'EUR');
 
     // ✅ expeditor snapshot из trip (FIX bank field)
@@ -280,7 +299,7 @@ class CmrController extends Controller
     $loading_country_iso   = '';
     $unloading_country_iso = '';
 
-    $sumInWords = $this->moneyToWordsLv((float)$total);
+    // sumInWords computed after delay is added to $total (see below)
 
     $issuedAt = now();
 
@@ -308,6 +327,11 @@ class CmrController extends Controller
         'vat'          => $vat,
         'total'        => $total,
         'sum_in_words' => $sumInWords,
+
+        'delay_days'           => $delayDays,
+        'delay_amount_no_vat'  => $delayAmountNoVat,
+        'delay_vat'            => $delayVat,
+        'delay_amount_with_tax'=> $delayAmountWithTax,
     ];
 
     $dir = "invoice/trip_{$trip->id}";

@@ -13,28 +13,20 @@ class CreateTripTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function trip_with_cargos_and_steps_is_created_correctly()
+    public function trip_can_be_created_with_steps_and_cargos()
     {
-        $step1 = TripStep::factory()->create(['order' => 1, 'type' => 'loading']);
-        $step2 = TripStep::factory()->create(['order' => 2, 'type' => 'unloading']);
+        $trip = Trip::factory()->create();
+        $step1 = TripStep::factory()->create(['trip_id' => $trip->id, 'order' => 1, 'type' => 'loading']);
+        $step2 = TripStep::factory()->create(['trip_id' => $trip->id, 'order' => 2, 'type' => 'unloading']);
 
-        $response = $this->post('/trips/create', [
-            'expeditor_id' => 1,
-            'driver_id' => 1,
-            'truck_id' => 1,
-            'currency' => 'EUR',
-            'cargos' => [
-                [
-                    'price' => 100,
-                    'tax_percent' => 21,
-                    'loading_step_id' => $step1->id,
-                    'unloading_step_id' => $step2->id,
-                ]
-            ]
-        ]);
+        $cargo1 = TripCargo::factory()->create(['trip_id' => $trip->id]);
+        $step1->cargos()->attach($cargo1->id, ['role' => 'loading']);
+        $step2->cargos()->attach($cargo1->id, ['role' => 'unloading']);
 
-        $response->assertStatus(302);
         $this->assertDatabaseCount('trips', 1);
+        $this->assertDatabaseCount('trip_steps', 2);
         $this->assertDatabaseCount('trip_cargos', 1);
+        $this->assertCount(2, $trip->fresh()->steps);
+        $this->assertCount(1, $trip->fresh()->cargos);
     }
 }

@@ -623,13 +623,6 @@
                         </div>
 
                         <div class="flex items-center justify-end">
-                            @if(count($steps) > 1)
-                                <button type="button"
-                                        wire:click="removeStep({{ $index }})"
-                                        class="text-xs text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
-                                    ✕ Удалить шаг
-                                </button>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -829,13 +822,6 @@
                             Груз #{{ $index + 1 }}
                         </div>
 
-                        @if(count($cargos) > 1)
-                            <button type="button"
-                                    wire:click="removeCargo({{ $index }})"
-                                    class="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-lg hover:bg-red-50">
-                                ✕ Удалить
-                            </button>
-                        @endif
                     </div>
 
                     <div class="px-4 py-4 space-y-4">
@@ -986,13 +972,6 @@
                                             Позиция #{{ $itemIndex + 1 }}
                                         </div>
 
-                                        @if(count($cargo['items'] ?? []) > 1)
-                                            <button type="button"
-                                                    wire:click="removeItem({{ $index }}, {{ $itemIndex }})"
-                                                    class="text-xs text-red-600 hover:text-red-700 px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                ✕ Удалить позицию
-                                            </button>
-                                        @endif
                                     </div>
 
                                     <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">

@@ -19,7 +19,8 @@ class CreateDriver extends Component
 
     // Личные данные
     public $first_name, $last_name, $pers_code, $citizenship_id;
-    public $phone, $email, $company;
+    public $phone, $email;
+    public ?int $company_id = null;
     public $status = DriverStatus::ON_WORK->value;
     public $is_active = true;
 
@@ -61,7 +62,7 @@ class CreateDriver extends Component
             Rule::unique('drivers','email'),
             Rule::unique('users','email'),
         ],
-            'company'     => 'required|integer',
+            'company_id'  => 'required|integer|exists:companies,id',
 
             // Declared address
             'declared_country_id' => 'required|integer',
@@ -193,7 +194,7 @@ private function generateUniquePin(): string
                 'declaration_issued'  => $this->declaration_issued,
                 'declaration_expired' => $this->declaration_expired,
 
-                'company'             => $this->company,
+                'company_id'           => $this->company_id,
 
                 'login_pin'           => $pin,
                 'user_id'             => $user->id,
