@@ -131,10 +131,10 @@
     .h611_body { height: 28mm; }
     .h611_adr  { height: 8mm; }
 
-    .h13_19 { height: 34mm; }
+    .h13_19 { height: 22mm; }
     .h14    { height: 8mm;  }
     .h15_20 { height: 8mm;  }
-    .h21_24 { height: 22mm; }
+    .h21_24 { height: 14mm; }
     .h25_26 { height: 12mm; }
 
     /* totals line inside h611_body */
@@ -455,7 +455,7 @@
                         <td class="h13_19">
                             <div><span class="num">13</span><span class="lbl">Nosūtītāja norādījumi (muitas u.c. formalitātes)
                                 <span class="sub">Absenders (Zoll und sonstige amtliche Behandlung)</span></span></div>
-                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div><div class="line"></div></div>
+                            <div class="lines"><div class="line"></div><div class="line"></div><div class="line"></div></div>
                             <div class="mini" style="margin-top:2mm;">
                                 Norādīta kravas vērtība
                                 <span style="float:right;">Angabe des Wertes des Gutes</span>
@@ -510,8 +510,8 @@
                                 <span style="margin-left:18mm;">Datums</span>
                             </div>
 
-                            {{-- ✅ центрируем оба значения и сдвигаем к центру --}}
-                            <div style="margin-top:2.5mm; font-size:9px; text-align:center;">
+                            {{-- ✅ центрируем оба значения, сжатые отступы для одной страницы --}}
+                            <div style="margin-top:1.2mm; font-size:8.5px; text-align:center;">
                                 <div style="display:inline-block; width:110mm;">
                                     <span style="display:inline-block; width:55mm; text-align:center;">
                                         {{ $trip?->expeditor_city ?? '' }}
@@ -522,11 +522,11 @@
                                 </div>
                             </div>
 
-                            <div style="margin-top:3mm;" class="lbl">
+                            <div style="margin-top:1.2mm;" class="lbl">
                                 <span class="num">22</span> Ierašanās iekraušanai
                                 <span class="sub">Ankunft für einladung</span>
-                                <div style="margin-top:2mm;" class="lbl">Aizbraukšana <span class="sub">Abfahrt</span></div>
-                                <div style="margin-top:2mm;" class="lbl">Nosūtītāja paraksts un zīmogs
+                                <div style="margin-top:0.8mm;" class="lbl">Aizbraukšana <span class="sub">Abfahrt</span></div>
+                                <div style="margin-top:0.8mm;" class="lbl">Nosūtītāja paraksts un zīmogs
                                     <span class="sub">Unterschrift und Stempel des Absender</span>
                                 </div>
                             </div>
@@ -534,7 +534,7 @@
 
                         <td style="width:28.9474%;" class="h21_24">
                             <div class="lbl"><span class="num">23</span> Ceļazīmes Nr. ____________________</div>
-                            <div style="margin-top:8mm;" class="lbl">Vadītāja uzvārdi __________________</div>
+                            <div style="margin-top:3mm;" class="lbl">Vadītāja uzvārdi __________________</div>
                         </td>
 
                         <td style="width:13.1579%;" class="h21_24 no-pad">

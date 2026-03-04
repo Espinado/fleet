@@ -234,18 +234,20 @@ class CmrController extends Controller
         $total = round($subtotal + $vat, 2);
     }
 
-    // ✅ Dikstāve (delay): add to subtotal/vat/total if set
+    // ✅ Dikstāve (delay): сумма без НДС за день × кол-во дней, затем налог на всю строку
     $delayDays = null;
+    $delayAmountPerDay = null;
     $delayAmountNoVat = null;
     $delayVat = null;
     $delayAmountWithTax = null;
     if (!empty($cargo->has_delay) && (int)($cargo->delay_days ?? 0) > 0 && (float)($cargo->delay_amount ?? 0) > 0) {
-        $delayAmountNoVat = (float) $cargo->delay_amount;
+        $delayAmountPerDay = (float) $cargo->delay_amount;
+        $delayDays = (int) $cargo->delay_days;
+        $delayAmountNoVat = round($delayAmountPerDay * $delayDays, 2);
         $taxPct = $taxPercent !== null ? (float) $taxPercent : 21;
         $delayTax = CalculateTax::calculate($delayAmountNoVat, $taxPct);
         $delayVat = $delayTax['tax_amount'];
         $delayAmountWithTax = $delayTax['price_with_tax'];
-        $delayDays = (int) $cargo->delay_days;
         $subtotal += $delayAmountNoVat;
         $vat += $delayVat;
         $total += $delayAmountWithTax;
@@ -328,7 +330,8 @@ class CmrController extends Controller
         'total'        => $total,
         'sum_in_words' => $sumInWords,
 
-        'delay_days'           => $delayDays,
+        'delay_days'            => $delayDays,
+        'delay_amount_per_day' => $delayAmountPerDay,
         'delay_amount_no_vat'  => $delayAmountNoVat,
         'delay_vat'            => $delayVat,
         'delay_amount_with_tax'=> $delayAmountWithTax,

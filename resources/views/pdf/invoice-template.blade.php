@@ -183,8 +183,8 @@
                     </td>
                     <td class="cell text-center">Dienas</td>
                     <td class="cell text-center">{{ (int)$delay_days }}</td>
+                    <td class="cell amount">{{ number_format($delay_amount_per_day ?? $delay_amount_no_vat, 2, '.', ' ') }}</td>
                     <td class="cell amount">{{ number_format($delay_amount_no_vat, 2, '.', ' ') }}</td>
-                    <td class="cell amount">{{ number_format($delay_amount_with_tax, 2, '.', ' ') }}</td>
                 </tr>
                 @endif
             @endforeach
