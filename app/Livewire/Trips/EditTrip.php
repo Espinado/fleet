@@ -171,8 +171,8 @@ class EditTrip extends Component
         $this->cont_nr = $trip->cont_nr;
         $this->seal_nr = $trip->seal_nr;
 
-        $this->start_date = $trip->start_date;
-        $this->end_date   = $trip->end_date;
+        $this->start_date = $trip->start_date ? $trip->start_date->format('Y-m-d') : null;
+        $this->end_date   = $trip->end_date ? $trip->end_date->format('Y-m-d') : null;
 
         // ✅ FIX: enum-safe
         $this->status   = $this->statusToString($trip->status, 'planned');
@@ -183,6 +183,12 @@ class EditTrip extends Component
 
         // hydrate expeditor (banks + needsCarrierSelect + default carrier logic)
         $this->hydrateExpeditor();
+
+        // при редактировании рейса третьей стороны — показывать селект перевозчика и блок данных 3. стороны
+        $carrierForCheck = $this->trip->carrier_company_id ? Company::find($this->trip->carrier_company_id) : null;
+        if ($this->trip->carrier_company_id !== null && ($this->trip->driver_id === null || ($carrierForCheck && $carrierForCheck->is_third_party))) {
+            $this->needsCarrierSelect = true;
+        }
 
         // restore carrier select state
         $this->hydrateCarrierSelectFromTrip();
@@ -338,13 +344,12 @@ class EditTrip extends Component
             return;
         }
 
-        // посредник: определяем текущий режим
+        // посредник: определяем текущий режим (третья сторона, если компания помечена или у рейса нет водителя)
         $carrier = $this->trip->carrier_company_id ? Company::find($this->trip->carrier_company_id) : null;
 
         $isThirdPartyTrip =
-            $this->trip->driver_id === null
-            && $this->trip->carrier_company_id !== null
-            && ($carrier?->is_third_party ?? false);
+            $this->trip->carrier_company_id !== null
+            && (($carrier?->is_third_party ?? false) || $this->trip->driver_id === null);
 
         if ($isThirdPartyTrip) {
             $this->carrier_company_select = '__third_party__';
