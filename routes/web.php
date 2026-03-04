@@ -48,18 +48,14 @@ Route::get('/_dev/find-odometer', function () {
     return $matches;
 });
 
-// test push
-Route::get('/test-push', function () {
-    $user = Auth::user();
-
-    if (!$user) return "❌ You are not logged in";
-
-    $user->notify(new TestPushNotification());
-    return "✅ Push sent to {$user->email}";
-});
-
 // === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
+
+    Route::get('/test-push', function () {
+        $user = Auth::user();
+        $user->notify(new TestPushNotification());
+        return "✅ Push sent to {$user->email}";
+    })->name('test-push');
 
     Route::post('/push/subscribe', function (\Illuminate\Http\Request $request) {
         $data = $request->validate([

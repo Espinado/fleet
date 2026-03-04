@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\WebPush\WebPushChannel;
 use NotificationChannels\WebPush\WebPushMessage;
 
 use App\Models\Trip;
@@ -20,7 +21,7 @@ class DriverDepartureNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['webpush'];
+        return [WebPushChannel::class];
     }
 
     public function toWebPush(object $notifiable, $notification): WebPushMessage
