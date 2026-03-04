@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
+use App\Enums\TripStatus;
 use App\Helpers\CalculateTax;
 use App\Models\{
     Trip,
@@ -138,6 +139,11 @@ class EditTrip extends Component
     public function mount(Trip $trip): void
     {
         $this->trip = $trip;
+
+        if ($trip->status === TripStatus::COMPLETED) {
+            $this->redirect(route('trips.show', $trip->id), navigate: true);
+            return;
+        }
 
         $this->drivers  = Driver::where('is_active', 1)->get();
         $this->trucks   = Truck::where('is_active', 1)->get();
@@ -570,6 +576,98 @@ class EditTrip extends Component
 
         $this->trip_loading_step_ids = array_values(array_unique($this->trip_loading_step_ids));
         $this->trip_unloading_step_ids = array_values(array_unique($this->trip_unloading_step_ids));
+    }
+
+    /** ============================================================
+     *  GLOBAL STEP TOGGLES (как в CreateTrip)
+     * ============================================================ */
+    public function toggleTripLoadingStep(string $uid): void
+    {
+        $arr = $this->trip_loading_step_ids ?? [];
+        $this->trip_loading_step_ids = in_array($uid, $arr, true)
+            ? array_values(array_diff($arr, [$uid]))
+            : array_values(array_unique(array_merge($arr, [$uid])));
+    }
+
+    public function toggleTripUnloadingStep(string $uid): void
+    {
+        $arr = $this->trip_unloading_step_ids ?? [];
+        $this->trip_unloading_step_ids = in_array($uid, $arr, true)
+            ? array_values(array_diff($arr, [$uid]))
+            : array_values(array_unique(array_merge($arr, [$uid])));
+    }
+
+    /** ============================================================
+     *  STEPS: add, remove, reorder (drag-drop)
+     * ============================================================ */
+    public function addStep(): void
+    {
+        $this->steps[] = [
+            'uid'              => (string) Str::uuid(),
+            'type'             => 'loading',
+            'country_id'       => null,
+            'city_id'          => null,
+            'address'          => null,
+            'contact_phone_1'  => null,
+            'contact_phone_2'  => null,
+            'date'             => null,
+            'time'             => null,
+            'order'            => count($this->steps) + 1,
+            'notes'             => null,
+        ];
+        $this->stepCities[] = ['cities' => []];
+    }
+
+    public function removeStep($index): void
+    {
+        $removedUid = $this->steps[$index]['uid'] ?? null;
+        unset($this->steps[$index], $this->stepCities[$index]);
+        $this->steps = array_values($this->steps);
+        $this->stepCities = array_values($this->stepCities);
+        if ($removedUid) {
+            $this->trip_loading_step_ids = array_values(array_filter(
+                $this->trip_loading_step_ids ?? [],
+                fn ($v) => (string) $v !== (string) $removedUid
+            ));
+            $this->trip_unloading_step_ids = array_values(array_filter(
+                $this->trip_unloading_step_ids ?? [],
+                fn ($v) => (string) $v !== (string) $removedUid
+            ));
+            foreach ($this->cargos as $ci => $cargo) {
+                $this->cargos[$ci]['loading_step_ids'] = array_values(array_filter(
+                    $cargo['loading_step_ids'] ?? [],
+                    fn ($v) => (string) $v !== (string) $removedUid
+                ));
+                $this->cargos[$ci]['unloading_step_ids'] = array_values(array_filter(
+                    $cargo['unloading_step_ids'] ?? [],
+                    fn ($v) => (string) $v !== (string) $removedUid
+                ));
+            }
+        }
+    }
+
+    /**
+     * Перестановка шагов по новому порядку индексов (для drag-drop).
+     * @param array $orderedIndices Текущий порядок индексов после перетаскивания, например [1, 0, 2, 3]
+     */
+    public function reorderSteps(array $orderedIndices): void
+    {
+        if (empty($this->steps) || count($orderedIndices) !== count($this->steps)) {
+            return;
+        }
+        $steps = [];
+        $stepCities = [];
+        foreach ($orderedIndices as $i) {
+            $idx = (int) $i;
+            if (isset($this->steps[$idx], $this->stepCities[$idx])) {
+                $steps[] = $this->steps[$idx];
+                $stepCities[] = $this->stepCities[$idx];
+            }
+        }
+        if (count($steps) === count($this->steps)) {
+            $this->steps = $steps;
+            $this->stepCities = $stepCities;
+        }
     }
 
     /**

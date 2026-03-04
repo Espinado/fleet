@@ -557,6 +557,7 @@ return [
     'trip.route.step_locked'      => 'Šo soli vairs nevar pārvietot — tas jau tiek veikts vai pabeigts',
     'trip.route.cannot_move'      => 'Šo soli nevar pārvietot',
     'trip.route.order_saved'      => 'Jaunā secība saglabāta',
+    'trip.route.drag_hint'        => 'Velciet, lai mainītu secību',
 
     // Trip step (create/edit) — contact phones
     'trip.step.contact_phone_1' => 'Kontakttālrunis 1',

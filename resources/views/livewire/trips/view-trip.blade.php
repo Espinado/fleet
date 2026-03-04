@@ -167,10 +167,12 @@
             </div>
 
             <div class="flex items-center gap-2 shrink-0">
+                @if($trip->status !== \App\Enums\TripStatus::COMPLETED)
                 <a href="{{ route('trips.edit', $trip->id) }}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white">
                     ✏️
                 </a>
+                @endif
 
                 <span class="text-[10px] px-2 py-1 rounded-full bg-white/10">
                     {{ $mobileStatusLabel }}
@@ -304,10 +306,12 @@
             </div>
 
             <div class="flex items-start gap-2 shrink-0">
+                @if($trip->status !== \App\Enums\TripStatus::COMPLETED)
                 <a href="{{ route('trips.edit', $trip->id) }}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white">
                     ✏️ {{ __('app.trip.show.edit') }}
                 </a>
+                @endif
 
                 <a href="{{ route('trips.index') }}"
                    class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm bg-gray-100 hover:bg-gray-200 text-gray-700">

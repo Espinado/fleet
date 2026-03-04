@@ -566,8 +566,9 @@
             </div>
         </section>
 
-        {{-- STEPS --}}
-        <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4 border border-gray-100 dark:border-gray-800">
+        {{-- STEPS (sortable drag-drop) --}}
+        <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4 border border-gray-100 dark:border-gray-800"
+                 wire:key="steps-section">
             <div class="flex items-center justify-between gap-2">
                 <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                     🧭 {{ __('app.trip.edit.route_steps') }}
@@ -580,13 +581,46 @@
                 </button>
             </div>
 
-            @forelse($steps as $index => $step)
+            @if(count($steps) > 0)
+                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                    {{ __('app.trip.route.subtitle') }}
+                </p>
+
+            <ul id="sortable-edit-steps-{{ $trip->id ?? 'new' }}"
+                class="space-y-4 list-none p-0 m-0"
+                x-data
+                x-init="
+                    if (typeof Sortable === 'undefined') return;
+                    if ($el.dataset.sortableAttached === '1') return;
+                    $el.dataset.sortableAttached = '1';
+                    new Sortable($el, {
+                        animation: 200,
+                        handle: '.edit-step-drag-handle',
+                        ghostClass: 'opacity-50',
+                        onEnd: function() {
+                            var indices = Array.from($el.querySelectorAll('li[data-step-index]'))
+                                .map(function(li) { return li.getAttribute('data-step-index'); });
+                            if (indices.length === 0) return;
+                            var root = $el.closest('[wire\\\\:id]');
+                            if (root) {
+                                var id = root.getAttribute('wire:id');
+                                var c = window.Livewire.find(id);
+                                if (c) c.call('reorderSteps', indices);
+                            }
+                        }
+                    });
+                ">
+            @foreach($steps as $index => $step)
                 @php $stepKey = $step['uid'] ?? ($step['id'] ?? "step-$index"); @endphp
 
-                <div class="border rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-                     wire:key="step-{{ $stepKey }}">
-                    <div class="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-100 bg-white/40 dark:bg-gray-900/20">
-                        {{ __('app.trip.edit.step_n', ['n' => $index + 1]) }}
+                <li class="border rounded-2xl overflow-hidden bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 edit-step-item"
+                    data-step-index="{{ $index }}"
+                    wire:key="step-{{ $stepKey }}">
+                    <div class="px-4 py-3 text-sm font-semibold text-gray-800 dark:text-gray-100 bg-white/40 dark:bg-gray-900/20 flex items-center justify-between gap-2">
+                        <span class="flex items-center gap-2">
+                            <span class="edit-step-drag-handle cursor-move text-gray-400 hover:text-gray-600 select-none" title="{{ __('app.trip.route.drag_hint') ?? 'Velciet, lai mainītu secību' }}">⋮⋮</span>
+                            {{ __('app.trip.edit.step_n', ['n' => $index + 1]) }}
+                        </span>
                     </div>
 
                     <div class="px-4 py-4 space-y-3">
@@ -675,12 +709,14 @@
                             @endif
                         </div>
                     </div>
-                </div>
-            @empty
+                </li>
+            @endforeach
+            </ul>
+            @else
                 <div class="text-xs text-gray-500">
                     {{ __('app.trip.edit.no_steps') }}
                 </div>
-            @endforelse
+            @endif
         </section>
 
         {{-- GLOBAL STEPS SELECTION (ONE TIME) --}}
