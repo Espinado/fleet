@@ -35,8 +35,10 @@ class Profile extends Component
         ]);
 
         if ($this->photo) {
-            $path = $this->photo->store('driver-photos', 'public');
-            $this->driver->photo = $path;
+            $path = \App\Helpers\ImageCompress::storeUpload($this->photo, 'driver-photos', 'public');
+            if ($path) {
+                $this->driver->photo = $path;
+            }
         }
 
         $this->driver->phone = $this->phone;

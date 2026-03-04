@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Truck;
 use App\Models\Company;
+use App\Helpers\ImageCompress;
 use Illuminate\Validation\Rule;
 
 class CreateTruck extends Component
@@ -79,7 +80,7 @@ class CreateTruck extends Component
 
         $photoPath = null;
         if ($this->tech_passport_photo) {
-            $photoPath = $this->tech_passport_photo->store('trucks/tech_passports', 'public');
+            $photoPath = ImageCompress::storeUpload($this->tech_passport_photo, 'trucks/tech_passports', 'public') ?? $this->tech_passport_photo->store('trucks/tech_passports', 'public');
         }
 
         Truck::create([

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Driver;
 use App\Models\Company;
+use App\Helpers\ImageCompress;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
@@ -157,26 +158,26 @@ class EditDriver extends Component
         $this->validate();
 
         DB::transaction(function () {
-            // Save photos (replace old if new uploaded)
+            // Save photos (replace old if new uploaded; сжатие + коррекция ориентации по EXIF)
             if ($this->photo) {
                 if ($this->old_photo && Storage::disk('public')->exists($this->old_photo)) {
                     Storage::disk('public')->delete($this->old_photo);
                 }
-                $this->driver->photo = $this->photo->store('drivers/photos', 'public');
+                $this->driver->photo = ImageCompress::storeUpload($this->photo, 'drivers/photos', 'public') ?? $this->photo->store('drivers/photos', 'public');
             }
 
             if ($this->license_photo) {
                 if ($this->old_license_photo && Storage::disk('public')->exists($this->old_license_photo)) {
                     Storage::disk('public')->delete($this->old_license_photo);
                 }
-                $this->driver->license_photo = $this->license_photo->store('drivers/licenses', 'public');
+                $this->driver->license_photo = ImageCompress::storeUpload($this->license_photo, 'drivers/licenses', 'public') ?? $this->license_photo->store('drivers/licenses', 'public');
             }
 
             if ($this->medical_certificate_photo) {
                 if ($this->old_medical_certificate_photo && Storage::disk('public')->exists($this->old_medical_certificate_photo)) {
                     Storage::disk('public')->delete($this->old_medical_certificate_photo);
                 }
-                $this->driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
+                $this->driver->medical_certificate_photo = ImageCompress::storeUpload($this->medical_certificate_photo, 'drivers/medical', 'public') ?? $this->medical_certificate_photo->store('drivers/medical', 'public');
             }
 
             // Update driver

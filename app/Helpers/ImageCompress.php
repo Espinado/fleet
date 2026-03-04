@@ -42,6 +42,11 @@ class ImageCompress
             return $file->store($directory, $disk);
         }
 
+        $image = self::fixOrientation($image, $tmpPath, $mime);
+        if (!$image) {
+            return $file->store($directory, $disk);
+        }
+
         $resized = self::resizeToMaxSide($image, self::MAX_SIDE);
         if (!$resized) {
             imagedestroy($image);
@@ -76,6 +81,65 @@ class ImageCompress
             'image/webp' => @imagecreatefromwebp($path),
             default => false,
         };
+    }
+
+    /**
+     * Коррекция ориентации по EXIF (фото с телефона часто приходят с метаданными поворота).
+     * Применяет поворот/отражение к пикселям, чтобы изображение отображалось правильно везде.
+     */
+    private static function fixOrientation(\GdImage $image, string $path, string $mime): \GdImage|false
+    {
+        if ($mime !== 'image/jpeg') {
+            return $image;
+        }
+
+        if (!function_exists('exif_read_data')) {
+            return $image;
+        }
+
+        $exif = @exif_read_data($path, 'IFD0', true);
+        if (!is_array($exif) || !isset($exif['IFD0']['Orientation'])) {
+            return $image;
+        }
+        $orientation = (int) $exif['IFD0']['Orientation'];
+        if ($orientation <= 1 || $orientation > 8) {
+            return $image;
+        }
+
+        $rotated = null;
+        switch ($orientation) {
+            case 2:
+                imageflip($image, IMG_FLIP_HORIZONTAL);
+                return $image;
+            case 3:
+                $rotated = imagerotate($image, 180, 0);
+                break;
+            case 4:
+                imageflip($image, IMG_FLIP_VERTICAL);
+                return $image;
+            case 5:
+                imageflip($image, IMG_FLIP_HORIZONTAL);
+                $rotated = imagerotate($image, -90, 0);
+                break;
+            case 6:
+                $rotated = imagerotate($image, -90, 0);
+                break;
+            case 7:
+                imageflip($image, IMG_FLIP_HORIZONTAL);
+                $rotated = imagerotate($image, 90, 0);
+                break;
+            case 8:
+                $rotated = imagerotate($image, 90, 0);
+                break;
+            default:
+                return $image;
+        }
+
+        if (!$rotated instanceof \GdImage) {
+            return $image;
+        }
+        imagedestroy($image);
+        return $rotated;
     }
 
     private static function resizeToMaxSide(\GdImage $image, int $maxSide): \GdImage|false

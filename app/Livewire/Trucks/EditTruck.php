@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Truck;
 use App\Models\Company;
+use App\Helpers\ImageCompress;
 use Illuminate\Validation\Rule;
 
 class EditTruck extends Component
@@ -95,9 +96,9 @@ class EditTruck extends Component
 
         $this->dispatch('scroll-top');
 
-        // фото: новое или оставляем старое
+        // фото: новое (сжатие + коррекция ориентации) или оставляем старое
         if ($this->tech_passport_photo) {
-            $path = $this->tech_passport_photo->store('trucks/tech_passports', 'public');
+            $path = ImageCompress::storeUpload($this->tech_passport_photo, 'trucks/tech_passports', 'public') ?? $this->tech_passport_photo->store('trucks/tech_passports', 'public');
             $validated['tech_passport_photo'] = $path;
         } else {
             $validated['tech_passport_photo'] = $this->existing_photo;

@@ -6,6 +6,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Driver;
 use App\Enums\DriverStatus;
+use App\Helpers\ImageCompress;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -200,15 +201,15 @@ private function generateUniquePin(): string
                 'user_id'             => $user->id,
             ]);
 
-            // 4) Фото (после create — ок)
+            // 4) Фото (сжатие + коррекция ориентации по EXIF)
             if ($this->photo) {
-                $driver->photo = $this->photo->store('drivers/photos', 'public');
+                $driver->photo = ImageCompress::storeUpload($this->photo, 'drivers/photos', 'public') ?? $this->photo->store('drivers/photos', 'public');
             }
             if ($this->license_photo) {
-                $driver->license_photo = $this->license_photo->store('drivers/licenses', 'public');
+                $driver->license_photo = ImageCompress::storeUpload($this->license_photo, 'drivers/licenses', 'public') ?? $this->license_photo->store('drivers/licenses', 'public');
             }
             if ($this->medical_certificate_photo) {
-                $driver->medical_certificate_photo = $this->medical_certificate_photo->store('drivers/medical', 'public');
+                $driver->medical_certificate_photo = ImageCompress::storeUpload($this->medical_certificate_photo, 'drivers/medical', 'public') ?? $this->medical_certificate_photo->store('drivers/medical', 'public');
             }
             $driver->save();
         });

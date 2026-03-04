@@ -5,6 +5,7 @@ namespace App\Livewire\Trailers;
 use Livewire\Component;
 use App\Models\Trailer;
 use App\Models\Company;
+use App\Helpers\ImageCompress;
 use Livewire\WithFileUploads;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -102,7 +103,7 @@ class EditTrailer extends Component
         $this->validate();
 
         $photoPath = $this->tech_passport_photo
-            ? $this->tech_passport_photo->store('trailers', 'public')
+            ? (ImageCompress::storeUpload($this->tech_passport_photo, 'trailers', 'public') ?? $this->tech_passport_photo->store('trailers', 'public'))
             : $this->current_photo;
 
         $this->trailer->update([
