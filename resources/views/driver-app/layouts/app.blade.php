@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() ?? 'lv' }}" class="h-full">
+<html lang="{{ app()->getLocale() ?? 'lv' }}" class="h-full driver-app-root">
 <head>
     <meta charset="utf-8">
 
@@ -25,7 +25,7 @@
     @livewireStyles
 </head>
 
-<body class="bg-gray-100 min-h-screen min-h-[100dvh] flex flex-col">
+<body class="driver-app bg-gray-100 min-h-screen min-h-[100dvh] flex flex-col">
 
     <main class="flex-1 flex flex-col min-h-0 pb-20 px-3">
         <div class="mx-auto w-full max-w-[520px] flex-1 flex flex-col min-h-0">

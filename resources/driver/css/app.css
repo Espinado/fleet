@@ -89,3 +89,121 @@ body {
     html { font-size: 18px; }
   }
 }
+
+/* ========================== */
+/* Mobile: крупнее всё (кнопки, шрифты) — только для водителей */
+/* Breakpoint 820px = sm в tailwind.driver.config.js */
+/* ========================== */
+@media (max-width: 819px) {
+  .driver-app {
+    --driver-touch-min: 48px;
+    --driver-text-base: 1.125rem;
+    --driver-btn-py: 1rem;
+    --driver-btn-px: 1.25rem;
+  }
+
+  html.driver-app-root {
+    font-size: 18px;
+  }
+
+  /* Крупнее базовые кнопки и инпуты */
+  .driver-app .btn-primary {
+    padding: var(--driver-btn-py) var(--driver-btn-px);
+    font-size: var(--driver-text-base);
+    min-height: var(--driver-touch-min);
+  }
+
+  .driver-app .driver-input {
+    padding: 1rem;
+    font-size: var(--driver-text-base);
+    min-height: var(--driver-touch-min);
+  }
+
+  .driver-app .driver-nav-link {
+    font-size: 1rem;
+  }
+
+  /* Все кнопки в приложении водителя — крупнее и удобнее для нажатия */
+  .driver-app button:not([class*="text-"]),
+  .driver-app [type="submit"]:not([class*="text-"]),
+  .driver-app [role="button"]:not([class*="text-"]) {
+    min-height: var(--driver-touch-min);
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: var(--driver-text-base);
+  }
+
+  .driver-app button.text-xs,
+  .driver-app [type="submit"].text-xs,
+  .driver-app a.text-xs.button-like {
+    font-size: 0.95rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  /* Инпуты */
+  .driver-app input[type="text"],
+  .driver-app input[type="number"],
+  .driver-app input[type="email"],
+  .driver-app input[type="tel"],
+  .driver-app input[type="password"] {
+    padding: 0.875rem 1rem;
+    font-size: var(--driver-text-base);
+    min-height: var(--driver-touch-min);
+  }
+
+  /* Крупнее мелкий текст */
+  .driver-app .text-xs {
+    font-size: 0.9375rem; /* 15px при 18px base */
+  }
+
+  .driver-app .text-sm {
+    font-size: 1.0625rem; /* ~17px */
+  }
+
+  .driver-app .text-lg {
+    font-size: 1.25rem;
+  }
+
+  .driver-app .text-xl {
+    font-size: 1.5rem;
+  }
+
+  .driver-app .text-2xl {
+    font-size: 1.75rem;
+  }
+
+  /* Заголовки и карточки */
+  .driver-app h1, .driver-app .text-xl.font-bold {
+    font-size: 1.5rem;
+  }
+
+  .driver-app h2, .driver-app .text-lg.font-bold,
+  .driver-app .text-lg.font-semibold {
+    font-size: 1.25rem;
+  }
+
+  /* Шапка: кнопка «Назад» — крупнее для нажатия */
+  .driver-app .sticky.top-0 button.w-9 {
+    width: 2.75rem;
+    height: 2.75rem;
+    min-width: var(--driver-touch-min);
+    min-height: var(--driver-touch-min);
+  }
+
+  /* Нижняя навигация — крупнее иконки и подписи */
+  .driver-app .fixed.bottom-0 .flex.justify-around a,
+  .driver-app .fixed.bottom-0 .flex.justify-around button {
+    font-size: 1rem;
+    padding: 0.5rem 0.25rem;
+  }
+
+  .driver-app .fixed.bottom-0 .text-2xl {
+    font-size: 2rem;
+  }
+
+  /* Тосты */
+  .driver-app #driver-toast-root [role="alert"] {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+}
