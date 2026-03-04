@@ -140,7 +140,7 @@
                         class="{{ $navBase }} {{ $navIdle }} w-full text-left flex items-center gap-2">
                     🔔 Включить уведомления
                 </button>
-                <p id="push-status" class="text-xs text-gray-500 mt-1 px-3 hidden"></p>
+                <p id="push-status" class="text-xs text-gray-500 mt-1 px-3 hidden" role="status" aria-live="polite"></p>
             </div>
             @endif
         </nav>
@@ -302,23 +302,43 @@
                 .catch(function (e) { console.warn("Push SW error:", e); });
         }
     </script>
-    {{-- Кнопка «Включить уведомления» --}}
+    {{-- Кнопка «Включить уведомления» — делегирование, чтобы работало после навигации Livewire --}}
     @if(config('webpush.vapid.public_key'))
     <script>
-        document.getElementById('btn-enable-push') && document.getElementById('btn-enable-push').addEventListener('click', function () {
-            var btn = this;
-            if (!window.subscribeForPush) return;
-            var origText = btn.textContent;
-            btn.disabled = true;
-            window.fleetPushStatus = function (s) { btn.textContent = s || origText; };
-            window.subscribeForPush().then(function (ok) {
-                btn.disabled = false;
-                btn.textContent = ok ? '🔔 Уведомления включены' : '🔔 Включить уведомления';
-            }).catch(function () {
-                btn.disabled = false;
-                btn.textContent = '🔔 Включить уведомления';
+        (function() {
+            function runSubscribe(btn) {
+                if (!btn || !window.subscribeForPush) {
+                    if (btn) btn.textContent = '🔔 Включить уведомления';
+                    var statusEl = document.getElementById('push-status');
+                    if (statusEl) { statusEl.textContent = 'Ошибка: скрипт не загружен. Обновите страницу (F5).'; statusEl.classList.remove('hidden'); }
+                    return;
+                }
+                var origText = btn.textContent;
+                btn.disabled = true;
+                btn.textContent = 'Проверка…';
+                var statusEl = document.getElementById('push-status');
+                if (statusEl) { statusEl.textContent = ''; statusEl.classList.remove('hidden'); }
+                window.fleetPushStatus = function (s) { btn.textContent = s || origText; if (statusEl) statusEl.textContent = s || ''; };
+                window.fleetPushMessage = window.fleetPushMessage || function (s) { if (statusEl) { statusEl.textContent = s; statusEl.classList.remove('hidden'); } };
+                window.subscribeForPush().then(function (ok) {
+                    btn.disabled = false;
+                    btn.textContent = ok ? '🔔 Уведомления включены' : origText;
+                    if (statusEl) statusEl.textContent = ok ? 'Готово.' : statusEl.textContent;
+                }).catch(function (err) {
+                    btn.disabled = false;
+                    btn.textContent = origText;
+                    if (statusEl) statusEl.textContent = 'Ошибка: ' + (err && err.message ? err.message : String(err));
+                    console.error('Push subscribe error', err);
+                });
+            }
+            document.body.addEventListener('click', function (e) {
+                var btn = e.target && (e.target.id === 'btn-enable-push' ? e.target : e.target.closest && e.target.closest('#btn-enable-push'));
+                if (btn) {
+                    e.preventDefault();
+                    runSubscribe(btn);
+                }
             });
-        });
+        })();
     </script>
     @endif
 
