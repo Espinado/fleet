@@ -20,6 +20,8 @@ class TripStep extends Model
         'country_id',
         'city_id',
         'address',
+        'contact_phone_1',
+        'contact_phone_2',
         'date',
         'time',        // строка, удобнее в формах
         'order',

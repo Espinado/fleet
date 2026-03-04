@@ -501,6 +501,8 @@ class EditTrip extends Component
                 'country_id' => $s->country_id,
                 'city_id'    => $s->city_id,
                 'address'    => $s->address,
+                'contact_phone_1' => $s->contact_phone_1,
+                'contact_phone_2' => $s->contact_phone_2,
                 'date'       => $s->date ? $s->date->format('Y-m-d') : null,
                 'time'       => $s->time !== null && $s->time !== '' ? (string) $s->time : null,
                 'order'      => $s->order,
@@ -761,6 +763,8 @@ class EditTrip extends Component
             }
             $this->steps[$si]['time'] = isset($step['time']) ? trim((string) $step['time']) : null;
             $this->steps[$si]['address'] = isset($step['address']) ? trim((string) $step['address']) : '';
+            $this->steps[$si]['contact_phone_1'] = isset($step['contact_phone_1']) ? trim((string) $step['contact_phone_1']) : null;
+            $this->steps[$si]['contact_phone_2'] = isset($step['contact_phone_2']) ? trim((string) $step['contact_phone_2']) : null;
             $cid = $step['country_id'] ?? null;
             $this->steps[$si]['country_id'] = ($cid !== null && $cid !== '') ? (int) $cid : null;
             $cityId = $step['city_id'] ?? null;
@@ -1051,6 +1055,8 @@ class EditTrip extends Component
             'steps.*.country_id' => 'required|integer',
             'steps.*.city_id'    => 'required|integer',
             'steps.*.address'    => 'required|string',
+            'steps.*.contact_phone_1' => 'nullable|string|max:50',
+            'steps.*.contact_phone_2' => 'nullable|string|max:50',
             'steps.*.date'       => 'required|date',
             'steps.*.time'       => 'nullable',
             'steps.*.order'      => 'required|integer',
@@ -1277,11 +1283,13 @@ class EditTrip extends Component
             foreach ($this->steps as $i => $s) {
                 $dbStep = TripStep::create([
                     'trip_id'    => $this->trip->id,
-                    'order'      => (int) ($s['order'] ?? ($i + 1)),
+                    'order'      => $i + 1,
                     'type'       => $s['type'],
                     'country_id' => $s['country_id'],
                     'city_id'    => $s['city_id'],
                     'address'    => $s['address'],
+                    'contact_phone_1' => $s['contact_phone_1'] ?? null,
+                    'contact_phone_2' => $s['contact_phone_2'] ?? null,
                     'date'       => $s['date'],
                     'time'       => $s['time'] ?? null,
                     'notes'      => $s['notes'] ?? null,

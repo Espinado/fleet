@@ -157,6 +157,22 @@
                 <div class="bg-gray-50 rounded p-3 text-sm space-y-1">
                     <p><strong>📍 {{ __('app.driver.trip_details.location') }}:</strong> {{ $city }}</p>
                     <p><strong>📍 {{ __('app.driver.trip_details.address') }}:</strong> {{ $step->address }}</p>
+                    @php
+                        $phone1 = trim((string) ($step->contact_phone_1 ?? ''));
+                        $phone2 = trim((string) ($step->contact_phone_2 ?? ''));
+                        $hasPhones = $phone1 !== '' || $phone2 !== '';
+                    @endphp
+                    @if($hasPhones)
+                        <p class="pt-1">
+                            @if($phone1 !== '')
+                                <a href="tel:{{ preg_replace('/\s+/', '', $phone1) }}" class="text-blue-600 hover:underline font-medium">📞 {{ $phone1 }}</a>
+                            @endif
+                            @if($phone2 !== '')
+                                @if($phone1 !== '') <span class="text-gray-400 mx-1">|</span> @endif
+                                <a href="tel:{{ preg_replace('/\s+/', '', $phone2) }}" class="text-blue-600 hover:underline font-medium">📞 {{ $phone2 }}</a>
+                            @endif
+                        </p>
+                    @endif
                     <p><strong>📅 {{ __('app.driver.trip_details.date') }}:</strong> {{ optional($step->date)->format('d.m.Y') }}</p>
                 </div>
 

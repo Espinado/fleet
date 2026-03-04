@@ -558,6 +558,10 @@ return [
     'trip.route.cannot_move'      => 'Šo soli nevar pārvietot',
     'trip.route.order_saved'      => 'Jaunā secība saglabāta',
 
+    // Trip step (create/edit) — contact phones
+    'trip.step.contact_phone_1' => 'Kontakttālrunis 1',
+    'trip.step.contact_phone_2' => 'Kontakttālrunis 2',
+
     // Trip edit page
     'trip.edit.title'             => 'Labot reisu',
     'trip.edit.header'            => 'Reisa labošana (vairākas kravas)',

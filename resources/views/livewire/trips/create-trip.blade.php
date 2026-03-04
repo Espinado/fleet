@@ -588,7 +588,7 @@
                     </div>
 
                     <div class="px-4 py-4 space-y-3">
-                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Тип {!! $reqBadge() !!}
@@ -609,14 +609,6 @@
                                     <input type="time" wire:model.blur="steps.{{ $index }}.time" class="{{ $baseInput }}">
                                 </div>
                                 @error("steps.$index.date") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                                    Order {!! $reqBadge() !!}
-                                </label>
-                                <input type="number" wire:model.blur="steps.{{ $index }}.order" class="{{ $baseInput }}">
-                                @error("steps.$index.order") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
                         </div>
 
@@ -653,6 +645,21 @@
                                 </label>
                                 <input type="text" wire:model.blur="steps.{{ $index }}.address" class="{{ $baseInput }}">
                                 @error("steps.$index.address") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    {{ __('app.trip.step.contact_phone_1') }}
+                                </label>
+                                <input type="tel" wire:model.blur="steps.{{ $index }}.contact_phone_1" class="{{ $baseInput }}" placeholder="+371 12345678">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                    {{ __('app.trip.step.contact_phone_2') }}
+                                </label>
+                                <input type="tel" wire:model.blur="steps.{{ $index }}.contact_phone_2" class="{{ $baseInput }}" placeholder="+371 12345678">
                             </div>
                         </div>
 

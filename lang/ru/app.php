@@ -42,6 +42,10 @@ return [
     'trip.show.toast_error'   => 'Ошибка!',
     'trip.show.step_column'   => 'Шаг',
 
+    // Trip step (create/edit) — contact phones
+    'trip.step.contact_phone_1' => 'Контактный телефон 1',
+    'trip.step.contact_phone_2' => 'Контактный телефон 2',
+
     // Driver app: offline (PWA)
     'driver.offline.title'   => 'Нет соединения',
     'driver.offline.message' => 'Вы в офлайне. Проверьте интернет и попробуйте снова.',
