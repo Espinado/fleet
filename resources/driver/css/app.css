@@ -23,6 +23,13 @@
     --shadow-md: 0 2px 6px rgba(0,0,0,0.12);
 }
 
+/* Портрет: страница по высоте контента, без пустого блока внизу */
+.driver-app-root,
+.driver-app-root body {
+    min-height: auto !important;
+    height: auto !important;
+}
+
 /* Body style */
 body {
     background-color: var(--driver-bg);

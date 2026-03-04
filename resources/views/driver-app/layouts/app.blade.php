@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() ?? 'lv' }}" class="h-full driver-app-root">
+<html lang="{{ app()->getLocale() ?? 'lv' }}" class="driver-app-root">
 <head>
     <meta charset="utf-8">
 
