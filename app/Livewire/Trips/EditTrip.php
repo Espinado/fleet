@@ -1426,7 +1426,7 @@ class EditTrip extends Component
                     'price_with_tax'   => $tax['price_with_tax'],
 
                     'currency'      => 'EUR',
-                    'payment_terms' => $cargo->payment_terms,
+                    'payment_terms' => $cargoData['payment_terms'] ?? null,
                     'payment_days'  => in_array((int)($cargoData['payment_days'] ?? 30), [7, 14, 21, 30], true) ? (int)$cargoData['payment_days'] : 30,
                     'payer_type_id' => $cargoData['payer_type_id'] ?? null,
 
