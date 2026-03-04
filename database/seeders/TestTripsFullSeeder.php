@@ -53,58 +53,36 @@ class TestTripsFullSeeder extends Seeder
         }
 
         $companies = Company::where('is_active', 1)->orderBy('id')->get();
-        $ronaTrans = Company::where('name', 'like', '%Rona%')->first() ?? $companies->first();
-        $thirdPartyCompanies = $this->ensureThirdPartyCompanies(3);
-
-        $drivers = Driver::where('is_active', 1)->get();
-        $created = 0;
-
-        foreach ($drivers as $driver) {
-            $truck = Truck::where('company_id', $driver->company_id)->where('is_active', 1)->first();
-            $trailer = Trailer::where('company_id', $driver->company_id)->where('is_active', 1)->first();
-            if (!$truck || !$trailer) {
-                continue;
-            }
-
-            $expeditor = Company::find($driver->company_id) ?? $companies->first();
-            if (!$expeditor) {
-                continue;
-            }
-
-            $this->createTrip(
-                $driver,
-                $truck,
-                $trailer,
-                $expeditor,
-                $expeditor,
-                $clients,
-                $countryIdsWithCities,
-                false
-            );
-            $created++;
+        $driver = Driver::where('is_active', 1)->find(18);
+        if (!$driver) {
+            $this->command->warn('Водитель с id 18 не найден или не активен.');
+            return;
         }
 
-        for ($i = 0; $i < 3; $i++) {
-            $driver = $drivers->first();
-            $truck = Truck::where('company_id', $driver->company_id)->where('is_active', 1)->first();
-            $trailer = Trailer::where('company_id', $driver->company_id)->where('is_active', 1)->first();
-            if (!$truck || !$trailer || !isset($thirdPartyCompanies[$i])) {
-                break;
-            }
-            $expeditor = $ronaTrans;
-            $carrierThirdParty = $thirdPartyCompanies[$i];
-            $this->createTrip(
-                $driver,
-                $truck,
-                $trailer,
-                $expeditor,
-                $carrierThirdParty,
-                $clients,
-                $countryIdsWithCities,
-                true
-            );
-            $created++;
+        $truck = Truck::where('company_id', $driver->company_id)->where('is_active', 1)->first();
+        $trailer = Trailer::where('company_id', $driver->company_id)->where('is_active', 1)->first();
+        if (!$truck || !$trailer) {
+            $this->command->warn('У водителя 18 нет активного тягача или прицепа.');
+            return;
         }
+
+        $expeditor = Company::find($driver->company_id) ?? $companies->first();
+        if (!$expeditor) {
+            $this->command->warn('Компания экспедитора не найдена.');
+            return;
+        }
+
+        $this->createTrip(
+            $driver,
+            $truck,
+            $trailer,
+            $expeditor,
+            $expeditor,
+            $clients,
+            $countryIdsWithCities,
+            false
+        );
+        $created = 1;
 
         $this->command->info("TestTripsFullSeeder: создано рейсов: {$created}");
     }
