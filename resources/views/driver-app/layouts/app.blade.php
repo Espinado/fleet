@@ -25,10 +25,10 @@
     @livewireStyles
 </head>
 
-<body class="driver-app bg-gray-100 min-h-screen min-h-[100dvh] flex flex-col">
+<body class="driver-app bg-gray-100 flex flex-col min-w-0">
 
-    <main class="flex-1 flex flex-col min-h-0 pb-20 px-3 min-w-0 overflow-x-hidden">
-        <div class="mx-auto w-full max-w-[520px] flex-1 flex flex-col min-h-0 min-w-0">
+    <main class="flex flex-col min-h-0 pb-20 px-3 min-w-0 overflow-x-hidden">
+        <div class="mx-auto w-full max-w-[520px] flex flex-col min-h-0 min-w-0">
             {{ $slot }}
         </div>
     </main>

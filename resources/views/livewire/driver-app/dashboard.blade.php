@@ -1,6 +1,6 @@
 {{-- resources/views/livewire/driver-app/dashboard.blade.php --}}
-{{-- flex-1 min-h-0 min-w-0: портрет на узком экране — контент не вылезает по горизонтали --}}
-<div class="flex flex-col min-h-0 min-w-0 flex-1 gap-6">
+{{-- min-w-0: портрет — контент по высоте, без пустого блока внизу --}}
+<div class="flex flex-col min-h-0 min-w-0 gap-6">
 
     {{-- Sveiciens --}}
     <div class="text-2xl font-bold">
@@ -190,9 +190,6 @@
             {{ __('app.driver.dashboard.no_active') }}
         </div>
     @endif
-
-    {{-- Гибкий блок: забирает свободное место на больших экранах, убирает «пустую белую» зону внизу --}}
-    <div class="flex-1 min-h-[2rem]" aria-hidden="true"></div>
 
     {{-- ✅ Manual odometer modal (Dashboard only) --}}
     @if(!empty($showManualOdo) && $showManualOdo)
