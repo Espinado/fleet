@@ -302,33 +302,39 @@
                 .catch(function (e) { console.warn("Push SW error:", e); });
         }
     </script>
-    {{-- Кнопка «Включить уведомления» — делегирование, чтобы работало после навигации Livewire --}}
+    {{-- Кнопка «Включить уведомления» — делегирование + обновление актуальных элементов из DOM --}}
     @if(config('webpush.vapid.public_key'))
     <script>
         (function() {
+            function updateUi(btnText, statusText) {
+                var btn = document.getElementById('btn-enable-push');
+                var statusEl = document.getElementById('push-status');
+                if (btn) { btn.textContent = btnText; btn.disabled = false; }
+                if (statusEl) { statusEl.textContent = statusText || ''; statusEl.classList.remove('hidden'); }
+            }
             function runSubscribe(btn) {
                 if (!btn || !window.subscribeForPush) {
-                    if (btn) btn.textContent = '🔔 Включить уведомления';
-                    var statusEl = document.getElementById('push-status');
-                    if (statusEl) { statusEl.textContent = 'Ошибка: скрипт не загружен. Обновите страницу (F5).'; statusEl.classList.remove('hidden'); }
+                    updateUi('🔔 Включить уведомления', 'Ошибка: скрипт не загружен. Обновите страницу (F5).');
                     return;
                 }
                 var origText = btn.textContent;
                 btn.disabled = true;
-                btn.textContent = 'Проверка…';
-                var statusEl = document.getElementById('push-status');
-                if (statusEl) { statusEl.textContent = ''; statusEl.classList.remove('hidden'); }
-                window.fleetPushStatus = function (s) { btn.textContent = s || origText; if (statusEl) statusEl.textContent = s || ''; };
-                window.fleetPushMessage = window.fleetPushMessage || function (s) { if (statusEl) { statusEl.textContent = s; statusEl.classList.remove('hidden'); } };
+                updateUi('Проверка…', '');
+                window.fleetPushStatus = function (s) { updateUi(s || origText, s || ''); };
+                window.fleetPushMessage = function (s) { updateUi(document.getElementById('btn-enable-push') ? document.getElementById('btn-enable-push').textContent : origText, s || ''); };
+                window.fleetPushSuccess = function () { updateUi('🔔 Уведомления включены', 'Готово.'); };
                 window.subscribeForPush().then(function (ok) {
-                    btn.disabled = false;
-                    btn.textContent = ok ? '🔔 Уведомления включены' : origText;
-                    if (statusEl) statusEl.textContent = ok ? 'Готово.' : statusEl.textContent;
+                    if (ok) {
+                        updateUi('🔔 Уведомления включены', 'Готово.');
+                    } else {
+                        var statusEl = document.getElementById('push-status');
+                        var msg = (statusEl && statusEl.textContent) ? statusEl.textContent : 'Не удалось. Разрешите уведомления: замок в адресной строке → Настройки сайта → Уведомления → Разрешить.';
+                        updateUi('🔔 Включить уведомления', msg);
+                    }
                 }).catch(function (err) {
-                    btn.disabled = false;
-                    btn.textContent = origText;
-                    if (statusEl) statusEl.textContent = 'Ошибка: ' + (err && err.message ? err.message : String(err));
+                    var errMsg = (err && err.message) ? err.message : String(err);
                     console.error('Push subscribe error', err);
+                    updateUi('🔔 Включить уведомления', 'Ошибка: ' + errMsg);
                 });
             }
             document.body.addEventListener('click', function (e) {

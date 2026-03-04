@@ -77,6 +77,7 @@ async function subscribeForPush() {
             return false;
         }
         msg("Уведомления включены.");
+        if (typeof window.fleetPushSuccess === "function") window.fleetPushSuccess();
         return true;
     } catch (e) {
         msg("Ошибка: " + (e.message || String(e)));
