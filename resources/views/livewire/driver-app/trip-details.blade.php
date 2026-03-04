@@ -1,17 +1,17 @@
 {{-- resources/views/livewire/driver-app/trip-details.blade.php --}}
-<div class="flex flex-col min-h-screen bg-gray-100 px-4 pt-4 pb-24">
+<div class="flex flex-col min-h-screen bg-gray-100 px-4 pt-4 pb-24 min-w-0">
 
     {{-- Errors show via global driver toast (layout): "Ошибка! Свяжитесь с администратором" --}}
 
     {{-- ============================
          TRIP SUMMARY
     ============================ --}}
-    <div class="bg-white shadow rounded-xl p-4 space-y-2">
-        <h2 class="text-lg font-semibold">
+    <div class="bg-white shadow rounded-xl p-4 space-y-2 min-w-0">
+        <h2 class="text-lg font-semibold break-words">
             🚛 {{ __('app.driver.trip_details.trip_title', ['id' => $trip->id]) }}
         </h2>
 
-        <p class="text-sm">
+        <p class="text-sm break-words">
             <strong>{{ __('app.driver.trip_details.truck') }}:</strong> {{ $trip->truck?->plate ?? '—' }}
         </p>
 
@@ -22,7 +22,7 @@
             )->implode(' → ');
         @endphp
 
-        <p class="text-xs bg-blue-50 text-blue-700 rounded p-2">
+        <p class="text-xs bg-blue-50 text-blue-700 rounded p-2 break-words break-all">
             <strong>{{ __('app.driver.trip_details.route') }}:</strong> {!! $routeLine !!}
         </p>
 
@@ -38,10 +38,10 @@
          GARAGE → GARAGE (INFO ONLY)
          (start/end handled on Dashboard)
     ============================ --}}
-    <div wire:key="garage-{{ $trip->id }}" class="bg-white shadow rounded-xl p-4 space-y-3 mt-3">
+    <div wire:key="garage-{{ $trip->id }}" class="bg-white shadow rounded-xl p-4 space-y-3 mt-3 min-w-0">
 
-        <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="text-sm font-semibold min-w-0 flex-1">
                 🚪 {{ __('app.driver.trip_details.garage_to_garage') }}
             </div>
 
@@ -50,12 +50,12 @@
                 $can = (bool)($trip->truck?->can_available);
             @endphp
 
-            <span class="text-[11px] px-2 py-1 rounded-full {{ $can ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
+            <span class="text-[11px] px-2 py-1 rounded-full shrink-0 {{ $can ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800' }}">
                 {{ $can ? __('app.driver.trip_details.can_auto_unused') : __('app.driver.trip_details.manual_odo') }}
             </span>
         </div>
 
-            <div class="text-xs text-gray-600 space-y-1">
+            <div class="text-xs text-gray-600 space-y-1 min-w-0 break-words">
             <div><strong>{{ __('app.driver.trip_details.start') }}:</strong> {{ $trip->started_at?->format('d.m.Y H:i') ?? '—' }}</div>
             <div><strong>{{ __('app.driver.trip_details.end') }}:</strong> {{ $trip->ended_at?->format('d.m.Y H:i') ?? '—' }}</div>
 
@@ -78,7 +78,7 @@
                 @endif
             </div>
 
-            <div class="text-[11px] text-gray-500 pt-1">
+            <div class="text-[11px] text-gray-500 pt-1 break-words">
                 ℹ️ {{ __('app.driver.trip_details.garage_hint') }}
             </div>
         </div>
@@ -87,14 +87,14 @@
             @php
                 $driverOnRoad = $trip->started_at && !$trip->ended_at;
             @endphp
-            <div class="text-xs text-gray-500 flex items-center justify-between">
-                <span>
+            <div class="text-xs text-gray-500 flex flex-wrap items-center justify-between gap-1 min-w-0">
+                <span class="min-w-0 break-words">
                     {{ __('app.driver.trip_details.shift') }}:
                     <span class="font-medium">
                         {{ $driverOnRoad ? __('app.driver.trip_details.shift_open') : __('app.driver.trip_details.shift_closed') }}
                     </span>
                 </span>
-                <span>
+                <span class="shrink-0">
                     {{ $driverOnRoad ? '🚚 ' . __('app.driver.trip_details.state_road') : '🏠 ' . __('app.driver.trip_details.state_garage') }}
                 </span>
             </div>
@@ -119,22 +119,22 @@
         <div
             wire:key="step-{{ $step->id }}"
             x-data="{ open: false }"
-            class="bg-white shadow rounded-xl mb-4 overflow-hidden border {{ $isErrorStep ? 'border-red-500 ring-2 ring-red-200' : '' }}"
+            class="bg-white shadow rounded-xl mb-4 overflow-hidden border min-w-0 {{ $isErrorStep ? 'border-red-500 ring-2 ring-red-200' : '' }}"
         >
 
             {{-- Header --}}
-            <button @click="open = !open" class="w-full px-4 py-3 flex items-center justify-between bg-gray-50">
-                <div class="flex flex-col text-left">
-                    <span class="text-[15px] font-semibold">
+            <button @click="open = !open" class="w-full px-4 py-3 flex items-center justify-between gap-2 bg-gray-50 min-w-0">
+                <div class="flex flex-col text-left min-w-0 flex-1">
+                    <span class="text-[15px] font-semibold break-words">
                         {{ $label }}
                         @if($isErrorStep)
                             <span class="ml-2 text-[11px] font-semibold text-red-600">⚠️ {{ __('app.driver.trip_details.step_error') }}</span>
                         @endif
                     </span>
-                    <span class="text-xs text-gray-500">{{ $city }}</span>
+                    <span class="text-xs text-gray-500 break-words">{{ $city }}</span>
                 </div>
 
-                <div class="flex items-center">
+                <div class="flex items-center shrink-0">
                     <span @class([
                         'text-[11px] px-2 py-1 rounded-full mr-3',
                         'bg-gray-200 text-gray-700'      => $stepStatus === $TS::NOT_STARTED,

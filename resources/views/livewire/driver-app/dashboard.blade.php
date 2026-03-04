@@ -1,6 +1,6 @@
 {{-- resources/views/livewire/driver-app/dashboard.blade.php --}}
-{{-- flex-1 min-h-0: на больших экранах (Xiaomi 17 Pro и т.д.) контент заполняет высоту, внизу — гибкий блок вместо пустоты --}}
-<div class="flex flex-col min-h-0 flex-1 gap-6">
+{{-- flex-1 min-h-0 min-w-0: портрет на узком экране — контент не вылезает по горизонтали --}}
+<div class="flex flex-col min-h-0 min-w-0 flex-1 gap-6">
 
     {{-- Sveiciens --}}
     <div class="text-2xl font-bold">
@@ -8,8 +8,8 @@
     </div>
 
     {{-- Informācija par vadītāju --}}
-    <div class="bg-white p-4 rounded-xl shadow space-y-2">
-        <div class="flex items-center gap-4">
+    <div class="bg-white p-4 rounded-xl shadow space-y-2 min-w-0">
+        <div class="flex items-center gap-4 min-w-0">
 
             <div class="w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
                 @if($driver->photo)
@@ -21,12 +21,12 @@
                 @endif
             </div>
 
-            <div class="text-gray-700">
+            <div class="text-gray-700 min-w-0 flex-1 break-words">
                 <div class="font-semibold text-lg">
                     {{ $driver->first_name }} {{ $driver->last_name }}
                 </div>
-                <div class="text-sm">📞 {{ $driver->phone }}</div>
-                <div class="text-sm">✉️ {{ $driver->email }}</div>
+                <div class="text-sm break-all">📞 {{ $driver->phone }}</div>
+                <div class="text-sm break-all">✉️ {{ $driver->email }}</div>
             </div>
 
         </div>
@@ -36,40 +36,40 @@
     @php
         $fmtDate = fn($d) => $d ? \Carbon\Carbon::parse($d)->format('d-m-Y') : '—';
     @endphp
-    <div class="bg-white rounded-xl shadow overflow-hidden">
-        <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200">
-            <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
+    <div class="bg-white rounded-xl shadow overflow-hidden min-w-0">
+        <div class="bg-gradient-to-r from-slate-50 to-slate-100 px-4 py-3 border-b border-slate-200 min-w-0">
+            <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2 break-words">
                 <span class="text-xl">📄</span>
                 {{ __('app.driver.dashboard.documents') }}
             </h2>
         </div>
-        <div class="p-4 space-y-3">
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-50/80 border border-amber-100">
+        <div class="p-4 space-y-3 min-w-0">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-amber-50/80 border border-amber-100 min-w-0">
                 <span class="text-2xl shrink-0" aria-hidden="true">🪪</span>
-                <div class="min-w-0 flex-1">
-                    <div class="text-xs font-semibold text-amber-800/90 uppercase tracking-wide">
+                <div class="min-w-0 flex-1 overflow-hidden">
+                    <div class="text-xs font-semibold text-amber-800/90 uppercase tracking-wide break-words">
                         {{ __('app.driver.dashboard.license') }}
                     </div>
-                    <div class="text-sm font-medium text-slate-800 mt-0.5">{{ $driver->license_number ?? '—' }}</div>
-                    <div class="text-xs text-slate-600 mt-1">
+                    <div class="text-sm font-medium text-slate-800 mt-0.5 break-words">{{ $driver->license_number ?? '—' }}</div>
+                    <div class="text-xs text-slate-600 mt-1 break-words">
                         {{ __('app.driver.dashboard.license_to', ['date' => $fmtDate($driver->license_end)]) }}
                     </div>
                 </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-blue-50/80 border border-blue-100">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-blue-50/80 border border-blue-100 min-w-0">
                 <span class="text-2xl shrink-0" aria-hidden="true">📋</span>
-                <div class="min-w-0 flex-1">
-                    <div class="text-xs font-semibold text-blue-800/90 uppercase tracking-wide">Code95</div>
-                    <div class="text-xs text-slate-600 mt-1">{{ $fmtDate($driver->code95_end) }}</div>
+                <div class="min-w-0 flex-1 overflow-hidden">
+                    <div class="text-xs font-semibold text-blue-800/90 uppercase tracking-wide break-words">Code95</div>
+                    <div class="text-xs text-slate-600 mt-1 break-words">{{ $fmtDate($driver->code95_end) }}</div>
                 </div>
             </div>
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-emerald-50/80 border border-emerald-100">
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-emerald-50/80 border border-emerald-100 min-w-0">
                 <span class="text-2xl shrink-0" aria-hidden="true">🏥</span>
-                <div class="min-w-0 flex-1">
-                    <div class="text-xs font-semibold text-emerald-800/90 uppercase tracking-wide">
+                <div class="min-w-0 flex-1 overflow-hidden">
+                    <div class="text-xs font-semibold text-emerald-800/90 uppercase tracking-wide break-words">
                         {{ __('app.driver.dashboard.medical') }}
                     </div>
-                    <div class="text-xs text-slate-600 mt-1">{{ $fmtDate($driver->medical_expired) }}</div>
+                    <div class="text-xs text-slate-600 mt-1 break-words">{{ $fmtDate($driver->medical_expired) }}</div>
                 </div>
             </div>
         </div>
@@ -77,7 +77,7 @@
 
     {{-- Aktīvais reiss --}}
     @if($trip)
-        <div class="bg-white p-4 rounded-xl shadow space-y-3">
+        <div class="bg-white p-4 rounded-xl shadow space-y-3 min-w-0">
 
             <div class="flex items-start justify-between gap-3">
                 <h2 class="text-lg font-bold">
@@ -186,7 +186,7 @@
 
         </div>
     @else
-        <div class="bg-yellow-100 border border-yellow-300 rounded-xl p-4">
+        <div class="bg-yellow-100 border border-yellow-300 rounded-xl p-4 min-w-0 break-words">
             {{ __('app.driver.dashboard.no_active') }}
         </div>
     @endif
