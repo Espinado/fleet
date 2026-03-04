@@ -1,4 +1,4 @@
-<div class="bg-white p-6 rounded-xl w-full max-w-sm shadow text-center">
+<div class="bg-white p-6 rounded-xl w-full max-w-full sm:max-w-sm shadow text-center">
 
     <h1 class="text-xl font-bold mb-4">{{ __('app.driver.login.title') }}</h1>
 

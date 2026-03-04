@@ -8,9 +8,9 @@
     <title>{{ $title ?? 'Driver Login' }}</title>
 </head>
 
-<body class="driver-app bg-gray-100 text-gray-900">
+<body class="driver-app bg-gray-100 text-gray-900 w-full max-w-full">
 
-    <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="min-h-screen flex items-center justify-center p-4 w-full max-w-full">
         {{ $slot }}
     </div>
 
