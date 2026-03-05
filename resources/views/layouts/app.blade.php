@@ -47,7 +47,7 @@
            class="w-64 bg-white shadow-md fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40">
         <div class="p-4 border-b flex justify-between items-center gap-2">
             <div class="flex items-center gap-2 min-w-0">
-                <img src="{{ asset('images/icons/fleet.png') }}" alt="" class="rounded-lg shrink-0 object-cover" style="width: {{ config('app.logo.sidebar_width') }}px; height: {{ config('app.logo.sidebar_height') }}px;">
+                <img src="{{ asset('images/icons/fleet.png') }}" alt="" class="rounded-lg shrink-0 object-cover w-8 h-8 md:w-10 md:h-10">
                 <span class="text-2xl font-bold text-gray-800 truncate">{{ config('app.name', 'Fleet Manager') }}</span>
             </div>
             <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl shrink-0">✖</button>
@@ -161,8 +161,8 @@
     <div class="flex-1 flex flex-col">
 
         {{-- ===== Header ===== --}}
-        <header class="h-16 bg-white shadow flex items-center justify-between px-6">
-            <button id="openSidebar" class="md:hidden text-gray-600 hover:text-gray-900 text-2xl focus:outline-none">
+        <header class="h-16 bg-white shadow flex items-center justify-between px-6 relative z-40 md:z-auto">
+            <button id="openSidebar" type="button" class="md:hidden text-gray-600 hover:text-gray-900 text-2xl focus:outline-none shrink-0">
                 ☰
             </button>
 
