@@ -21,7 +21,7 @@ class TestPushNotification extends Notification
         return (new WebPushMessage())
             ->title('🔔 Test Push from Laravel')
             ->body('If you see this on your phone — PUSH works!')
-            ->icon('/images/icons/icon-192x192.png')
-            ->badge('/images/icons/icon-72x72.png');
+            ->icon(asset('images/icons/icon-192.png'))
+            ->badge(asset('images/icons/icon-72x72.png'));
     }
 }

@@ -20,13 +20,22 @@ new #[Layout('layouts.guest')] class extends Component
 };
 ?>
 
-<div class="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-gray-100 to-gray-200 p-4">
+<div class="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-gray-100 to-gray-200 p-4 relative">
+
+    {{-- Спиннер при входе (как при загрузке фото) --}}
+    <div wire:loading.flex
+         wire:target="login"
+         class="fixed inset-0 z-[200] flex items-center justify-center bg-white/90 backdrop-blur-sm"
+         aria-live="polite"
+         aria-label="{{ __('app.please_wait') }}">
+        @include('components.upload-loading-spinner-box')
+    </div>
 
     <div class="w-full max-w-md space-y-8">
         {{-- Logotips --}}
         <div class="flex flex-col items-center animate-fade-in">
-            <img src="{{ asset('images/icons/fleet.png') }}" alt="Fleet Manager" class="w-16 h-16 rounded-2xl shadow-md mb-3">
-            <h1 class="text-2xl font-semibold text-gray-800 tracking-tight">Fleet Manager</h1>
+            <img src="{{ asset('images/icons/fleet.png') }}" alt="{{ config('app.name', 'Fleet Manager') }}" class="rounded-2xl shadow-md mb-4 object-cover" style="width: {{ config('app.logo.width') }}px; height: {{ config('app.logo.height') }}px;">
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight">{{ config('app.name', 'Fleet Manager') }}</h1>
             <!-- <p class="text-gray-500 text-sm">Pierakstieties, lai turpinātu</p> -->
         </div>
 
@@ -34,7 +43,7 @@ new #[Layout('layouts.guest')] class extends Component
         <div class="bg-white rounded-2xl shadow-lg p-6 space-y-6 animate-slide-up">
             <x-auth-session-status class="mb-4" :status="session('status')" />
 
-            <form wire:submit="login" class="space-y-4">
+            <form wire:submit.prevent="login" action="{{ route('login') }}" class="space-y-4">
                 {{-- E-pasts --}}
                 <div>
                     <x-input-label for="email" :value="__('Email')" />
@@ -71,17 +80,21 @@ new #[Layout('layouts.guest')] class extends Component
                     <button
                         type="submit"
                         wire:loading.attr="disabled"
-                        class="relative inline-flex items-center justify-center px-6 py-2 text-white font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
+                        wire:target="login"
+                        class="relative inline-flex items-center justify-center px-6 py-2 text-white font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 transition disabled:opacity-70 disabled:cursor-not-allowed min-w-[180px]"
                     >
                         {{-- Spinner ielādes laikā --}}
-                        <svg wire:loading class="animate-spin h-5 w-5 mr-2 text-white absolute left-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg wire:loading wire:target="login" class="animate-spin h-5 w-5 mr-2 text-white absolute left-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                         </svg>
 
                         {{-- Teksts — mainās ielādes laikā --}}
-                        <span wire:loading.remove>{{ __('app.auth.login_button') }}</span>
-                        <span wire:loading>{{ __('app.auth.login_loading') }}</span>
+                        <span wire:loading.remove wire:target="login">{{ __('app.auth.login_button') }}</span>
+                        <span wire:loading wire:target="login" class="inline-flex items-center gap-2">
+                            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
+                            {{ __('app.auth.login_loading') }}
+                        </span>
                     </button>
                 </div>
             </form>
@@ -89,7 +102,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         {{-- Kājene --}}
         <p class="text-xs text-gray-500 text-center mt-6">
-            © {{ now()->year }} Fleet Manager 
+            © {{ now()->year }} {{ config('app.name', 'Fleet Manager') }} 
         </p>
     </div>
 

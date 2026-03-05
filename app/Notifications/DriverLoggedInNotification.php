@@ -33,8 +33,8 @@ class DriverLoggedInNotification extends Notification
         return (new WebPushMessage())
             ->title($title)
             ->body($body)
-            ->icon('/images/icons/icon-192.png')
-            ->badge('/images/icons/icon-72.png')
+            ->icon(asset('images/icons/icon-192.png'))
+            ->badge(asset('images/icons/icon-72.png'))
             ->data(['url' => $url])
             ->tag('driver-login-' . $this->driver->id);
     }

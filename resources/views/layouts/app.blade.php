@@ -30,6 +30,14 @@
 
 <body class="bg-gray-100 h-screen flex overflow-hidden relative">
 
+    {{-- Глобальный спиннер при переходах (до полной загрузки новой страницы) --}}
+    <div id="global-navigate-overlay" class="fixed inset-0 z-[250] flex items-center justify-center bg-white/90 backdrop-blur-sm hidden" aria-live="polite" aria-label="{{ __('app.please_wait') }}">
+        <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white shadow-xl border border-gray-200">
+            <svg class="animate-spin h-12 w-12 text-indigo-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <span class="font-semibold text-gray-800 text-lg">{{ __('app.please_wait') }}</span>
+        </div>
+    </div>
+
     {{-- ===== Мобильная подложка ===== --}}
     <div id="overlay"
          class="fixed inset-0 bg-black/50 z-30 hidden opacity-0 transition-opacity duration-300 md:hidden"></div>
@@ -37,9 +45,12 @@
     {{-- ===== Sidebar ===== --}}
     <aside id="sidebar"
            class="w-64 bg-white shadow-md fixed md:static inset-y-0 left-0 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-40">
-        <div class="p-4 text-xl font-bold border-b flex justify-between items-center">
-            🚚 Fleet Manager
-            <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl">✖</button>
+        <div class="p-4 border-b flex justify-between items-center gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+                <img src="{{ asset('images/icons/fleet.png') }}" alt="" class="rounded-lg shrink-0 object-cover" style="width: {{ config('app.logo.sidebar_width') }}px; height: {{ config('app.logo.sidebar_height') }}px;">
+                <span class="text-2xl font-bold text-gray-800 truncate">{{ config('app.name', 'Fleet Manager') }}</span>
+            </div>
+            <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl shrink-0">✖</button>
         </div>
 
         @php
@@ -58,12 +69,12 @@
         @endphp
 
         <nav class="p-4 space-y-2">
-            <a href="{{ route('dashboard') }}"
+            <a href="{{ route('dashboard') }}" wire:navigate
                @class([$navBase, request()->routeIs('dashboard') ? $navActive : $navIdle])>
                 📊 {{ __('app.nav.dashboard') }}
             </a>
 
-            <a href="{{ route('drivers.index') }}"
+            <a href="{{ route('drivers.index') }}" wire:navigate
                @class([$navBase, request()->routeIs('drivers.*') ? $navActive : $navIdle])>
                 👨‍✈️ {{ __('app.nav.drivers') }}
             </a>
@@ -81,12 +92,12 @@
 
     <div class="mt-1 ml-3 space-y-1">
 
-        <a href="{{ route('trucks.index') }}"
+        <a href="{{ route('trucks.index') }}" wire:navigate
            @class([$navBase, $trucksActive ? $navActive : $navIdle])>
             🚛 {{ __('app.nav.trucks') }}
         </a>
 
-        <a href="{{ route('trailers.index') }}"
+        <a href="{{ route('trailers.index') }}" wire:navigate
            @class([$navBase, $trailersActive ? $navActive : $navIdle])>
             🚚 {{ __('app.nav.trailers') }}
         </a>
@@ -94,12 +105,12 @@
     </div>
 </details>
 
-            <a href="{{ route('clients.index') }}"
+            <a href="{{ route('clients.index') }}" wire:navigate
                @class([$navBase, request()->routeIs('clients.*') ? $navActive : $navIdle])>
                 🏢 {{ __('app.nav.clients') }}
             </a>
 
-            <a href="{{ route('trips.index') }}"
+            <a href="{{ route('trips.index') }}" wire:navigate
                @class([$navBase, request()->routeIs('trips.*') ? $navActive : $navIdle])>
                 🧭 {{ __('app.nav.trips') }}
             </a>
@@ -116,20 +127,20 @@
 
                 <div class="mt-1 ml-3 space-y-1">
                     {{-- существующий stats.index -> внутрь как Overview --}}
-                    <a href="{{ route('stats.index') }}"
+                    <a href="{{ route('stats.index') }}" wire:navigate
                        @class([$navBase, $statsOverviewActive ? $navActive : $navIdle])>
                         📈 {{ __('app.nav.stats_overview') }}
                     </a>
 
                     {{-- новое подменю --}}
-                    <a href="{{ route('stats.events') }}"
+                    <a href="{{ route('stats.events') }}" wire:navigate
                        @class([$navBase, $statsEventsActive ? $navActive : $navIdle])>
                         🧾 {{ __('app.nav.stats_events') }}
                     </a>
                 </div>
             </details>
 
-            <a href="{{ route('invoices.index') }}"
+            <a href="{{ route('invoices.index') }}" wire:navigate
                @class([$navBase, request()->routeIs('invoices.*') ? $navActive : $navIdle])>
                 💶 {{ __('app.nav.invoices') }}
             </a>
@@ -212,6 +223,53 @@
 
     {{-- Livewire scripts --}}
     @livewireScripts
+
+    <script>
+    (function() {
+        var overlay = document.getElementById('global-navigate-overlay');
+        if (!overlay) return;
+        var pending = 0;
+        function showOverlay() { overlay.classList.remove('hidden'); }
+        function hideOverlay() { overlay.classList.add('hidden'); }
+        function done() { pending--; if (pending <= 0) { pending = 0; hideOverlay(); } }
+        document.addEventListener('livewire:navigate', function() { pending++; showOverlay(); });
+        document.addEventListener('livewire:navigated', done);
+        document.addEventListener('livewire:request-finished', done);
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {
+                showOverlay();
+            }
+        });
+        document.addEventListener('click', function(e) {
+            var a = e.target.closest('a');
+            if (!a || !a.href) return;
+            if (a.target === '_blank' || a.getAttribute('href') === '#' || (a.getAttribute('href') || '').indexOf('javascript:') === 0) return;
+            try {
+                if (new URL(a.href).origin === window.location.origin) {
+                    pending++;
+                    showOverlay();
+                }
+            } catch (_) {}
+        });
+        function registerRequestHook() {
+            if (window.Livewire && typeof window.Livewire.hook === 'function') {
+                window.Livewire.hook('request', function(_ref) {
+                    var succeed = _ref.succeed, fail = _ref.fail;
+                    pending++;
+                    showOverlay();
+                    succeed(function() { done(); });
+                    fail(function() { done(); });
+                });
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('livewire:init', registerRequestHook, { once: true });
+        } else {
+            registerRequestHook();
+        }
+    })();
+    </script>
 
     {{-- Select2 init (работает и с Livewire). После каждого обновления Livewire переинициализируем Select2, чтобы селекты городов и др. не превращались обратно в обычные. --}}
     <script>
