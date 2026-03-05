@@ -197,28 +197,39 @@
         </main>
     </div>
 
-    {{-- Sidebar JS --}}
+    {{-- Sidebar JS: делегирование кликов, чтобы кнопка работала после Livewire morph (таблицы и др.) --}}
     <script>
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const openBtn = document.getElementById('openSidebar');
-        const closeBtn = document.getElementById('closeSidebar');
-
-        function openSidebarMenu() {
-            sidebar.classList.remove('-translate-x-full');
-            overlay.classList.remove('hidden');
-            requestAnimationFrame(() => overlay.classList.add('opacity-100'));
-        }
-
-        function closeSidebarMenu() {
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.remove('opacity-100');
-            overlay.addEventListener('transitionend', () => overlay.classList.add('hidden'), { once: true });
-        }
-
-        openBtn?.addEventListener('click', openSidebarMenu);
-        closeBtn?.addEventListener('click', closeSidebarMenu);
-        overlay?.addEventListener('click', closeSidebarMenu);
+        (function() {
+            function openSidebarMenu() {
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('-translate-x-full');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                    requestAnimationFrame(function() { overlay.classList.add('opacity-100'); });
+                }
+            }
+            function closeSidebarMenu() {
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.add('-translate-x-full');
+                if (overlay) {
+                    overlay.classList.remove('opacity-100');
+                    overlay.addEventListener('transitionend', function() { overlay.classList.add('hidden'); }, { once: true });
+                }
+            }
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('#openSidebar')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openSidebarMenu();
+                    return;
+                }
+                if (e.target.closest('#closeSidebar') || e.target.id === 'overlay') {
+                    closeSidebarMenu();
+                }
+            });
+        })();
     </script>
 
     {{-- Livewire scripts --}}
