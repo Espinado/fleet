@@ -551,6 +551,22 @@ class CreateTrip extends Component
         }
     }
 
+    /**
+     * Вызов из JS (input+datalist «Страна»): установить страну шага и подгрузить города.
+     * updatedSteps при $wire.set() может не сработать для вложенного свойства.
+     */
+    public function setStepCountry(int $stepIndex, $countryId): void
+    {
+        if (!isset($this->steps[$stepIndex])) {
+            return;
+        }
+        $id = $countryId !== null && $countryId !== '' ? (int) $countryId : null;
+        $this->steps[$stepIndex]['country_id'] = $id;
+        $this->stepCities[$stepIndex]['cities'] = $id !== null ? (getCitiesByCountryId($id) ?? []) : [];
+        $this->steps[$stepIndex]['city_id'] = null;
+        $this->autofillTripDatesFromSteps(false);
+    }
+
     private function normalizeTripStepSelectionsToUids(): void
     {
         foreach (['trip_loading_step_ids', 'trip_unloading_step_ids'] as $field) {
@@ -965,21 +981,36 @@ class CreateTrip extends Component
         ];
 
         $messages = [
-            'bank_index.required'             => 'Выберите банковский счёт экспедитора.',
-            'carrier_company_select.required' => 'Выберите перевозчика (или “Третья сторона”).',
-            'carrier_company_id.required'     => 'Выберите перевозчика (внутреннюю компанию).',
+            'expeditor_id.required'           => __('app.trip.validation.expeditor_required'),
+            'bank_index.required'              => __('app.trip.validation.bank_required'),
+            'carrier_company_select.required' => __('app.trip.validation.carrier_select_required'),
+            'carrier_company_id.required'     => __('app.trip.validation.carrier_id_required'),
 
-            'third_party_name.required'        => 'Введите название третьей стороны.',
-            'third_party_truck_plate.required' => 'Введите номер тягача третьей стороны.',
-            'third_party_price.required'       => 'Введите сумму, которую платим третьей стороне.',
+            'third_party_name.required'        => __('app.trip.validation.third_party_name_required'),
+            'third_party_truck_plate.required'=> __('app.trip.validation.third_party_truck_required'),
+            'third_party_price.required'      => __('app.trip.validation.third_party_price_required'),
 
-            'cont_nr.required' => 'Введите номер контейнера (контейнерный прицеп).',
-            'seal_nr.required' => 'Введите номер пломбы (контейнерный прицеп).',
-
-            'customs_address.required' => 'Укажите адрес таможенного пункта.',
-
-            'trip_loading_step_ids.required'   => 'Выберите хотя бы один шаг погрузки.',
-            'trip_unloading_step_ids.required' => 'Выберите хотя бы один шаг разгрузки.',
+            'driver_id.required'               => __('app.trip.validation.driver_required'),
+            'truck_id.required'                => __('app.trip.validation.truck_required'),
+            'start_date.required'               => __('app.trip.validation.start_date_required'),
+            'end_date.required'                 => __('app.trip.validation.end_date_required'),
+            'cont_nr.required'                 => __('app.trip.validation.cont_nr_required'),
+            'seal_nr.required'                 => __('app.trip.validation.seal_nr_required'),
+            'customs_address.required'         => __('app.trip.validation.customs_address_required'),
+            'trip_loading_step_ids.required'   => __('app.trip.validation.loading_steps_required'),
+            'trip_unloading_step_ids.required' => __('app.trip.validation.unloading_steps_required'),
+            'steps.*.type.required'            => __('app.trip.validation.step_type_required'),
+            'steps.*.country_id.required'      => __('app.trip.validation.step_country_required'),
+            'steps.*.city_id.required'         => __('app.trip.validation.step_city_required'),
+            'steps.*.address.required'         => __('app.trip.validation.step_address_required'),
+            'steps.*.date.required'            => __('app.trip.validation.step_date_required'),
+            'steps.*.order.required'           => __('app.trip.validation.step_order_required'),
+            'cargos.*.customer_id.required'    => __('app.trip.validation.cargo_customer_required'),
+            'cargos.*.shipper_id.required'     => __('app.trip.validation.cargo_shipper_required'),
+            'cargos.*.consignee_id.required'   => __('app.trip.validation.cargo_consignee_required'),
+            'cargos.*.price.required'          => __('app.trip.validation.cargo_price_required'),
+            'cargos.*.tax_percent.required'     => __('app.trip.validation.cargo_tax_required'),
+            'cargos.*.items.required'          => __('app.trip.validation.cargo_items_required'),
         ];
 
         $data = [
@@ -1032,14 +1063,14 @@ class CreateTrip extends Component
             }
 
             if ($isThirdPartyFlow && (empty($this->start_date) || empty($this->end_date))) {
-                $validator->errors()->add('start_date', 'Не удалось определить даты рейса: заполните даты шагов.');
+                $validator->errors()->add('start_date', __('app.trip.validation.err_dates_third_party'));
             }
 
             // carrier type check for internal carrier
             if ($this->needsCarrierSelect && !$isThirdPartyFlow && $this->carrier_company_id) {
                 $type = Company::whereKey($this->carrier_company_id)->value('type');
                 if (!in_array($type, ['carrier', 'mixed', 'forwarder'], true)) {
-                    $validator->errors()->add('carrier_company_id', 'Некорректный тип компании перевозчика.');
+                    $validator->errors()->add('carrier_company_id', __('app.trip.validation.err_carrier_type'));
                 }
             }
 
@@ -1066,7 +1097,7 @@ class CreateTrip extends Component
                     if (!$hasDescOrCode && !$hasMeasurement) {
                         $validator->errors()->add(
                             "cargos.$cargoIndex.items.$itemIndex.measurements",
-                            'В позиции #' . ($itemIndex + 1) . ' необходимо указать хотя бы одно поле (описание, код ТН ВЭД или единицы измерения).'
+                            __('app.trip.validation.err_item_measure', ['n' => $itemIndex + 1])
                         );
                     }
                 }
@@ -1075,6 +1106,7 @@ class CreateTrip extends Component
 
         if ($validator->fails()) {
             $this->setErrorBag($validator->errors());
+            $this->dispatch('scroll-to-first-error');
             return;
         }
 
@@ -1090,7 +1122,8 @@ class CreateTrip extends Component
         ));
 
         if (!empty($intersection)) {
-            $this->addError('trip_unloading_step_ids', 'Один и тот же шаг не может быть одновременно погрузкой и разгрузкой.');
+            $this->addError('trip_unloading_step_ids', __('app.trip.edit.err_same_step'));
+            $this->dispatch('scroll-to-first-error');
             return;
         }
 
@@ -1100,7 +1133,8 @@ class CreateTrip extends Component
         foreach (($this->trip_loading_step_ids ?? []) as $lToken) {
             $pos = $this->stepPositionByToken($lToken);
             if ($pos === null) {
-                $this->addError("trip_loading_step_ids", 'Выбраны некорректные шаги (обновите страницу и попробуйте снова).');
+                $this->addError("trip_loading_step_ids", __('app.trip.validation.err_steps_invalid'));
+                $this->dispatch('scroll-to-first-error');
                 return;
             }
             $loadingPositions[] = $pos;
@@ -1109,7 +1143,8 @@ class CreateTrip extends Component
         foreach (($this->trip_unloading_step_ids ?? []) as $uToken) {
             $pos = $this->stepPositionByToken($uToken);
             if ($pos === null) {
-                $this->addError("trip_unloading_step_ids", 'Выбраны некорректные шаги (обновите страницу и попробуйте снова).');
+                $this->addError("trip_unloading_step_ids", __('app.trip.validation.err_steps_invalid'));
+                $this->dispatch('scroll-to-first-error');
                 return;
             }
             $unloadingPositions[] = $pos;
@@ -1120,7 +1155,8 @@ class CreateTrip extends Component
             $minU = min($unloadingPositions);
 
             if ($minU <= $minL) {
-                $this->addError("trip_unloading_step_ids", 'Первая разгрузка должна быть ПОСЛЕ первой погрузки.');
+                $this->addError("trip_unloading_step_ids", __('app.trip.validation.err_unload_after_load'));
+                $this->dispatch('scroll-to-first-error');
                 return;
             }
         }
@@ -1312,7 +1348,7 @@ class CreateTrip extends Component
                 'file' => $e->getFile(),
             ]);
 
-            $this->addError('error', 'Ошибка при создании рейса.');
+            $this->addError('error', __('app.trip.validation.err_create'));
         }
     }
 

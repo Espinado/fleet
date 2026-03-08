@@ -30,6 +30,10 @@ return [
     26 => ['name' => 'Spain',         'iso' => 'ES', 'phone_code' => '+34'],
     27 => ['name' => 'Sweden',        'iso' => 'SE', 'phone_code' => '+46'],
 
+    // === Scandinavia (non-EU) ===
+    41 => ['name' => 'Norway',        'iso' => 'NO', 'phone_code' => '+47'],
+    42 => ['name' => 'Iceland',       'iso' => 'IS', 'phone_code' => '+354'],
+
     // === CIS (Commonwealth of Independent States) ===
     28 => ['name' => 'Russia',        'iso' => 'RU', 'phone_code' => '+7'],
     29 => ['name' => 'Belarus',       'iso' => 'BY', 'phone_code' => '+375'],

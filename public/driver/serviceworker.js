@@ -1,5 +1,5 @@
 // Driver PWA SW (safe for Livewire/Vite)
-const CACHE = "driver-pwa-v4";
+const CACHE = "driver-pwa-v5";
 
 const OFFLINE_URL = "/driver/offline";
 const PRECACHE = [

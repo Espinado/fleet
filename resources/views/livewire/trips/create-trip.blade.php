@@ -120,7 +120,9 @@
     };
 @endphp
 
-<div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 select2-parent">
+{{-- Надёжный вариант: только нативные <select> (без Select2). --}}
+<div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
+    @include('components.upload-loading-overlay', ['targets' => 'save'])
 
     {{-- HEADER --}}
     <div class="sticky top-0 z-20 bg-white/85 dark:bg-gray-900/80 border-b border-amber-200 dark:border-amber-900/40 backdrop-blur">
@@ -132,10 +134,11 @@
             <button
                 wire:click="save"
                 wire:loading.attr="disabled"
+                wire:target="save"
                 class="hidden sm:inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold
                        bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white shadow">
-                <span wire:loading.remove>💾 Создать рейс</span>
-                <span wire:loading>⏳ Сохранение...</span>
+                <span wire:loading.remove wire:target="save">💾 Создать рейс</span>
+                <span wire:loading wire:target="save">⏳ Сохранение...</span>
             </button>
         </div>
     </div>
@@ -191,7 +194,7 @@
 
                         <select
                             wire:model.live="expeditor_id"
-                            @class([$baseInput, 'js-select2', $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
+                            @class([$baseInput, $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
                         >
                             <option value="">— выберите экспедитора —</option>
                             @foreach($expeditors as $exp)
@@ -214,7 +217,7 @@
 
                         <select
                             wire:model.live="bank_index"
-                            @class([$baseInput, 'js-select2', $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
+                            @class([$baseInput, $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
                         >
                             <option value="">— выберите банк —</option>
                             @foreach(($banks ?? []) as $idx => $bank)
@@ -246,7 +249,6 @@
                                 wire:model.live="carrier_company_select"
                                 @class([
                                     $baseInput,
-                                    'js-select2',
                                     $warnInput => ($isBlank($carrier_company_select) && !$errors->has($kCarrierSelect)),
                                     $errInput => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId)),
                                     'input-error' => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId))
@@ -419,7 +421,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Водитель {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="driver_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="driver_id" class="{{ $baseInput }}">
                             <option value="">— выбрать —</option>
                             @foreach($drivers as $driver)
                                 <option value="{{ $driver->id }}">{{ $driver->first_name }} {{ $driver->last_name }}</option>
@@ -432,7 +434,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             Тягач {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="truck_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="truck_id" class="{{ $baseInput }}">
                             <option value="">— выбрать —</option>
                             @foreach($trucks as $truck)
                                 <option value="{{ $truck->id }}">{{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})</option>
@@ -446,7 +448,7 @@
                             Прицеп <span class="ml-2 text-[11px] text-gray-400">(опц.)</span>
                         </label>
 
-                        <select wire:model.live="trailer_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="trailer_id" class="{{ $baseInput }}">
                             <option value="">— без прицепа —</option>
                             @foreach($trailers as $trailer)
                                 @php
@@ -593,7 +595,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Тип {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.blur="steps.{{ $index }}.type" class="{{ $baseInput }} js-select2">
+                                <select wire:model.blur="steps.{{ $index }}.type" class="{{ $baseInput }}">
                                     <option value="loading">Погрузка</option>
                                     <option value="unloading">Разгрузка</option>
                                 </select>
@@ -617,7 +619,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Страна {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.country_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="steps.{{ $index }}.country_id" class="{{ $baseInput }}">
                                     <option value="">— выбрать —</option>
                                     @foreach($countries as $countryId => $country)
                                         <option value="{{ $countryId }}">{{ $country['name'] }}</option>
@@ -630,7 +632,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     Город {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.city_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="steps.{{ $index }}.city_id" class="{{ $baseInput }}">
                                     <option value="">— выбрать —</option>
                                     @foreach(($stepCities[$index]['cities'] ?? []) as $cityId => $city)
                                         <option value="{{ $cityId }}">{{ $city['name'] ?? ('#'.$cityId) }}</option>
@@ -734,7 +736,7 @@
                         </div>
                     @endif
 
-                    <div class="max-h-64 overflow-auto pr-1 space-y-1">
+                    <div class="space-y-1">
                         @foreach($steps as $si => $s)
                             @continue(($s['type'] ?? null) !== 'loading')
                             @php
@@ -797,7 +799,7 @@
                         </div>
                     @endif
 
-                    <div class="max-h-64 overflow-auto pr-1 space-y-1">
+                    <div class="space-y-1">
                         @foreach($steps as $si => $s)
                             @continue(($s['type'] ?? null) !== 'unloading')
                             @php
@@ -871,7 +873,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Заказчик {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }}">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -882,7 +884,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Shipper {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }}">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -893,7 +895,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Consignee {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }}">
                                     <option value="">— выбрать —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -944,7 +946,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">НДС %</label>
-                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs">
                                     @foreach($taxRates as $rate)
                                         <option value="{{ $rate }}">{{ $rate }}</option>
                                     @endforeach
@@ -964,7 +966,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.payment_by') }}</label>
-                                <select wire:model.blur="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.blur="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs">
                                     @foreach([7, 14, 21, 30] as $days)
                                         <option value="{{ $days }}">{{ __('app.trip.edit.payment_days', ['days' => $days]) }}</option>
                                     @endforeach
@@ -973,7 +975,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">Плательщик</label>
-                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs">
                                     <option value="">— не выбрано —</option>
                                     @foreach($payers as $payerId => $payer)
                                         <option value="{{ $payerId }}">{{ $payer['label'] ?? $payerId }}</option>
@@ -1167,10 +1169,11 @@
             <button
                 wire:click="save"
                 wire:loading.attr="disabled"
+                wire:target="save"
                 class="inline-flex items-center px-4 py-2 rounded-2xl text-sm font-semibold
                        bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white shadow">
-                <span wire:loading.remove>💾 Создать рейс</span>
-                <span wire:loading>⏳ Сохранение...</span>
+                <span wire:loading.remove wire:target="save">💾 Создать рейс</span>
+                <span wire:loading wire:target="save">⏳ Сохранение...</span>
             </button>
         </div>
     </div>
@@ -1178,14 +1181,22 @@
 
 <script>
 document.addEventListener("livewire:initialized", () => {
-    Livewire.hook('message.processed', () => {
+    Livewire.on('scroll-to-first-error', () => {
         const firstError = document.querySelector('.input-error');
-        if (firstError) {
-            firstError.focus({ preventScroll: true });
-            const yOffset = -140;
+        if (!firstError) return;
+        firstError.focus({ preventScroll: true });
+        const main = document.querySelector('main');
+        const yOffset = -140;
+        if (main && main.scrollHeight > main.clientHeight) {
+            const rect = firstError.getBoundingClientRect();
+            const containerRect = main.getBoundingClientRect();
+            const scrollTop = main.scrollTop + (rect.top - containerRect.top) + yOffset;
+            main.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+        } else {
             const y = firstError.getBoundingClientRect().top + window.scrollY + yOffset;
-            window.scrollTo({ top: y, behavior: 'smooth' });
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
         }
     });
+
 });
 </script>

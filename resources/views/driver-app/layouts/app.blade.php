@@ -94,36 +94,38 @@
         document.addEventListener('submit', function(e) {
             var form = e.target;
             if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {
+                pending++;
                 showOverlay();
             }
         });
         document.addEventListener('click', function(e) {
             var a = e.target.closest('a');
-            if (!a || !a.href) return;
-            if (a.target === '_blank' || a.getAttribute('href') === '#' || (a.getAttribute('href') || '').indexOf('javascript:') === 0) return;
-            try {
-                if (new URL(a.href).origin === window.location.origin) {
+            if (a && a.href) {
+                if (a.target !== '_blank' && a.getAttribute('href') !== '#' && (a.getAttribute('href') || '').indexOf('javascript:') !== 0) {
+                    try {
+                        if (new URL(a.href).origin === window.location.origin) {
+                            pending++;
+                            showOverlay();
+                        }
+                    } catch (_) {}
+                }
+                return;
+            }
+            var btn = e.target.closest('button[type="submit"], input[type="submit"], [data-loading-overlay]');
+            if (btn) {
+                var form = btn.closest('form');
+                if (form && (form.getAttribute('wire:submit') || form.getAttribute('wire:submit.prevent') || btn.getAttribute('data-loading-overlay'))) {
                     pending++;
                     showOverlay();
                 }
-            } catch (_) {}
-        });
-        function registerRequestHook() {
-            if (window.Livewire && typeof window.Livewire.hook === 'function') {
-                window.Livewire.hook('request', function(_ref) {
-                    var succeed = _ref.succeed, fail = _ref.fail;
-                    pending++;
-                    showOverlay();
-                    succeed(function() { done(); });
-                    fail(function() { done(); });
-                });
             }
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('livewire:init', registerRequestHook, { once: true });
-        } else {
-            registerRequestHook();
-        }
+        });
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
+                pending++;
+                showOverlay();
+            }
+        });
     })();
     </script>
 

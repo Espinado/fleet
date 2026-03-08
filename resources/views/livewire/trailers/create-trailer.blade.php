@@ -78,7 +78,7 @@
                 <div>
                     <label class="block mb-1 font-medium">Puspiekabes tips *</label>
                     <select wire:model="type_id"
-                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 js-select2 @error('type_id') border-red-500 @enderror">
+                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('type_id') border-red-500 @enderror">
                         @foreach(config('trailer-types.types') as $id => $key)
                             <option value="{{ $id }}">
                                 {{ config("trailer-types.icons.$key") }} {{ config("trailer-types.labels.$key", $key) }}
@@ -103,7 +103,7 @@
                 <div>
                     <label class="block mb-1 font-medium">{{ __('app.truck.show.company') }} *</label>
                     <select wire:model="company_id"
-                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 js-select2 @error('company_id') border-red-500 @enderror">
+                            class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-blue-500 @error('company_id') border-red-500 @enderror">
                         <option value="">{{ __('app.driver.create.company_choose') }}</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}">{{ $company->name }}</option>

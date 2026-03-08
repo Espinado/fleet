@@ -122,7 +122,7 @@
     };
 @endphp
 
-<div class="min-h-screen pb-24 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900 select2-parent">
+<div class="pb-8 bg-gradient-to-b from-gray-50 via-gray-100 to-gray-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-900">
 
     {{-- HEADER --}}
     <div class="sticky top-0 z-20 bg-white/85 dark:bg-gray-900/80 border-b border-amber-200 dark:border-amber-900/40 backdrop-blur">
@@ -193,7 +193,7 @@
 
                         <select
                             wire:model.live="expeditor_id"
-                            @class([$baseInput, 'js-select2', $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
+                            @class([$baseInput, $warnInput => $expWarn, $errInput => $errors->has($kExp), 'input-error' => $errors->has($kExp)])
                         >
                             <option value="">— {{ __('app.trip.edit.choose_expeditor') }} —</option>
                             @foreach($expeditors as $exp)
@@ -216,7 +216,7 @@
 
                         <select
                             wire:model.live="bank_index"
-                            @class([$baseInput, 'js-select2', $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
+                            @class([$baseInput, $warnInput => $bankWarn, $errInput => $errors->has($kBank), 'input-error' => $errors->has($kBank)])
                         >
                             <option value="">— {{ __('app.trip.edit.choose_bank') }} —</option>
                             @foreach(($banks ?? []) as $idx => $bank)
@@ -248,7 +248,6 @@
                                 wire:model.live="carrier_company_select"
                                 @class([
                                     $baseInput,
-                                    'js-select2',
                                     $warnInput => ($isBlank($carrier_company_select) && !$errors->has($kCarrierSelect)),
                                     $errInput => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId)),
                                     'input-error' => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId))
@@ -421,7 +420,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             {{ __('app.trip.edit.driver') }} {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="driver_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="driver_id" class="{{ $baseInput }}">
                             <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                             @foreach($drivers as $driver)
                                 <option value="{{ $driver->id }}">{{ $driver->first_name }} {{ $driver->last_name }}</option>
@@ -434,7 +433,7 @@
                         <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                             {{ __('app.trip.edit.truck') }} {!! $reqBadge() !!}
                         </label>
-                        <select wire:model.live="truck_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="truck_id" class="{{ $baseInput }}">
                             <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                             @foreach($trucks as $truck)
                                 <option value="{{ $truck->id }}">{{ $truck->plate }} ({{ $truck->brand }} {{ $truck->model }})</option>
@@ -448,7 +447,7 @@
                             {{ __('app.trip.edit.trailer') }} <span class="ml-2 text-[11px] text-gray-400">{{ __('app.trip.edit.third_party_trailer_opt') }}</span>
                         </label>
 
-                        <select wire:model.live="trailer_id" class="{{ $baseInput }} js-select2">
+                        <select wire:model.live="trailer_id" class="{{ $baseInput }}">
                             <option value="">{{ __('app.trip.edit.no_trailer') }}</option>
                             @foreach($trailers as $trailer)
                                 @php
@@ -629,7 +628,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.type') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.blur="steps.{{ $index }}.type" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.type"), 'input-error' => $errors->has("steps.$index.type")])>
+                                <select wire:model.blur="steps.{{ $index }}.type" @class([$baseInput, $errInput => $errors->has("steps.$index.type"), 'input-error' => $errors->has("steps.$index.type")])>
                                     <option value="loading">{{ __('app.trip.edit.loading') }}</option>
                                     <option value="unloading">{{ __('app.trip.edit.unloading') }}</option>
                                 </select>
@@ -653,7 +652,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.country') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.country_id" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.country_id"), 'input-error' => $errors->has("steps.$index.country_id")])>
+                                <select wire:model.live="steps.{{ $index }}.country_id" @class([$baseInput, $errInput => $errors->has("steps.$index.country_id"), 'input-error' => $errors->has("steps.$index.country_id")])>
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach($countries as $countryId => $country)
                                         <option value="{{ $countryId }}">{{ is_array($country) ? ($country['name'] ?? $country) : $country }}</option>
@@ -666,7 +665,7 @@
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
                                     {{ __('app.trip.edit.city') }} {!! $reqBadge() !!}
                                 </label>
-                                <select wire:model.live="steps.{{ $index }}.city_id" @class([$baseInput, 'js-select2', $errInput => $errors->has("steps.$index.city_id"), 'input-error' => $errors->has("steps.$index.city_id")])>
+                                <select wire:model.live="steps.{{ $index }}.city_id" @class([$baseInput, $errInput => $errors->has("steps.$index.city_id"), 'input-error' => $errors->has("steps.$index.city_id")])>
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach(($stepCities[$index]['cities'] ?? []) as $cityId => $city)
                                         <option value="{{ $cityId }}">{{ is_array($city) ? ($city['name'] ?? ('#'.$cityId)) : $city }}</option>
@@ -923,7 +922,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.customer') }} {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.customer_id" class="{{ $baseInput }}">
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -934,7 +933,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.shipper') }} {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.shipper_id" class="{{ $baseInput }}">
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -945,7 +944,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.consignee') }} {!! $reqBadge() !!}</label>
-                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }} js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.consignee_id" class="{{ $baseInput }}">
                                     <option value="">— {{ __('app.trip.edit.choose') }} —</option>
                                     @foreach($clients as $client)
                                         <option value="{{ $client->id }}">{{ $client->company_name }}</option>
@@ -996,7 +995,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.vat_percent') }}</label>
-                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.tax_percent" class="{{ $baseInput }} text-xs">
                                     @foreach($taxRates as $rate)
                                         <option value="{{ $rate }}">{{ $rate }}</option>
                                     @endforeach
@@ -1016,7 +1015,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.payment_by') }}</label>
-                                <select wire:model.blur="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.blur="cargos.{{ $index }}.payment_days" class="{{ $baseInput }} text-xs">
                                     @foreach([7, 14, 21, 30] as $days)
                                         <option value="{{ $days }}">{{ __('app.trip.edit.payment_days', ['days' => $days]) }}</option>
                                     @endforeach
@@ -1028,7 +1027,7 @@
 
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.payer') }}</label>
-                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs js-select2">
+                                <select wire:model.live="cargos.{{ $index }}.payer_type_id" class="{{ $baseInput }} text-xs">
                                     <option value="">{{ __('app.trip.edit.payer_not_selected') }}</option>
                                     @foreach($payers as $payerId => $payer)
                                         <option value="{{ $payerId }}">{{ $payer['label'] ?? $payerId }}</option>
@@ -1220,8 +1219,8 @@
 
     </div>
 
-    {{-- BOTTOM BAR --}}
-    <div class="fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-gray-900/95 border-t border-amber-200 dark:border-amber-900/40 backdrop-blur">
+    {{-- BOTTOM BAR (в потоке страницы, скроллится вместе с формой) --}}
+    <div class="mt-8 pt-4 border-t border-amber-200 dark:border-amber-900/40 bg-white/95 dark:bg-gray-900/95">
         <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div class="text-xs text-gray-500 truncate">
                 {{ __('app.trip.edit.bottom_hint') }}
@@ -1242,10 +1241,20 @@
 document.addEventListener("livewire:initialized", () => {
     Livewire.hook('message.processed', () => {
         const firstError = document.querySelector('.input-error');
-        if (firstError) {
-            firstError.focus({ preventScroll: true });
-            const yOffset = -140;
-            const y = firstError.getBoundingClientRect().top + window.scrollY + yOffset;
+        if (!firstError) return;
+        firstError.focus({ preventScroll: true });
+        var scrollContainer = document.querySelector('main');
+        if (!scrollContainer || scrollContainer.scrollHeight <= scrollContainer.clientHeight) {
+            scrollContainer = null;
+        }
+        var yOffset = -100;
+        if (scrollContainer) {
+            var rect = firstError.getBoundingClientRect();
+            var containerRect = scrollContainer.getBoundingClientRect();
+            var scrollTop = scrollContainer.scrollTop + (rect.top - containerRect.top) + yOffset;
+            scrollContainer.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' });
+        } else {
+            var y = firstError.getBoundingClientRect().top + window.scrollY + yOffset;
             window.scrollTo({ top: y, behavior: 'smooth' });
         }
     });

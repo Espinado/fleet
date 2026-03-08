@@ -1,7 +1,7 @@
 {
   "name": "Fleet Driver",
   "short_name": "Driver App",
-  "version": "1.3",
+  "version": "1.4",
   "start_url": "/driver/dashboard",
   "scope": "/driver",
   "display": "standalone",

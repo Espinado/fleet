@@ -69,7 +69,7 @@
             <div class="hidden md:flex items-center gap-2">
                 <label for="perPage" class="text-sm text-gray-600">{{ __('app.trucks.rows') }}</label>
                 <select id="perPage" wire:model.live="perPage"
-                        class="border rounded-lg px-2 py-1 text-sm shadow-sm focus:ring focus:ring-blue-100 js-select2">
+                        class="border rounded-lg px-2 py-1 text-sm shadow-sm focus:ring focus:ring-blue-100">
                     <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>

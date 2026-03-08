@@ -52,26 +52,10 @@
        document.addEventListener('submit', function(e) {
            var form = e.target;
            if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {
+               pending++;
                showOverlay();
            }
        });
-
-       function registerRequestHook() {
-           if (window.Livewire && typeof window.Livewire.hook === 'function') {
-               window.Livewire.hook('request', function(_ref) {
-                   var succeed = _ref.succeed, fail = _ref.fail;
-                   pending++;
-                   showOverlay();
-                   succeed(function() { done(); });
-                   fail(function() { done(); });
-               });
-           }
-       }
-       if (document.readyState === 'loading') {
-           document.addEventListener('livewire:init', registerRequestHook, { once: true });
-       } else {
-           registerRequestHook();
-       }
 
        window.addEventListener('pageshow', function(e) {
            if (e.persisted) { pending = 0; hideOverlay(); }

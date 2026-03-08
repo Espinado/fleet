@@ -56,7 +56,7 @@
                 {{-- Rows --}}
                 <div class="hidden md:flex items-center gap-2">
                     <label class="text-sm text-gray-600">{{ __('app.trips.rows') }}</label>
-                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm js-select2">
+                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm">
                         <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
@@ -66,7 +66,7 @@
                 {{-- Status --}}
                 <div class="hidden md:flex items-center gap-2">
                     <label class="text-sm text-gray-600">{{ __('app.trips.status_label') }}</label>
-                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-36 js-select2">
+                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-36">
                         <option value="">{{ __('app.trips.status_all') }}</option>
                         <option value="planned">{{ __('app.trips.status_planned') }}</option>
                         <option value="in_progress">{{ __('app.trips.status_in_progress') }}</option>

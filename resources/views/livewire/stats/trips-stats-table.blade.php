@@ -110,10 +110,57 @@
     </div>
 
     {{-- =========================
-         CONTENT
+         SUMMARY (сводка по фильтрам)
     ========================== --}}
     <div class="max-w-7xl mx-auto px-4 pt-4">
+        <div class="mb-4 rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {{ __('app.stats.summary_period') }}
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.summary_trips') }}</div>
+                    <div class="text-lg font-bold text-gray-900">{{ number_format($summary->trips_count, 0, '.', ' ') }}</div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.freight_total') }}</div>
+                    <div class="text-lg font-bold text-gray-900">{{ number_format($summary->total_freight, 2, '.', ' ') }} <span class="text-xs font-normal text-gray-500">EUR</span></div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.expenses_total') }}</div>
+                    <div class="text-lg font-bold text-gray-900">{{ number_format($summary->total_expenses, 2, '.', ' ') }} <span class="text-xs font-normal text-gray-500">EUR</span></div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.profit') }}</div>
+                    <div class="text-lg font-bold {{ $summary->total_profit >= 0 ? 'text-green-700' : 'text-red-600' }}">{{ number_format($summary->total_profit, 2, '.', ' ') }} <span class="text-xs font-normal text-gray-500">EUR</span></div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.margin') }} %</div>
+                    @if($summary->avg_margin_percent !== null)
+                        <div class="text-lg font-bold text-gray-900">{{ number_format($summary->avg_margin_percent, 1, '.', ' ') }}%</div>
+                    @else
+                        <div class="text-lg font-bold text-gray-400">—</div>
+                    @endif
+                </div>
+            </div>
+        </div>
 
+        {{-- График по периодам --}}
+        @if(!empty($chartData['labels']))
+        <div class="mb-4 rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {{ __('app.stats.chart_by_period') }}
+            </div>
+            <div class="h-64 sm:h-80 relative">
+                <canvas id="stats-chart-canvas" width="400" height="300"></canvas>
+            </div>
+            <script type="application/json" id="stats-chart-data">@json($chartData)</script>
+        </div>
+        @endif
+
+    {{-- =========================
+         CONTENT
+    ========================== --}}
         {{-- MOBILE: CARDS --}}
         <div class="space-y-3 md:hidden">
             @forelse($rows as $trip)
@@ -595,4 +642,43 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+
+    {{-- Chart.js: график по периодам --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+    (function() {
+        window.statsChartInstance = null;
+        function renderStatsChart() {
+            if (window.statsChartInstance) { window.statsChartInstance.destroy(); window.statsChartInstance = null; }
+            var dataEl = document.getElementById('stats-chart-data');
+            var canvas = document.getElementById('stats-chart-canvas');
+            if (!dataEl || !canvas || typeof Chart === 'undefined') return;
+            var data = JSON.parse(dataEl.textContent);
+            if (!data.labels || data.labels.length === 0) return;
+            var ctx = canvas.getContext('2d');
+            window.statsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: data.label_freight || 'Frakts (EUR)', data: data.freight, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgb(59, 130, 246)', borderWidth: 1 },
+                        { label: data.label_profit || 'Peļņa (EUR)', data: data.profit, backgroundColor: 'rgba(34, 197, 94, 0.7)', borderColor: 'rgb(34, 197, 94)', borderWidth: 1 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: function(v) { return Number(v).toLocaleString('lv'); } } }
+                    }
+                }
+            });
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderStatsChart);
+        else renderStatsChart();
+        document.addEventListener('livewire:navigated', renderStatsChart);
+        if (window.Livewire) Livewire.hook('morph.updated', function() { renderStatsChart(); });
+    })();
+    </script>
 </div>

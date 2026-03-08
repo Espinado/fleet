@@ -213,6 +213,55 @@ class TripsStatsTable extends Component
         return $q;
     }
 
+    /**
+     * Группировка рейсов по периоду (неделя или месяц) для графика.
+     * При диапазоне > 60 дней — по месяцам, иначе — по неделям.
+     *
+     * @param \Illuminate\Support\Collection $rows
+     * @return array{labels: string[], freight: float[], profit: float[]}
+     */
+    private function buildChartData($rows): array
+    {
+        if ($rows->isEmpty()) {
+            return ['labels' => [], 'freight' => [], 'profit' => [], 'label_freight' => '', 'label_profit' => ''];
+        }
+
+        $first = $rows->min('start_date');
+        $last = $rows->max('start_date');
+        $days = $first && $last ? Carbon::parse($first)->diffInDays(Carbon::parse($last)) : 0;
+        $useMonth = $days > 60;
+
+        $grouped = $rows->groupBy(function ($t) use ($useMonth) {
+            $d = Carbon::parse($t->start_date);
+            return $useMonth ? $d->format('Y-m') : $d->copy()->startOfWeek()->format('Y-m-d');
+        });
+
+        $labels = [];
+        $freight = [];
+        $profit = [];
+
+        foreach ($grouped->keys()->sort()->values() as $key) {
+            $items = $grouped[$key];
+            if ($useMonth) {
+                $labels[] = Carbon::createFromFormat('Y-m', $key)->translatedFormat('M Y');
+            } else {
+                $start = Carbon::parse($key);
+                $end = $start->copy()->endOfWeek();
+                $labels[] = $start->format('d.m') . '–' . $end->format('d.m');
+            }
+            $freight[] = round($items->sum('freight_total'), 2);
+            $profit[] = round($items->sum('profit'), 2);
+        }
+
+        return [
+            'labels' => $labels,
+            'freight' => $freight,
+            'profit' => $profit,
+            'label_freight' => __('app.stats.chart_freight'),
+            'label_profit' => __('app.stats.chart_profit'),
+        ];
+    }
+
     public function render()
     {
         $allowedSort = [
@@ -243,7 +292,27 @@ class TripsStatsTable extends Component
 
         $rows = $q->paginate(15);
 
-        return view('livewire.stats.trips-stats-table', compact('rows'))->layout('layouts.app', [
+        // Сводка по тем же фильтрам (без дублирования: те же dateFrom/dateTo/search)
+        $summaryQuery = (clone $q)->get();
+        $summary = (object) [
+            'trips_count'        => $summaryQuery->count(),
+            'total_freight'      => round($summaryQuery->sum('freight_total'), 2),
+            'total_expenses'     => round($summaryQuery->sum('expenses_total'), 2),
+            'total_profit'       => round($summaryQuery->sum('profit'), 2),
+            'avg_margin_percent' => null,
+        ];
+        $withFreight = $summaryQuery->filter(fn ($t) => (float) ($t->freight_total ?? 0) > 0);
+        if ($withFreight->isNotEmpty()) {
+            $summary->avg_margin_percent = round(
+                $withFreight->avg(fn ($t) => ((float) ($t->profit ?? 0) / (float) $t->freight_total) * 100),
+                1
+            );
+        }
+
+        // График по периодам: группировка по неделе или месяцу
+        $chartData = $this->buildChartData($summaryQuery);
+
+        return view('livewire.stats.trips-stats-table', compact('rows', 'summary', 'chartData'))->layout('layouts.app', [
             'title' => 'Trips stats'
         ]);
     }

@@ -1220,7 +1220,38 @@ class EditTrip extends Component
             $data['trailer_id'] = null;
         }
 
-        $validator = Validator::make($data, $rules);
+        $messages = [
+            'expeditor_id.required'           => __('app.trip.validation.expeditor_required'),
+            'bank_index.required'              => __('app.trip.validation.bank_required'),
+            'carrier_company_select.required' => __('app.trip.validation.carrier_select_required'),
+            'carrier_company_id.required'     => __('app.trip.validation.carrier_id_required'),
+            'third_party_name.required'        => __('app.trip.validation.third_party_name_required'),
+            'third_party_truck_plate.required'=> __('app.trip.validation.third_party_truck_required'),
+            'third_party_price.required'       => __('app.trip.validation.third_party_price_required'),
+            'driver_id.required'               => __('app.trip.validation.driver_required'),
+            'truck_id.required'                => __('app.trip.validation.truck_required'),
+            'start_date.required'              => __('app.trip.validation.start_date_required'),
+            'end_date.required'                => __('app.trip.validation.end_date_required'),
+            'cont_nr.required'                 => __('app.trip.validation.cont_nr_required'),
+            'seal_nr.required'                 => __('app.trip.validation.seal_nr_required'),
+            'customs_address.required'         => __('app.trip.validation.customs_address_required'),
+            'trip_loading_step_ids.required'   => __('app.trip.validation.loading_steps_required'),
+            'trip_unloading_step_ids.required' => __('app.trip.validation.unloading_steps_required'),
+            'steps.*.type.required'            => __('app.trip.validation.step_type_required'),
+            'steps.*.country_id.required'      => __('app.trip.validation.step_country_required'),
+            'steps.*.city_id.required'         => __('app.trip.validation.step_city_required'),
+            'steps.*.address.required'         => __('app.trip.validation.step_address_required'),
+            'steps.*.date.required'            => __('app.trip.validation.step_date_required'),
+            'steps.*.order.required'           => __('app.trip.validation.step_order_required'),
+            'cargos.*.customer_id.required'   => __('app.trip.validation.cargo_customer_required'),
+            'cargos.*.shipper_id.required'     => __('app.trip.validation.cargo_shipper_required'),
+            'cargos.*.consignee_id.required'   => __('app.trip.validation.cargo_consignee_required'),
+            'cargos.*.price.required'          => __('app.trip.validation.cargo_price_required'),
+            'cargos.*.tax_percent.required'    => __('app.trip.validation.cargo_tax_required'),
+            'cargos.*.items.required'          => __('app.trip.validation.cargo_items_required'),
+        ];
+
+        $validator = Validator::make($data, $rules, $messages);
 
         $validator->after(function ($validator) use ($isThirdPartyFlow) {
             if ($isThirdPartyFlow && (empty($this->start_date) || empty($this->end_date))) {

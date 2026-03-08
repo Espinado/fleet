@@ -88,7 +88,7 @@
                 <div>
                     <label class="block font-medium mb-1">{{ __('app.driver.create.company') }}</label>
                     <select wire:model="company_id"
-                            class="w-full border rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-blue-500 min-h-[48px] js-select2">
+                            class="w-full border rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]">
                         <option value="">{{ __('app.driver.create.company_choose') }}</option>
                         @foreach($companies as $id => $comp)
                             <option value="{{ $id }}">{{ is_array($comp) ? $comp['name'] : $comp }}</option>
@@ -133,7 +133,7 @@
                 <div>
                     <label class="block mb-1">{{ __('app.driver.create.citizenship') }}</label>
                     <select wire:model="citizenship_id"
-                            class="w-full border rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-blue-500 min-h-[48px] js-select2">
+                            class="w-full border rounded-xl px-4 py-3.5 text-base focus:ring-2 focus:ring-blue-500 min-h-[48px]">
                         <option value="">{{ __('app.driver.create.country_choose') }}</option>
                         @foreach($countries as $id => $country)
                             <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
@@ -174,7 +174,7 @@
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="relative">
                         <select wire:model.live="declared_country_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                             <option value="">{{ __('app.driver.create.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
@@ -188,7 +188,7 @@
 
                     <div class="relative">
                         <select wire:model="declared_city_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                             <option value="">{{ __('app.driver.create.city_choose') }}</option>
                             @foreach($declaredCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? $city['name'] : $city }}</option>
@@ -221,7 +221,7 @@
                 <div class="grid sm:grid-cols-2 gap-4">
                     <div class="relative">
                         <select wire:model.live="actual_country_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                             <option value="">{{ __('app.driver.create.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? $country['name'] : $country }}</option>
@@ -235,7 +235,7 @@
 
                     <div class="relative">
                         <select wire:model="actual_city_id"
-                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 js-select2">
+                                class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500">
                             <option value="">{{ __('app.driver.create.city_choose') }}</option>
                             @foreach($actualCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? $city['name'] : $city }}</option>

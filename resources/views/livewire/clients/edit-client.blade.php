@@ -51,7 +51,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ __('app.client.edit.country') }} *</label>
-                        <select wire:model.live="jur_country_id" class="w-full border rounded px-3 py-2 js-select2">
+                        <select wire:model.live="jur_country_id" class="w-full border rounded px-3 py-2">
                             <option value="">{{ __('app.client.edit.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? ($country['name'] ?? $country) : $country }}</option>
@@ -62,7 +62,7 @@
 
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ __('app.client.edit.city') }} *</label>
-                        <select wire:model.live="jur_city_id" class="w-full border rounded px-3 py-2 js-select2">
+                        <select wire:model.live="jur_city_id" class="w-full border rounded px-3 py-2">
                             <option value="">{{ __('app.client.edit.city_choose') }}</option>
                             @foreach($jurCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? ($city['name'] ?? $city) : $city }}</option>
@@ -86,7 +86,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ __('app.client.edit.country') }}</label>
-                        <select wire:model.live="fiz_country_id" class="w-full border rounded px-3 py-2 js-select2">
+                        <select wire:model.live="fiz_country_id" class="w-full border rounded px-3 py-2">
                             <option value="">{{ __('app.client.edit.country_choose') }}</option>
                             @foreach($countries as $id => $country)
                                 <option value="{{ $id }}">{{ is_array($country) ? ($country['name'] ?? $country) : $country }}</option>
@@ -96,7 +96,7 @@
 
                     <div>
                         <label class="block text-sm font-medium mb-1">{{ __('app.client.edit.city') }}</label>
-                        <select wire:model="fiz_city_id" class="w-full border rounded px-3 py-2 js-select2">
+                        <select wire:model="fiz_city_id" class="w-full border rounded px-3 py-2">
                             <option value="">{{ __('app.client.edit.city_choose') }}</option>
                             @foreach($fizCities as $id => $city)
                                 <option value="{{ $id }}">{{ is_array($city) ? ($city['name'] ?? $city) : $city }}</option>

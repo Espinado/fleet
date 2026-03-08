@@ -1,5 +1,5 @@
 // Admin PWA SW (safe for Livewire/Vite)
-const CACHE = "admin-pwa-v2";
+const CACHE = "admin-pwa-v3";
 
 const OFFLINE_URL = "/offline-admin";
 const PRECACHE = [

@@ -48,7 +48,7 @@
         <div class="p-4 border-b flex justify-between items-center gap-2">
             <div class="flex items-center gap-2 min-w-0">
                 <img src="{{ asset('images/icons/fleet.png') }}" alt="" class="rounded-lg shrink-0 object-cover w-8 h-8 md:w-10 md:h-10">
-                <span class="text-2xl font-bold text-gray-800 truncate">{{ config('app.name', 'Fleet Manager') }}</span>
+                <span class="text-lg font-bold text-gray-800 truncate">{{ config('app.name', 'Fleet Manager') }}</span>
             </div>
             <button id="closeSidebar" class="md:hidden text-gray-500 hover:text-gray-700 text-xl shrink-0">✖</button>
         </div>
@@ -158,10 +158,10 @@
     </aside>
 
     {{-- ===== Main content ===== --}}
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col min-h-0 w-0 min-w-0">
 
         {{-- ===== Header ===== --}}
-        <header class="h-16 bg-white shadow flex items-center justify-between px-6 relative z-40 md:z-auto">
+        <header class="h-16 bg-white shadow flex items-center justify-between px-6 relative z-40 md:z-auto shrink-0">
             <button id="openSidebar" type="button" class="md:hidden text-gray-600 hover:text-gray-900 text-2xl focus:outline-none shrink-0">
                 ☰
             </button>
@@ -249,47 +249,51 @@
         document.addEventListener('submit', function(e) {
             var form = e.target;
             if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {
+                pending++;
                 showOverlay();
             }
         });
         document.addEventListener('click', function(e) {
             var a = e.target.closest('a');
-            if (!a || !a.href) return;
-            if (a.target === '_blank' || a.getAttribute('href') === '#' || (a.getAttribute('href') || '').indexOf('javascript:') === 0) return;
-            try {
-                if (new URL(a.href).origin === window.location.origin) {
+            if (a && a.href) {
+                if (a.target !== '_blank' && a.getAttribute('href') !== '#' && (a.getAttribute('href') || '').indexOf('javascript:') !== 0) {
+                    try {
+                        if (new URL(a.href).origin === window.location.origin) {
+                            pending++;
+                            showOverlay();
+                        }
+                    } catch (_) {}
+                }
+                return;
+            }
+            var btn = e.target.closest('button[type="submit"], input[type="submit"], [data-loading-overlay]');
+            if (btn) {
+                var form = btn.closest('form');
+                if (form && (form.getAttribute('wire:submit') || form.getAttribute('wire:submit.prevent') || btn.getAttribute('data-loading-overlay'))) {
                     pending++;
                     showOverlay();
                 }
-            } catch (_) {}
-        });
-        function registerRequestHook() {
-            if (window.Livewire && typeof window.Livewire.hook === 'function') {
-                window.Livewire.hook('request', function(_ref) {
-                    var succeed = _ref.succeed, fail = _ref.fail;
-                    pending++;
-                    showOverlay();
-                    succeed(function() { done(); });
-                    fail(function() { done(); });
-                });
             }
-        }
-        if (document.readyState === 'loading') {
-            document.addEventListener('livewire:init', registerRequestHook, { once: true });
-        } else {
-            registerRequestHook();
-        }
+        });
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'file' && e.target.files && e.target.files.length > 0) {
+                pending++;
+                showOverlay();
+            }
+        });
     })();
     </script>
 
-    {{-- Select2 init (работает и с Livewire). После каждого обновления Livewire переинициализируем Select2, чтобы селекты городов и др. не превращались обратно в обычные. --}}
+    {{-- Select2 init (работает и с Livewire). После каждого обновления Livewire (morph) переинициализируем Select2. Маленький спиннер у поля при отправке значения. --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const initSelect2 = () => {
                 $('.js-select2').each(function () {
                     const $el = $(this);
+                    const el = $el[0];
+                    if (!el || !document.body.contains(el)) return;
 
-                    // Если Select2 уже был инициализирован — уничтожаем (после смены страны опции городов обновились, виджет нужно пересоздать)
+                    // Если Select2 уже инициализирован — уничтожаем только если элемент ещё в DOM (после смены страны опции обновились, виджет пересоздаём)
                     if ($el.data('select2')) {
                         try {
                             $el.off('change.lwSelect2');
@@ -312,19 +316,19 @@
                         dropdownParent: $parent
                     });
 
-                    // Синхронизация с Livewire при смене значения
+                    // Синхронизация с Livewire при смене значения + маленький спиннер у поля
                     if (window.Livewire) {
                         $el.off('change.lwSelect2').on('change.lwSelect2', function (e) {
-                            const el = e.target;
+                            const target = e.target;
                             const model =
-                                el.getAttribute('wire:model.live') ||
-                                el.getAttribute('wire:model') ||
-                                el.getAttribute('wire:model.defer') ||
-                                el.getAttribute('wire:model.blur');
+                                target.getAttribute('wire:model.live') ||
+                                target.getAttribute('wire:model') ||
+                                target.getAttribute('wire:model.defer') ||
+                                target.getAttribute('wire:model.blur');
 
                             if (!model) return;
 
-                            const componentRoot = el.closest('[wire\\:id]');
+                            const componentRoot = target.closest('[wire\\:id]');
                             if (!componentRoot) return;
 
                             const componentId = componentRoot.getAttribute('wire:id');
@@ -333,18 +337,35 @@
                             const component = window.Livewire.find(componentId);
                             if (!component || typeof component.set !== 'function') return;
 
+                            var wrapper = target.closest('div');
+                            if (wrapper && !wrapper.classList.contains('select2-spinner-wrapper')) {
+                                wrapper.classList.add('select2-spinner-wrapper', 'relative');
+                                var spinner = wrapper.querySelector('.select2-inline-spinner');
+                                if (!spinner) {
+                                    spinner = document.createElement('span');
+                                    spinner.className = 'select2-inline-spinner absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin pointer-events-none';
+                                    spinner.setAttribute('aria-hidden', 'true');
+                                    wrapper.appendChild(spinner);
+                                }
+                                spinner.classList.remove('hidden');
+                            }
+
                             component.set(model, $el.val());
+                            if (target.blur) target.blur();
                         });
                     }
                 });
+                document.querySelectorAll('.select2-inline-spinner').forEach(function(el) { el.classList.add('hidden'); });
+            };
+
+            const scheduleSelect2 = () => {
+                setTimeout(initSelect2, 0);
             };
 
             initSelect2();
 
-            if (window.Livewire) {
-                window.Livewire.hook('message.processed', () => {
-                    initSelect2();
-                });
+            if (window.Livewire && typeof window.Livewire.hook === 'function') {
+                window.Livewire.hook('morphed', scheduleSelect2);
             }
         });
     </script>
