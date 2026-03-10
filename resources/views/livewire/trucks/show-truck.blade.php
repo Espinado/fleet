@@ -156,6 +156,14 @@
 
     {{-- Карта позиции (когда есть lat/lng из Mapon). Контейнер wire:ignore — при обновлении меняется только маркер. --}}
     @if($maponLat !== null && $maponLng !== null)
+        @php
+            $leafletCss = config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.css') : config('mapon.leaflet_css_url');
+            $leafletJs  = config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.js') : config('mapon.leaflet_js_url');
+            $tileUrl = config('mapon.tile_layer_url');
+            if (config('mapon.tile_use_proxy')) { $tileUrl = url('/map/tiles/{z}/{x}/{y}.png'); }
+            if (empty($tileUrl)) { $tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'; }
+            $tileAttribution = config('mapon.tile_attribution', '');
+        @endphp
         {{-- Скрытый элемент с координатами — его обновляет Livewire при Refresh, по нему двигаем маркер --}}
         <div id="truck-map-coords-{{ $truck->id }}"
              data-truck-id="{{ $truck->id }}"
@@ -168,15 +176,17 @@
             <p class="text-sm text-gray-500 mb-2">{{ __('app.truck.show.mapon_map_title') }}</p>
             <div id="truck-map-wrap-{{ $truck->id }}"
                  class="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"
-                 style="height: 320px;">
+                 style="height: 320px;"
+                 data-tile-url="{{ e($tileUrl) }}"
+                 data-tile-attribution="{{ e($tileAttribution) }}">
             </div>
         </div>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <link rel="stylesheet" href="{{ $leafletCss }}" crossorigin=""/>
         <style>
             .truck-marker-tooltip { font-weight: 600; font-size: 13px; white-space: nowrap; }
         </style>
         @push('scripts')
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script src="{{ $leafletJs }}" crossorigin=""></script>
         <script>
             (function() {
                 var truckId = {{ $truck->id }};
@@ -186,11 +196,11 @@
                 var lat = parseFloat(coordsEl.getAttribute('data-lat'));
                 var lng = parseFloat(coordsEl.getAttribute('data-lng'));
                 if (isNaN(lat) || isNaN(lng)) return;
+                var tileUrl = wrap.getAttribute('data-tile-url') || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+                var tileAttribution = wrap.getAttribute('data-tile-attribution') || '';
 
                 var map = L.map(wrap).setView([lat, lng], 15);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map);
+                L.tileLayer(tileUrl, { attribution: tileAttribution }).addTo(map);
                 var marker = L.marker([lat, lng]).addTo(map);
                 var tooltipText = (coordsEl.getAttribute('data-tooltip') || '').trim();
                 if (tooltipText) {

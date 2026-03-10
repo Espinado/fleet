@@ -420,6 +420,114 @@
     <script src="/pwa/push.js"></script>
     @endif
 
+    {{-- Общая карта (страница /map): инициализация из layout, т.к. при wire:navigate скрипты из контента не выполняются --}}
+    <script>
+    (function() {
+        var leafletUrl = @json(config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.js') : config('mapon.leaflet_js_url'));
+        function runFleetMapInit() {
+            var el = document.getElementById('fleet-map-container');
+            var dataEl = document.getElementById('fleet-map-data');
+            if (!el || !dataEl || el._fleetMapInited) return;
+            if (typeof L === 'undefined') {
+                var s = document.createElement('script');
+                s.src = leafletUrl;
+                s.onload = function() { runFleetMapInit(); };
+                document.head.appendChild(s);
+                return;
+            }
+            var data = { units: [], tile_url: '', tile_attribution: '' };
+            try {
+                var raw = (dataEl.textContent || dataEl.innerText || '').trim();
+                if (raw) data = JSON.parse(raw);
+            } catch (e) { return; }
+            var units = data.units || [];
+            if (units.length === 0) return;
+            el._fleetMapInited = true;
+            var tileUrl = (data.tile_url || '').trim() || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var tileAttribution = (data.tile_attribution || '').trim();
+            var map = L.map(el).setView([units[0].lat, units[0].lng], 6);
+            L.tileLayer(tileUrl, { attribution: tileAttribution }).addTo(map);
+            var bounds = L.latLngBounds();
+            for (var i = 0; i < units.length; i++) {
+                var u = units[i];
+                var latlng = [u.lat, u.lng];
+                bounds.extend(latlng);
+                var marker = L.marker(latlng).addTo(map);
+                if (u.tooltip) {
+                    marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -22], className: 'fleet-marker-tooltip' });
+                }
+            }
+            if (units.length > 1) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+            window.__fleetMapInstance = map;
+            window.__fleetMapFocusOn = function(lat, lng) {
+                if (window.__fleetMapInstance && typeof lat === 'number' && typeof lng === 'number') {
+                    window.__fleetMapInstance.setView([lat, lng], 15);
+                }
+            };
+        }
+        function tryFleetMap() {
+            if (document.getElementById('fleet-map-container') && document.getElementById('fleet-map-data')) {
+                runFleetMapInit();
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', tryFleetMap);
+        } else {
+            tryFleetMap();
+        }
+        tryFleetMap();
+        document.addEventListener('livewire:navigated', function() {
+            tryFleetMap();
+            setTimeout(tryFleetMap, 150);
+            setTimeout(tryFleetMap, 500);
+        });
+        document.addEventListener('livewire:init', function() {
+            if (window.Livewire && typeof window.Livewire.hook === 'function') {
+                window.Livewire.hook('morph.updated', function() {
+                    if (document.getElementById('fleet-map-container') && document.getElementById('fleet-map-data')) tryFleetMap();
+                });
+            }
+        });
+        window.__fleetMapFocusOn = function() {};
+    })();
+    </script>
+    <script>
+    document.addEventListener('alpine:init', function() {
+        if (window.Alpine && window.Alpine.data) {
+            window.Alpine.data('fleetMapSearch', function() {
+                return {
+                    units: [],
+                    query: '',
+                    filtered: [],
+                    init: function() {
+                        var el = document.getElementById('fleet-map-data');
+                        if (el) {
+                            try {
+                                var d = JSON.parse((el.textContent || '').trim() || '{}');
+                                this.units = d.units || [];
+                            } catch (e) {}
+                        }
+                    },
+                    filter: function() {
+                        var q = (this.query || '').trim().toLowerCase();
+                        if (!q) { this.filtered = []; return; }
+                        this.filtered = this.units.filter(function(u) {
+                            return (u.number || '').toLowerCase().indexOf(q) >= 0;
+                        });
+                    },
+                    focusOn: function(u) {
+                        if (window.__fleetMapFocusOn && u && typeof u.lat === 'number' && typeof u.lng === 'number') {
+                            window.__fleetMapFocusOn(u.lat, u.lng);
+                        }
+                        this.query = '';
+                        this.filtered = [];
+                    }
+                };
+            });
+        }
+    });
+    </script>
+
     @stack('scripts')
 
     {{-- Root SW (scope /) — для Web Push на /dashboard и всех страницах --}}

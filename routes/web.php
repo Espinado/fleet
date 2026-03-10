@@ -75,6 +75,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard', ExpiringDocumentsTable::class)->name('dashboard');
 
+    // Прокси тайлов OSM — до /map, чтобы не перехватывалось Livewire. OSM требует User-Agent.
+    Route::get('/map/tiles/{z}/{x}/{y}.png', function (int $z, int $x, int $y) {
+        $z = max(0, min(19, $z));
+        $url = 'https://a.tile.openstreetmap.org/' . $z . '/' . $x . '/' . $y . '.png';
+        $response = \Illuminate\Support\Facades\Http::timeout(8)
+            ->withHeaders([
+                'User-Agent' => config('app.name', 'FleetManager') . '/1.0 (+' . config('app.url', '') . ')',
+            ])
+            ->get($url);
+        if (!$response->successful()) {
+            abort(404);
+        }
+        return response($response->body(), 200, [
+            'Content-Type'  => 'image/png',
+            'Cache-Control' => 'public, max-age=86400',
+        ]);
+    })->whereNumber(['z', 'x', 'y'])->name('map.tiles');
+
     Route::get('/map', FleetMap::class)->name('map.index');
 
     // Drivers

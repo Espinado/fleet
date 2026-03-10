@@ -15,54 +15,53 @@
             {{ __('app.map.no_units') }}
         </div>
     @else
+        <div class="mb-4" x-data="fleetMapSearch()" x-init="init()">
+            <label for="fleet-map-search" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.map.search_label') }}</label>
+            <div class="relative">
+                <input type="text"
+                       id="fleet-map-search"
+                       x-model="query"
+                       x-on:input.debounce.200ms="filter()"
+                       placeholder="{{ __('app.map.search_placeholder') }}"
+                       class="w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 pr-10 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+            </div>
+            <template x-if="query.length > 0 && filtered.length > 0">
+                <ul class="mt-2 max-w-md rounded-lg border border-gray-200 bg-white shadow-lg overflow-hidden divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                    <template x-for="u in filtered" :key="u.unit_id">
+                        <li>
+                            <button type="button"
+                                    x-on:click="focusOn(u)"
+                                    class="w-full text-left px-4 py-3 hover:bg-blue-50 transition flex justify-between items-center">
+                                <span class="font-medium" x-text="u.number"></span>
+                                <span class="text-sm text-gray-500" x-text="u.tooltip ? u.tooltip.replace(u.number + ' — ', '') : ''"></span>
+                            </button>
+                        </li>
+                    </template>
+                </ul>
+            </template>
+            <template x-if="query.length > 0 && filtered.length === 0">
+                <p class="mt-2 text-sm text-gray-500">{{ __('app.map.search_no_results') }}</p>
+            </template>
+        </div>
+        @php
+            $leafletCss = config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.css') : config('mapon.leaflet_css_url');
+            $tileUrl = config('mapon.tile_layer_url');
+            if (config('mapon.tile_use_proxy')) {
+                $tileUrl = url('/map/tiles/{z}/{x}/{y}.png');
+            }
+            if (empty($tileUrl)) {
+                $tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            }
+            $tileAttribution = config('mapon.tile_attribution', '');
+        @endphp
+        <link rel="stylesheet" href="{{ $leafletCss }}" crossorigin=""/>
+        <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }</style>
+        <script type="application/json" id="fleet-map-data">{!! json_encode(['units' => $unitsForMap, 'tile_url' => $tileUrl, 'tile_attribution' => $tileAttribution]) !!}</script>
         <div id="fleet-map-container"
              class="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"
-             style="height: calc(100vh - 220px); min-height: 400px;"
-             data-units="{{ e(json_encode($unitsForMap)) }}">
+             style="height: calc(100vh - 220px); min-height: 400px;">
         </div>
-
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-        <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }</style>
-        @push('scripts')
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-        <script>
-            (function() {
-                var el = document.getElementById('fleet-map-container');
-                if (!el) return;
-                var raw = el.getAttribute('data-units');
-                var units = [];
-                try {
-                    units = JSON.parse(raw || '[]');
-                } catch (e) {
-                    return;
-                }
-                if (units.length === 0) return;
-
-                var map = L.map(el).setView([units[0].lat, units[0].lng], 6);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                }).addTo(map);
-
-                var bounds = L.latLngBounds();
-                for (var i = 0; i < units.length; i++) {
-                    var u = units[i];
-                    var latlng = [u.lat, u.lng];
-                    bounds.extend(latlng);
-                    var marker = L.marker(latlng).addTo(map);
-                    if (u.tooltip) {
-                        marker.bindTooltip(u.tooltip, {
-                            permanent: true,
-                            direction: 'top',
-                            offset: [0, -22],
-                            className: 'fleet-marker-tooltip'
-                        });
-                    }
-                }
-                if (units.length > 1) {
-                    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-                }
-            })();
-        </script>
-        @endpush
+        {{-- Инициализация карты выполняется в layout (DOMContentLoaded + livewire:navigated), т.к. при wire:navigate скрипты из контента не выполняются --}}
     @endif
 </div>
