@@ -31,7 +31,7 @@
 <body class="bg-gray-100 h-screen flex overflow-hidden relative">
 
     {{-- Глобальный спиннер при переходах (до полной загрузки новой страницы) --}}
-    <div id="global-navigate-overlay" class="fixed inset-0 z-[250] flex items-center justify-center bg-white/90 backdrop-blur-sm hidden" aria-live="polite" aria-label="{{ __('app.please_wait') }}">
+    <div id="global-navigate-overlay" class="fixed inset-0 z-[9999] flex items-center justify-center bg-white/90 backdrop-blur-sm hidden" aria-live="polite" aria-label="{{ __('app.please_wait') }}">
         <div class="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white shadow-xl border border-gray-200">
             <svg class="animate-spin h-12 w-12 text-indigo-600 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             <span class="font-semibold text-gray-800 text-lg">{{ __('app.please_wait') }}</span>
@@ -424,10 +424,48 @@
     <script>
     (function() {
         var leafletUrl = @json(config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.js') : config('mapon.leaflet_js_url'));
+        function addMarkersToLayer(layer, units) {
+            if (!layer || !units || !units.length) return;
+            for (var i = 0; i < units.length; i++) {
+                var u = units[i];
+                var latlng = [u.lat, u.lng];
+                var marker = L.marker(latlng).addTo(layer);
+                if (u.tooltip) {
+                    marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -22], className: 'fleet-marker-tooltip' });
+                }
+            }
+        }
+        function updateFleetMapMarkers() {
+            var dataEl = document.getElementById('fleet-map-data');
+            var map = window.__fleetMapInstance;
+            var layer = window.__fleetMapMarkersLayer;
+            if (!dataEl || !map || !layer) return;
+            var data = { units: [] };
+            try {
+                var raw = (dataEl.textContent || dataEl.innerText || '').trim();
+                if (raw) data = JSON.parse(raw);
+            } catch (e) { return; }
+            var units = data.units || [];
+            layer.clearLayers();
+            addMarkersToLayer(layer, units);
+            /* Не меняем центр и зум — только перерисовываем маркеры */
+        }
         function runFleetMapInit() {
             var el = document.getElementById('fleet-map-container');
             var dataEl = document.getElementById('fleet-map-data');
-            if (!el || !dataEl || el._fleetMapInited) return;
+            if (!el || !dataEl) return;
+            if (window.__fleetMapInstance) {
+                var container = window.__fleetMapInstance.getContainer ? window.__fleetMapInstance.getContainer() : null;
+                if (container && container === el) {
+                    updateFleetMapMarkers();
+                    return;
+                }
+                try { window.__fleetMapInstance.remove(); } catch (e) {}
+                window.__fleetMapInstance = null;
+                window.__fleetMapMarkersLayer = null;
+                el._fleetMapInited = false;
+            }
+            if (el._fleetMapInited) return;
             if (typeof L === 'undefined') {
                 var s = document.createElement('script');
                 s.src = leafletUrl;
@@ -447,17 +485,14 @@
             var tileAttribution = (data.tile_attribution || '').trim();
             var map = L.map(el).setView([units[0].lat, units[0].lng], 6);
             L.tileLayer(tileUrl, { attribution: tileAttribution }).addTo(map);
-            var bounds = L.latLngBounds();
-            for (var i = 0; i < units.length; i++) {
-                var u = units[i];
-                var latlng = [u.lat, u.lng];
-                bounds.extend(latlng);
-                var marker = L.marker(latlng).addTo(map);
-                if (u.tooltip) {
-                    marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -22], className: 'fleet-marker-tooltip' });
-                }
+            var markersLayer = L.layerGroup().addTo(map);
+            window.__fleetMapMarkersLayer = markersLayer;
+            addMarkersToLayer(markersLayer, units);
+            if (units.length > 1) {
+                var bounds = L.latLngBounds();
+                for (var i = 0; i < units.length; i++) bounds.extend([units[i].lat, units[i].lng]);
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
             }
-            if (units.length > 1) map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
             window.__fleetMapInstance = map;
             window.__fleetMapFocusOn = function(lat, lng) {
                 if (window.__fleetMapInstance && typeof lat === 'number' && typeof lng === 'number') {
@@ -485,6 +520,12 @@
             if (window.Livewire && typeof window.Livewire.hook === 'function') {
                 window.Livewire.hook('morph.updated', function() {
                     if (document.getElementById('fleet-map-container') && document.getElementById('fleet-map-data')) tryFleetMap();
+                });
+            }
+            if (window.Livewire && typeof window.Livewire.on === 'function') {
+                window.Livewire.on('fleet-map-refreshed', function() {
+                    setTimeout(updateFleetMapMarkers, 50);
+                    setTimeout(updateFleetMapMarkers, 250);
                 });
             }
         });

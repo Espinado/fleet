@@ -23,6 +23,7 @@ class FleetMap extends Component
     {
         Cache::forget('mapon:all_units');
         $this->loadUnits();
+        $this->dispatch('fleet-map-refreshed');
     }
 
     protected function loadUnits(): void

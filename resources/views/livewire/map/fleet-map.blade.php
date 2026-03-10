@@ -59,6 +59,7 @@
         <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }</style>
         <script type="application/json" id="fleet-map-data">{!! json_encode(['units' => $unitsForMap, 'tile_url' => $tileUrl, 'tile_attribution' => $tileAttribution]) !!}</script>
         <div id="fleet-map-container"
+             wire:ignore
              class="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"
              style="height: calc(100vh - 220px); min-height: 400px;">
         </div>
