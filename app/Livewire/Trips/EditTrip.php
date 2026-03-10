@@ -1288,6 +1288,16 @@ class EditTrip extends Component
                     }
                 }
             }
+
+            // Один рейс = одна машина = один водитель. Не допускаем пересечение дат.
+            if (!$isThirdPartyFlow && $this->start_date) {
+                if ($this->driver_id && Trip::hasOverlappingDriver((int) $this->driver_id, $this->start_date, $this->end_date, $this->trip->id)) {
+                    $validator->errors()->add('driver_id', __('app.trip.validation.err_driver_overlap'));
+                }
+                if ($this->truck_id && Trip::hasOverlappingTruck((int) $this->truck_id, $this->start_date, $this->end_date, $this->trip->id)) {
+                    $validator->errors()->add('truck_id', __('app.trip.validation.err_truck_overlap'));
+                }
+            }
         });
 
         if ($validator->fails()) {

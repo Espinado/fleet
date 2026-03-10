@@ -60,6 +60,7 @@ class TripDocumentsSection extends Component
     public function delete($id)
     {
         $doc = TripDocument::findOrFail($id);
+        abort_if((int) $doc->trip_id !== (int) $this->trip->id, 403);
 
         Storage::disk('public')->delete($doc->file_path);
         $doc->delete();

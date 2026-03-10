@@ -149,6 +149,7 @@ class TripExpensesSection extends Component
     public function delete($id)
     {
         $exp = TripExpense::findOrFail($id);
+        abort_if((int) $exp->trip_id !== (int) $this->trip->id, 403);
 
         if ($exp->file_path) {
             Storage::disk('public')->delete($exp->file_path);

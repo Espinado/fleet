@@ -9,6 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoices', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
 
             // Relations (1 cargo = 1 invoice)

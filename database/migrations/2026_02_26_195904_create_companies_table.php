@@ -8,6 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('companies', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
 
             $table->string('slug')->unique(); // lakna/padex/expeditor

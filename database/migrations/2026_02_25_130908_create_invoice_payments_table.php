@@ -9,6 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('invoice_payments', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
 
             $table->foreignId('invoice_id')->constrained('invoices')->cascadeOnDelete();

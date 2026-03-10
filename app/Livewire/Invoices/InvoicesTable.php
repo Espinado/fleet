@@ -91,7 +91,14 @@ class InvoicesTable extends Component
             'payment_amount' => 'payment amount',
         ]);
 
-        $invoice = Invoice::findOrFail($this->paymentInvoiceId);
+        $invoice = Invoice::with('trip')->findOrFail($this->paymentInvoiceId);
+        $user = auth()->user();
+        if ($user && !$user->isAdmin() && $user->company_id !== null) {
+            abort_if(
+                !$invoice->trip || (int) $invoice->trip->carrier_company_id !== (int) $user->company_id,
+                403
+            );
+        }
 
         InvoicePayment::create([
             'invoice_id' => $invoice->id,
@@ -107,9 +114,19 @@ class InvoicesTable extends Component
 
     public function render()
     {
+        $user = auth()->user();
         $q = Invoice::query()
             ->with(['payer', 'payments'])
-            ->select('invoices.*')
+            ->select('invoices.*');
+
+        if ($user && $user->isAdmin()) {
+            // Админ видит все инвойсы
+        } elseif ($user && $user->company_id !== null) {
+            $q->whereHas('trip', fn ($sub) => $sub->where('carrier_company_id', (int) $user->company_id));
+        } else {
+            $q->whereRaw('1 = 0');
+        }
+        $q
             ->selectSub(function ($sub) {
                 $sub->from('invoice_payments')
                     ->selectRaw('COALESCE(SUM(amount),0)')

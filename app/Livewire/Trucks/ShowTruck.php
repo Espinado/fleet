@@ -26,6 +26,16 @@ class ShowTruck extends Component
     public ?string $maponLastUpdate = null;      // unit.last_update
     public ?string $maponCanAt = null;           // can.odom.gmt
 
+    // Position (for map)
+    public ?float $maponLat = null;
+    public ?float $maponLng = null;
+    /** State: 'standing' | 'moving' */
+    public ?string $maponStateName = null;
+    /** Speed km/h (when moving) */
+    public ?float $maponSpeed = null;
+    /** Tooltip text for map marker (state + speed) */
+    public string $maponMarkerTooltip = '';
+
     public function mount(Truck $truck): void
     {
         $this->truck = $truck;
@@ -54,6 +64,11 @@ public function loadMaponData(): void
     $this->maponUnitName = null;
     $this->maponLastUpdate = null;
     $this->maponCanAt = null;
+    $this->maponLat = null;
+    $this->maponLng = null;
+    $this->maponStateName = null;
+    $this->maponSpeed = null;
+    $this->maponMarkerTooltip = '';
 
     $this->maponCanStale = false;
     $this->maponCanDaysAgo = null;
@@ -93,6 +108,24 @@ public function loadMaponData(): void
         ?? '—';
 
     $this->maponLastUpdate = $result['last_update'] ?? null;
+
+    if (isset($result['lat']) && isset($result['lng'])) {
+        $this->maponLat = (float) $result['lat'];
+        $this->maponLng = (float) $result['lng'];
+    }
+
+    $this->maponStateName = $result['state']['name'] ?? $result['movement_state']['name'] ?? 'standing';
+    if (isset($result['speed']) && $result['speed'] !== null) {
+        $this->maponSpeed = (float) $result['speed'];
+    }
+
+    if ($this->maponStateName === 'moving' && $this->maponSpeed !== null) {
+        $this->maponMarkerTooltip = __('app.truck.show.mapon_moving') . ', ' . (int) round($this->maponSpeed) . ' ' . __('app.truck.show.mapon_kmh');
+    } elseif ($this->maponStateName === 'moving') {
+        $this->maponMarkerTooltip = __('app.truck.show.mapon_moving');
+    } else {
+        $this->maponMarkerTooltip = __('app.truck.show.mapon_standing');
+    }
 
     // --------------------------------------
     // ODOMETER: CAN → fallback mileage

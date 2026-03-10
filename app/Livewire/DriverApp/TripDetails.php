@@ -45,6 +45,8 @@ class TripDetails extends Component
             return redirect()->route('driver.login');
         }
 
+        abort_if($trip->driver_id === null || (int) $trip->driver_id !== (int) $user->driver->id, 403);
+
         $this->trip = $trip;
         $this->trip->load('truck');
 

@@ -216,5 +216,67 @@ public function getSchemeBadgeClassAttribute(): string
     };
 }
 
+/**
+ * Проверка: есть ли другой рейс с тем же водителем в пересекающиеся даты.
+ * Один рейс = один водитель; в один период водитель не может быть в двух рейсах.
+ *
+ * @param int $driverId
+ * @param string|\Carbon\Carbon|null $startDate Y-m-d или Carbon
+ * @param string|\Carbon\Carbon|null $endDate Y-m-d или Carbon (если null — считается как startDate)
+ * @param int|null $excludeTripId Исключить рейс из проверки (при редактировании)
+ */
+public static function hasOverlappingDriver(int $driverId, $startDate, $endDate, ?int $excludeTripId = null): bool
+{
+    $start = $startDate ? (\Carbon\Carbon::parse($startDate))->format('Y-m-d') : null;
+    $end = $endDate ? (\Carbon\Carbon::parse($endDate))->format('Y-m-d') : $start;
+    if ($start === null) {
+        return false;
+    }
 
+    $q = static::query()
+        ->where('driver_id', $driverId)
+        ->where(function ($b) use ($start, $end) {
+            $b->where('start_date', '<=', $end)
+                ->where(function ($b2) use ($start) {
+                    $b2->where('end_date', '>=', $start)
+                        ->orWhereNull('end_date');
+                });
+        });
+    if ($excludeTripId !== null) {
+        $q->where('id', '!=', $excludeTripId);
+    }
+    return $q->exists();
+}
+
+/**
+ * Проверка: есть ли другой рейс с той же машиной в пересекающиеся даты.
+ * Один рейс = одна машина; в один период машина не может быть в двух рейсах.
+ *
+ * @param int $truckId
+ * @param string|\Carbon\Carbon|null $startDate
+ * @param string|\Carbon\Carbon|null $endDate
+ * @param int|null $excludeTripId
+ */
+public static function hasOverlappingTruck(int $truckId, $startDate, $endDate, ?int $excludeTripId = null): bool
+{
+    $start = $startDate ? (\Carbon\Carbon::parse($startDate))->format('Y-m-d') : null;
+    $end = $endDate ? (\Carbon\Carbon::parse($endDate))->format('Y-m-d') : $start;
+    if ($start === null) {
+        return false;
+    }
+
+    $q = static::query()
+        ->where('truck_id', $truckId)
+        ->where(function ($b) use ($start, $end) {
+            $b->where('start_date', '<=', $end)
+                ->where(function ($b2) use ($start) {
+                    $b2->where('end_date', '>=', $start)
+                        ->orWhereNull('end_date');
+                });
+        });
+    if ($excludeTripId !== null) {
+        $q->where('id', '!=', $excludeTripId);
+    }
+    return $q->exists();
+}
 }

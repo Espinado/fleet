@@ -197,7 +197,7 @@
             </tr>
             <tr>
                 <td class="cell" colspan="4"></td>
-              @php $taxPercent = (float)($cargos->first()->tax_percent ?? 21); @endphp
+              @php $taxPercent = (float) data_get($cargos->first(), 'tax_percent', 21); @endphp
 <td class="cell">
     PVN {{ rtrim(rtrim(number_format($taxPercent, 2, '.', ''), '0'), '.') }}%
     @if($taxPercent == 0)

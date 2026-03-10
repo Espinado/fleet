@@ -100,6 +100,7 @@ class ViewTrip extends Component
     public function deleteStepDocument(int $docId)
     {
         $doc = TripStepDocument::findOrFail($docId);
+        abort_if((int) $doc->trip_id !== (int) $this->trip->id, 403);
 
         \Storage::disk('public')->delete($doc->file_path);
         $doc->delete();

@@ -42,5 +42,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->renderable(function (\Illuminate\Validation\ValidationException $e) {
             report($e);
         });
+
+        // Page expired (419) — вместо ошибки редирект на страницу входа
+        $exceptions->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            $loginRoute = str_starts_with($request->path(), 'driver') ? 'driver.login' : 'login';
+            $loginUrl = route($loginRoute);
+
+            // AJAX / Livewire: возвращаем 419 с URL редиректа, клиент перенаправит
+            if ($request->header('X-Livewire') || $request->ajax() || $request->expectsJson()) {
+                return response()->json(['message' => 'Page expired.', 'redirect' => $loginUrl], 419)
+                    ->header('X-Redirect-To', $loginUrl);
+            }
+            return redirect()->to($loginUrl)
+                ->with('error', __('Session expired. Please log in again.'));
+        });
     })
     ->create();

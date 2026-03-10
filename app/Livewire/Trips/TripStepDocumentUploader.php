@@ -25,7 +25,7 @@ class TripStepDocumentUploader extends Component
         return [
             'type'    => ['required', new Enum(StepDocumentType::class)],
             'comment' => 'nullable|string|max:2000',
-            'file'    => 'required|file',
+            'file'    => 'required|file|mimes:pdf,jpeg,jpg,png,gif|max:10240',
         ];
     }
 
@@ -70,6 +70,7 @@ class TripStepDocumentUploader extends Component
     public function delete($id)
     {
         $doc = TripStepDocument::findOrFail($id);
+        abort_if((int) $doc->trip_step_id !== (int) $this->step->id, 403);
 
         if (\Storage::disk('public')->exists($doc->file_path)) {
             \Storage::disk('public')->delete($doc->file_path);

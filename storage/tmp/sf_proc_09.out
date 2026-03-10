@@ -2,18 +2,18 @@
 7-Zip (a) 24.09 (x86) : Copyright (c) 1999-2024 Igor Pavlov : 2024-11-29
 
 Scanning the drive for archives:
-1 file, 22714 bytes (23 KiB)
+1 file, 80953 bytes (80 KiB)
 
-Extracting archive: C:\laragon\www\cargo-trans\vendor\composer\tmp-b8abac9f7d2b4d6f410955205138bb72.zip
+Extracting archive: C:\laragon\www\vsedetali\vendor\composer\tmp-bf46b7483f6cd0a2abbe5d280118f5c0.zip
 --
-Path = C:\laragon\www\cargo-trans\vendor\composer\tmp-b8abac9f7d2b4d6f410955205138bb72.zip
+Path = C:\laragon\www\vsedetali\vendor\composer\tmp-bf46b7483f6cd0a2abbe5d280118f5c0.zip
 Type = zip
-Physical Size = 22714
-Comment = 07d290f0c47959fd5eed98c95ee5602db07e0b6a
+Physical Size = 80953
+Comment = 3a6ef54b6a8cefc79858e7033e4d6b65fb2d859b
 
 Everything is Ok
 
-Folders: 13
-Files: 30
-Size:       37238
-Compressed: 22714
+Folders: 69
+Files: 103
+Size:       129882
+Compressed: 80953

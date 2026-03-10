@@ -71,6 +71,7 @@ return [
     'nav.stats_overview'    => 'Pārskats',
     'nav.stats_events'      => 'Notikumi',
     'nav.invoices'          => 'Rēķini',
+    'nav.map'               => 'Karte',
     'nav.hello'             => 'Sveiki, :name',
     'nav.logout'            => 'Izrakstīties',
 
@@ -241,6 +242,16 @@ return [
     'truck.show.mapon_last_update'   => 'Pēdējais atjauninājums',
     'truck.show.mapon_unit_name'     => 'Unit nosaukums',
     'truck.show.mapon_loading'       => 'Ielādē Mapon datus...',
+    'truck.show.mapon_map_title'     => 'Pozīcija kartē',
+    'truck.show.mapon_no_position'   => 'Pozīcija nav pieejama',
+
+    'map.title'      => 'Karte — visi transportlīdzekļi',
+    'map.refresh'    => 'Atjaunot',
+    'map.refreshing' => 'Atjaunina...',
+    'map.no_units'   => 'Nav datu no Mapon. Pārbaudiet API atslēgas vai mēģiniet vēlāk.',
+    'truck.show.mapon_standing'      => 'Stāv',
+    'truck.show.mapon_moving'        => 'Brauc',
+    'truck.show.mapon_kmh'            => 'km/h',
     'truck.show.inspection_title'    => 'Tehniskā apskate',
     'truck.show.issued'              => 'Izsniegts',
     'truck.show.expires'             => 'Der līdz',
@@ -723,6 +734,8 @@ return [
     'trip.validation.err_unload_after_load'    => 'Pirmajai izkraušanai jābūt pēc pirmās iekraušanas.',
     'trip.validation.err_create'               => 'Kļūda, veidojot reisu.',
     'trip.validation.err_save'                  => 'Kļūda, saglabājot reisu.',
+    'trip.validation.err_driver_overlap'        => 'Izvēlētais vadītājs jau ir piešķirts citam reisam šajā periodā. Viens reiss = viens vadītājs.',
+    'trip.validation.err_truck_overlap'          => 'Izvēlētais kravas auto jau ir piešķirts citam reisam šajā periodā. Viens reiss = viens kravas auto.',
 
     // Expiring documents (dashboard)
     'exp.search'            => 'Meklēt dokumentu...',

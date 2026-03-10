@@ -178,9 +178,10 @@
 
                 {{-- Clients --}}
                 @if($step->cargos->count())
+                    @php $firstCargo = $step->cargos->first(); @endphp
                     <div class="text-xs space-y-1">
-                        <p><strong>{{ __('app.driver.trip_details.shipper') }}:</strong> {{ $step->cargos->first()->shipper?->company_name }}</p>
-                        <p><strong>{{ __('app.driver.trip_details.consignee') }}:</strong> {{ $step->cargos->first()->consignee?->company_name }}</p>
+                        <p><strong>{{ __('app.driver.trip_details.shipper') }}:</strong> {{ $firstCargo?->shipper?->company_name ?? '—' }}</p>
+                        <p><strong>{{ __('app.driver.trip_details.consignee') }}:</strong> {{ $firstCargo?->consignee?->company_name ?? '—' }}</p>
                     </div>
                 @endif
 

@@ -17,7 +17,13 @@ class ViewDocument extends Component
             return redirect()->route('driver.login');
         }
 
-        $this->document = TripDocument::findOrFail($document);
+        $this->document = TripDocument::with('trip')->findOrFail($document);
+        abort_if(
+            !$this->document->trip
+            || $this->document->trip->driver_id === null
+            || (int) $this->document->trip->driver_id !== (int) $user->driver->id,
+            403
+        );
     }
 
     public function render()

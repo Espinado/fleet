@@ -425,7 +425,7 @@
     <div class="space-y-6">
 
         @foreach ($trip->cargos->groupBy('customer_id') as $customerId => $customerCargos)
-            @php $customer = $customerCargos->first()->customer; @endphp
+            @php $customer = $customerCargos->first()?->customer; @endphp
 
             <div x-data="{ openClient: false }"
                  class="bg-white dark:bg-gray-900 shadow rounded-xl border border-gray-200 dark:border-gray-700">
@@ -434,10 +434,10 @@
                 <button type="button" @click="openClient = !openClient"
                         class="w-full flex items-center justify-between p-4 text-left">
                     <div class="min-w-0">
-                        <h3 class="text-lg font-semibold truncate">{{ $customer->company_name }}</h3>
+                        <h3 class="text-lg font-semibold truncate">{{ $customer?->company_name ?? '—' }}</h3>
                         <p class="text-xs text-gray-500">
-                            {{ getCountryById($customer->jur_country_id) }},
-                            {{ getCityNameByCountryId($customer->jur_country_id, $customer->jur_city_id) }}
+                            {{ $customer ? getCountryById($customer->jur_country_id) : '—' }},
+                            {{ $customer ? getCityNameByCountryId($customer->jur_country_id, $customer->jur_city_id) : '—' }}
                         </p>
                     </div>
                     <div class="text-gray-400 transition-transform" :class="{ 'rotate-180': openClient }">▼</div>

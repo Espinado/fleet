@@ -80,6 +80,58 @@ class MaponService
 
 
     /**
+     * Список всех юнитов по API-ключу (без unit_id — Mapon возвращает все юниты аккаунта).
+     */
+    public function fetchAllUnits(string $apiKey, array|string|null $include = null): array
+    {
+        $url = rtrim($this->baseUrl, '/') . '/unit/list.json';
+
+        $query = ['key' => $apiKey];
+        if (is_string($include) && $include !== '') {
+            $query['include'] = $include;
+        } elseif (is_array($include) && !empty($include)) {
+            $query['include'] = $include;
+        }
+
+        $response = Http::timeout(20)->get($url, $query);
+        if (!$response->ok()) {
+            return [];
+        }
+
+        $units = data_get($response->json(), 'data.units', []);
+        return is_array($units) ? $units : [];
+    }
+
+    /**
+     * Все юниты по всем настроенным ключам (по компаниям + fallback key).
+     * Каждый юнит дополняется company_id (ключ из config), если ключ из keys[company_id].
+     */
+    public function getAllUnits(): array
+    {
+        $result = [];
+        $keys = config('mapon.keys', []);
+        foreach ($keys as $companyId => $apiKey) {
+            $apiKey = (string) $apiKey;
+            if ($apiKey === '') {
+                continue;
+            }
+            $units = $this->fetchAllUnits($apiKey);
+            foreach ($units as $unit) {
+                $unit['_company_id'] = $companyId;
+                $result[] = $unit;
+            }
+        }
+        $fallback = (string) config('mapon.key', '');
+        if ($fallback !== '' && empty($result)) {
+            foreach ($this->fetchAllUnits($fallback) as $unit) {
+                $unit['_company_id'] = null;
+                $result[] = $unit;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * Низкоуровневый запрос к Mapon.
      * Возвращает именно тот unit, который запрошен.
      */

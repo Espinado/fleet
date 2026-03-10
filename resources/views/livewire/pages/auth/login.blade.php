@@ -2,17 +2,27 @@
 
 use App\Livewire\Forms\LoginForm;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component
 {
     public LoginForm $form;
+    public string $authError = '';
 
     public function login(): void
     {
+        $this->authError = '';
         $this->validate();
-        $this->form->authenticate();
+
+        try {
+            $this->form->authenticate();
+        } catch (ValidationException $e) {
+            $this->authError = data_get($e->errors(), 'form.email.0', __('auth.failed'));
+            return;
+        }
+
         Session::regenerate();
 
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
@@ -42,6 +52,12 @@ new #[Layout('layouts.guest')] class extends Component
         {{-- Pieteikšanās forma --}}
         <div class="bg-white rounded-2xl shadow-lg p-6 space-y-6 animate-slide-up">
             <x-auth-session-status class="mb-4" :status="session('status')" />
+
+            @if ($authError)
+                <div class="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4" role="alert">
+                    {{ $authError }}
+                </div>
+            @endif
 
             <form wire:submit.prevent="login" action="{{ route('login') }}" class="space-y-4">
                 {{-- E-pasts --}}

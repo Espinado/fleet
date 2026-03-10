@@ -24,6 +24,7 @@ use App\Livewire\Invoices\InvoicesTable;
 use App\Models\Invoice;
 use Illuminate\Support\Facades\Storage;
 use App\Livewire\Stats\EventsTable;
+use App\Livewire\Map\FleetMap;
 
 
 
@@ -31,22 +32,21 @@ use App\Notifications\TestPushNotification;
 
 // Главная страница
 Route::redirect('/', '/dashboard');
-Route::get('/_dev/find-odometer', function () {
-    $root = app_path();
-
-    $rii = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
-    );
-
-    $matches = [];
-    foreach ($rii as $file) {
-        if ($file->getFilename() === 'MaponOdometerFetcher.php') {
-            $matches[] = $file->getPathname();
+if (app()->environment('local')) {
+    Route::get('/_dev/find-odometer', function () {
+        $root = app_path();
+        $rii = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+        );
+        $matches = [];
+        foreach ($rii as $file) {
+            if ($file->getFilename() === 'MaponOdometerFetcher.php') {
+                $matches[] = $file->getPathname();
+            }
         }
-    }
-
-    return $matches;
-});
+        return $matches;
+    });
+}
 
 // === БЛОК АДМИНА (auth + verified) ===
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -74,6 +74,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('push.subscribe');
 
     Route::get('/dashboard', ExpiringDocumentsTable::class)->name('dashboard');
+
+    Route::get('/map', FleetMap::class)->name('map.index');
 
     // Drivers
     Route::get('/drivers', DriversTable::class)->name('drivers.index');
@@ -123,6 +125,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/invoices', InvoicesTable::class)
     ->name('invoices.index');
   Route::get('/invoices/{invoice}/open', function (Invoice $invoice) {
+    $invoice->load('trip');
+    $user = auth()->user();
+    if ($user && !$user->isAdmin() && $user->company_id !== null) {
+        abort_if(!$invoice->trip || (int) $invoice->trip->carrier_company_id !== (int) $user->company_id, 403);
+    }
 
     if (!$invoice->pdf_file) {
         abort(404, 'Invoice PDF not found');

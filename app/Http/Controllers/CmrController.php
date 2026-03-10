@@ -16,6 +16,13 @@ class CmrController extends Controller
 {
     public function generateAndSave(TripCargo $cargo): string
     {
+        $user = auth()->user();
+        if ($user && !$user->isAdmin() && $user->company_id !== null) {
+            abort_if(
+                !$cargo->trip || (int) $cargo->trip->carrier_company_id !== (int) $user->company_id,
+                403
+            );
+        }
         $cargo->loadMissing([
             'trip.driver',
             'trip.truck',
@@ -166,9 +173,16 @@ class CmrController extends Controller
     /**
      * ✅ Новый метод под роут: /invoice/{cargo}/generate
      */
- public function generateInvoiceAndSave(TripCargo $cargo): string
-{
-    $cargo->loadMissing([
+    public function generateInvoiceAndSave(TripCargo $cargo): string
+    {
+        $user = auth()->user();
+        if ($user && !$user->isAdmin() && $user->company_id !== null) {
+            abort_if(
+                !$cargo->trip || (int) $cargo->trip->carrier_company_id !== (int) $user->company_id,
+                403
+            );
+        }
+        $cargo->loadMissing([
         'trip.truck',
         'trip.trailer',
         'customer',

@@ -154,6 +154,101 @@
         </div>
     </div>
 
+    {{-- Карта позиции (когда есть lat/lng из Mapon). Контейнер wire:ignore — при обновлении меняется только маркер. --}}
+    @if($maponLat !== null && $maponLng !== null)
+        {{-- Скрытый элемент с координатами — его обновляет Livewire при Refresh, по нему двигаем маркер --}}
+        <div id="truck-map-coords-{{ $truck->id }}"
+             data-truck-id="{{ $truck->id }}"
+             data-lat="{{ $maponLat }}"
+             data-lng="{{ $maponLng }}"
+             data-tooltip="{{ e($maponMarkerTooltip) }}"
+             class="hidden"
+             aria-hidden="true"></div>
+        <div id="truck-map-outer-{{ $truck->id }}" class="mt-6" wire:ignore>
+            <p class="text-sm text-gray-500 mb-2">{{ __('app.truck.show.mapon_map_title') }}</p>
+            <div id="truck-map-wrap-{{ $truck->id }}"
+                 class="rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"
+                 style="height: 320px;">
+            </div>
+        </div>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+        <style>
+            .truck-marker-tooltip { font-weight: 600; font-size: 13px; white-space: nowrap; }
+        </style>
+        @push('scripts')
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+        <script>
+            (function() {
+                var truckId = {{ $truck->id }};
+                var coordsEl = document.getElementById('truck-map-coords-' + truckId);
+                var wrap = document.getElementById('truck-map-wrap-' + truckId);
+                if (!coordsEl || !wrap) return;
+                var lat = parseFloat(coordsEl.getAttribute('data-lat'));
+                var lng = parseFloat(coordsEl.getAttribute('data-lng'));
+                if (isNaN(lat) || isNaN(lng)) return;
+
+                var map = L.map(wrap).setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(map);
+                var marker = L.marker([lat, lng]).addTo(map);
+                var tooltipText = (coordsEl.getAttribute('data-tooltip') || '').trim();
+                if (tooltipText) {
+                    marker.bindTooltip(tooltipText, {
+                        permanent: true,
+                        direction: 'top',
+                        offset: [0, -28],
+                        className: 'truck-marker-tooltip'
+                    });
+                }
+
+                window.__truckMaps = window.__truckMaps || {};
+                window.__truckMaps[truckId] = { map: map, marker: marker };
+
+                Livewire.hook('morph.updated', function() {
+                    var el = document.getElementById('truck-map-coords-' + truckId);
+                    var stored = window.__truckMaps && window.__truckMaps[truckId];
+                    if (!el || !stored) return;
+                    var newLat = parseFloat(el.getAttribute('data-lat'));
+                    var newLng = parseFloat(el.getAttribute('data-lng'));
+                    if (isNaN(newLat) || isNaN(newLng)) return;
+                    stored.marker.setLatLng([newLat, newLng]);
+                    stored.map.panTo([newLat, newLng]);
+                    var newTooltip = (el.getAttribute('data-tooltip') || '').trim();
+                    if (stored.marker.getTooltip()) {
+                        stored.marker.setTooltipContent(newTooltip || ' ');
+                    } else if (newTooltip) {
+                        stored.marker.bindTooltip(newTooltip, {
+                            permanent: true,
+                            direction: 'top',
+                            offset: [0, -28],
+                            className: 'truck-marker-tooltip'
+                        });
+                    }
+                });
+
+                function destroyTruckMaps() {
+                    if (!window.__truckMaps) return;
+                    for (var id in window.__truckMaps) {
+                        try {
+                            window.__truckMaps[id].map.remove();
+                        } catch (e) {}
+                        var outer = document.getElementById('truck-map-outer-' + id);
+                        if (outer && outer.parentNode) outer.parentNode.removeChild(outer);
+                    }
+                    window.__truckMaps = {};
+                }
+                if (!window.__truckMapsCleanupRegistered) {
+                    window.__truckMapsCleanupRegistered = true;
+                    document.addEventListener('livewire:navigate', destroyTruckMaps);
+                }
+            })();
+        </script>
+        @endpush
+    @elseif($truck->mapon_unit_id && $maponError)
+        <p class="mt-3 text-sm text-amber-600">{{ __('app.truck.show.mapon_no_position') }}</p>
+    @endif
+
     <div wire:loading wire:target="refreshMaponData" class="mt-3 text-sm text-gray-500 animate-pulse">
         {{ __('app.truck.show.mapon_loading') }}
     </div>

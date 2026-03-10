@@ -1,0 +1,19 @@
+
+7-Zip (a) 24.09 (x86) : Copyright (c) 1999-2024 Igor Pavlov : 2024-11-29
+
+Scanning the drive for archives:
+1 file, 7905 bytes (8 KiB)
+
+Extracting archive: C:\laragon\www\vsedetali\vendor\composer\tmp-2d03ca2485d0708370df00e6429d8025.zip
+--
+Path = C:\laragon\www\vsedetali\vendor\composer\tmp-2d03ca2485d0708370df00e6429d8025.zip
+Type = zip
+Physical Size = 7905
+Comment = 14dde653a9ae8f38af07a0ba4921dc046235e1a0
+
+Everything is Ok
+
+Folders: 3
+Files: 9
+Size:       13454
+Compressed: 7905

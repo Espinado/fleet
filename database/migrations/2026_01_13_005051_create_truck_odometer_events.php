@@ -8,6 +8,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('truck_odometer_events', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
 
             $table->foreignId('truck_id')->constrained()->cascadeOnDelete();

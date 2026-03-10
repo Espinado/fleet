@@ -48,7 +48,21 @@
 
        document.addEventListener('livewire:navigate', function() { pending++; showOverlay(); });
        document.addEventListener('livewire:navigated', done);
-       document.addEventListener('livewire:request-finished', done);
+       document.addEventListener('livewire:init', function() {
+           if (!window.Livewire || typeof window.Livewire.hook !== 'function') return;
+
+           window.Livewire.hook('request', function({ succeed, fail }) {
+               var finalized = false;
+               var finalize = function() {
+                   if (finalized) return;
+                   finalized = true;
+                   done();
+               };
+
+               succeed(finalize);
+               fail(finalize);
+           });
+       });
        document.addEventListener('submit', function(e) {
            var form = e.target;
            if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {

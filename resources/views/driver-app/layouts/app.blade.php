@@ -78,6 +78,25 @@
         });
     </script>
 
+    {{-- При 419 (Page expired) редирект на логин водителя — перехват до загрузки Livewire --}}
+    <script>
+    (function() {
+        window.__loginRedirectUrl = @json(route('driver.login'));
+        var f = window.fetch;
+        if (typeof f !== 'function') return;
+        window.fetch = function() {
+            return f.apply(this, arguments).then(function(r) {
+                if (r.status === 419) {
+                    var url = r.headers.get('X-Redirect-To') || window.__loginRedirectUrl || '/driver/login';
+                    window.location.href = url;
+                    return Promise.reject(new Error('Session expired'));
+                }
+                return r;
+            });
+        };
+    })();
+    </script>
+
     @livewireScripts
 
     <script>
@@ -90,7 +109,21 @@
         function done() { pending--; if (pending <= 0) { pending = 0; hideOverlay(); } }
         document.addEventListener('livewire:navigate', function() { pending++; showOverlay(); });
         document.addEventListener('livewire:navigated', done);
-        document.addEventListener('livewire:request-finished', done);
+        document.addEventListener('livewire:init', function() {
+            if (!window.Livewire || typeof window.Livewire.hook !== 'function') return;
+
+            window.Livewire.hook('request', function({ succeed, fail }) {
+                var finalized = false;
+                var finalize = function() {
+                    if (finalized) return;
+                    finalized = true;
+                    done();
+                };
+
+                succeed(finalize);
+                fail(finalize);
+            });
+        });
         document.addEventListener('submit', function(e) {
             var form = e.target;
             if (form && form.tagName === 'FORM' && form.action && form.action.indexOf('logout') !== -1) {
