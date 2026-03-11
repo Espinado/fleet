@@ -426,12 +426,21 @@
         var leafletUrl = @json(config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.js') : config('mapon.leaflet_js_url'));
         function addMarkersToLayer(layer, units) {
             if (!layer || !units || !units.length) return;
+            var movingColor = '#22c55e';
+            var standingColor = '#6b7280';
             for (var i = 0; i < units.length; i++) {
                 var u = units[i];
                 var latlng = [u.lat, u.lng];
-                var marker = L.marker(latlng).addTo(layer);
+                var isMoving = (u.state_name || '') === 'moving';
+                var marker = L.circleMarker(latlng, {
+                    radius: 10,
+                    fillColor: isMoving ? movingColor : standingColor,
+                    color: '#fff',
+                    weight: 2,
+                    fillOpacity: 1
+                }).addTo(layer);
                 if (u.tooltip) {
-                    marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -22], className: 'fleet-marker-tooltip' });
+                    marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -14], className: 'fleet-marker-tooltip' });
                 }
             }
         }

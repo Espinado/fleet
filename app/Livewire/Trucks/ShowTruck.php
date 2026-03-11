@@ -114,10 +114,13 @@ public function loadMaponData(): void
         $this->maponLng = (float) $result['lng'];
     }
 
-    $this->maponStateName = $result['state']['name'] ?? $result['movement_state']['name'] ?? 'standing';
-    if (isset($result['speed']) && $result['speed'] !== null) {
-        $this->maponSpeed = (float) $result['speed'];
-    }
+    $rawState = (string) ($result['state']['name'] ?? $result['movement_state']['name'] ?? '');
+    $this->maponSpeed = isset($result['speed']) && $result['speed'] !== null ? (float) $result['speed'] : null;
+    // Движение: явный статус "moving"/"driving" или скорость > 0 (как на карте)
+    $this->maponStateName = in_array(strtolower($rawState), ['moving', 'driving'], true)
+        || ($this->maponSpeed !== null && $this->maponSpeed > 0)
+        ? 'moving'
+        : 'standing';
 
     if ($this->maponStateName === 'moving' && $this->maponSpeed !== null) {
         $this->maponMarkerTooltip = __('app.truck.show.mapon_moving') . ', ' . (int) round($this->maponSpeed) . ' ' . __('app.truck.show.mapon_kmh');

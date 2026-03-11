@@ -49,10 +49,15 @@ class FleetMap extends Component
                 continue;
             }
             $number = (string) ($unit['number'] ?? $unit['label'] ?? (string) ($unit['unit_id'] ?? '—'));
-            $stateName = (string) ($unit['state']['name'] ?? $unit['movement_state']['name'] ?? 'standing');
+            $stateName = (string) ($unit['state']['name'] ?? $unit['movement_state']['name'] ?? '');
             $speed = isset($unit['speed']) && $unit['speed'] !== null
                 ? (float) $unit['speed']
                 : null;
+
+            // Движение: явный статус "moving"/"driving" или скорость > 0 (на карте видно движение)
+            $isMoving = in_array(strtolower($stateName), ['moving', 'driving'], true)
+                || ($speed !== null && $speed > 0);
+            $stateName = $isMoving ? 'moving' : 'standing';
 
             if ($stateName === 'moving' && $speed !== null) {
                 $tooltip = $number . ' — ' . $movingLabel . ', ' . (int) round($speed) . ' ' . $kmhLabel;

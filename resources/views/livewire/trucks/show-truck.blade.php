@@ -170,6 +170,7 @@
              data-lat="{{ $maponLat }}"
              data-lng="{{ $maponLng }}"
              data-tooltip="{{ e($maponMarkerTooltip) }}"
+             data-state="{{ $maponStateName ?? 'standing' }}"
              class="hidden"
              aria-hidden="true"></div>
         <div id="truck-map-outer-{{ $truck->id }}" class="mt-6" wire:ignore>
@@ -201,13 +202,21 @@
 
                 var map = L.map(wrap).setView([lat, lng], 15);
                 L.tileLayer(tileUrl, { attribution: tileAttribution }).addTo(map);
-                var marker = L.marker([lat, lng]).addTo(map);
+                var state = (coordsEl.getAttribute('data-state') || 'standing').toLowerCase();
+                var isMoving = state === 'moving';
+                var marker = L.circleMarker([lat, lng], {
+                    radius: 12,
+                    fillColor: isMoving ? '#22c55e' : '#6b7280',
+                    color: '#fff',
+                    weight: 2,
+                    fillOpacity: 1
+                }).addTo(map);
                 var tooltipText = (coordsEl.getAttribute('data-tooltip') || '').trim();
                 if (tooltipText) {
                     marker.bindTooltip(tooltipText, {
                         permanent: true,
                         direction: 'top',
-                        offset: [0, -28],
+                        offset: [0, -16],
                         className: 'truck-marker-tooltip'
                     });
                 }
@@ -224,6 +233,11 @@
                     if (isNaN(newLat) || isNaN(newLng)) return;
                     stored.marker.setLatLng([newLat, newLng]);
                     stored.map.panTo([newLat, newLng]);
+                    var newState = (el.getAttribute('data-state') || 'standing').toLowerCase();
+                    var moving = newState === 'moving';
+                    if (stored.marker.setStyle) {
+                        stored.marker.setStyle({ fillColor: moving ? '#22c55e' : '#6b7280' });
+                    }
                     var newTooltip = (el.getAttribute('data-tooltip') || '').trim();
                     if (stored.marker.getTooltip()) {
                         stored.marker.setTooltipContent(newTooltip || ' ');
@@ -231,7 +245,7 @@
                         stored.marker.bindTooltip(newTooltip, {
                             permanent: true,
                             direction: 'top',
-                            offset: [0, -28],
+                            offset: [0, -16],
                             className: 'truck-marker-tooltip'
                         });
                     }
