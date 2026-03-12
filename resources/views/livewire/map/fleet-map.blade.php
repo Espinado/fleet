@@ -15,6 +15,7 @@
             {{ __('app.map.no_units') }}
         </div>
     @else
+        <div x-data x-init="window.dispatchEvent(new CustomEvent('fleet-map-dom-ready'))">
         <div class="mb-4" x-data="fleetMapSearch()" x-init="init()">
             <label for="fleet-map-search" class="block text-sm font-medium text-gray-700 mb-1">{{ __('app.map.search_label') }}</label>
             <div class="relative">
@@ -56,13 +57,14 @@
             $tileAttribution = config('mapon.tile_attribution', '');
         @endphp
         <link rel="stylesheet" href="{{ $leafletCss }}" crossorigin=""/>
-        <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }</style>
+        <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }.fleet-map-circle-marker { background: none !important; border: none !important; }</style>
         <script type="application/json" id="fleet-map-data">{!! json_encode(['units' => $unitsForMap, 'tile_url' => $tileUrl, 'tile_attribution' => $tileAttribution]) !!}</script>
         <div id="fleet-map-container"
              wire:ignore
              class="relative z-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"
              style="height: calc(100vh - 220px); min-height: 400px;">
         </div>
-        {{-- Инициализация карты выполняется в layout (DOMContentLoaded + livewire:navigated), т.к. при wire:navigate скрипты из контента не выполняются --}}
+        {{-- Инициализация карты по событию fleet-map-dom-ready из layout --}}
+        </div>
     @endif
 </div>

@@ -34,12 +34,24 @@ class FleetMap extends Component
             return $svc->getAllUnits();
         });
 
+        $allowedCompanyIds = auth()->check()
+            ? auth()->user()->allowedMapCompanyIds()
+            : [];
+        $allowNullCompany = auth()->check() && auth()->user()->isAdmin();
+
         $this->unitsForMap = [];
         $standingLabel = (string) __('app.truck.show.mapon_standing');
         $movingLabel = (string) __('app.truck.show.mapon_moving');
         $kmhLabel = (string) __('app.truck.show.mapon_kmh');
 
         foreach ($raw as $unit) {
+            $companyId = array_key_exists('_company_id', $unit) ? $unit['_company_id'] : null;
+            if ($companyId !== null && ! in_array((int) $companyId, $allowedCompanyIds, true)) {
+                continue;
+            }
+            if ($companyId === null && ! $allowNullCompany) {
+                continue;
+            }
             if (!is_array($unit)) {
                 continue;
             }

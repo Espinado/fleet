@@ -430,14 +430,16 @@
             var standingColor = '#6b7280';
             for (var i = 0; i < units.length; i++) {
                 var u = units[i];
-                var latlng = [u.lat, u.lng];
+                var latlng = L.latLng(u.lat, u.lng);
                 var isMoving = (u.state_name || '') === 'moving';
-                var marker = L.circleMarker(latlng, {
-                    radius: 10,
-                    fillColor: isMoving ? movingColor : standingColor,
-                    color: '#fff',
-                    weight: 2,
-                    fillOpacity: 1
+                var color = isMoving ? movingColor : standingColor;
+                var marker = L.marker(latlng, {
+                    icon: L.divIcon({
+                        className: 'fleet-map-circle-marker',
+                        html: '<span style="width:20px;height:20px;border-radius:50%;background:' + color + ';border:2px solid #fff;display:block;box-sizing:border-box;"></span>',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
                 }).addTo(layer);
                 if (u.tooltip) {
                     marker.bindTooltip(u.tooltip, { permanent: true, direction: 'top', offset: [0, -14], className: 'fleet-marker-tooltip' });
@@ -463,6 +465,10 @@
             var el = document.getElementById('fleet-map-container');
             var dataEl = document.getElementById('fleet-map-data');
             if (!el || !dataEl) return;
+            if (!el.offsetWidth || !el.offsetHeight) {
+                setTimeout(tryFleetMap, 100);
+                return;
+            }
             if (window.__fleetMapInstance) {
                 var container = window.__fleetMapInstance.getContainer ? window.__fleetMapInstance.getContainer() : null;
                 if (container && container === el) {
@@ -488,21 +494,29 @@
                 if (raw) data = JSON.parse(raw);
             } catch (e) { return; }
             var units = data.units || [];
-            if (units.length === 0) return;
+            if (units.length === 0) {
+                setTimeout(tryFleetMap, 400);
+                return;
+            }
             el._fleetMapInited = true;
             var tileUrl = (data.tile_url || '').trim() || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
             var tileAttribution = (data.tile_attribution || '').trim();
             var map = L.map(el).setView([units[0].lat, units[0].lng], 6);
+            if (map.invalidateSize) map.invalidateSize();
             L.tileLayer(tileUrl, { attribution: tileAttribution }).addTo(map);
-            var markersLayer = L.layerGroup().addTo(map);
+            var markersLayer = L.layerGroup();
             window.__fleetMapMarkersLayer = markersLayer;
-            addMarkersToLayer(markersLayer, units);
-            if (units.length > 1) {
-                var bounds = L.latLngBounds();
-                for (var i = 0; i < units.length; i++) bounds.extend([units[i].lat, units[i].lng]);
-                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
-            }
             window.__fleetMapInstance = map;
+            map.whenReady(function() {
+                if (window.__fleetMapInstance !== map) return;
+                map.addLayer(markersLayer);
+                addMarkersToLayer(markersLayer, units);
+                if (units.length > 1) {
+                    var bounds = L.latLngBounds();
+                    for (var i = 0; i < units.length; i++) bounds.extend([units[i].lat, units[i].lng]);
+                    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 12 });
+                }
+            });
             window.__fleetMapFocusOn = function(lat, lng) {
                 if (window.__fleetMapInstance && typeof lat === 'number' && typeof lng === 'number') {
                     window.__fleetMapInstance.setView([lat, lng], 15);
@@ -514,16 +528,23 @@
                 runFleetMapInit();
             }
         }
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', tryFleetMap);
-        } else {
-            tryFleetMap();
-        }
-        tryFleetMap();
-        document.addEventListener('livewire:navigated', function() {
+        function scheduleFleetMapRetries() {
             tryFleetMap();
             setTimeout(tryFleetMap, 150);
             setTimeout(tryFleetMap, 500);
+            setTimeout(tryFleetMap, 900);
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', scheduleFleetMapRetries);
+        } else {
+            scheduleFleetMapRetries();
+        }
+        document.addEventListener('livewire:navigated', scheduleFleetMapRetries);
+        document.addEventListener('livewire:initialized', function() {
+            scheduleFleetMapRetries();
+        });
+        document.addEventListener('fleet-map-dom-ready', function() {
+            scheduleFleetMapRetries();
         });
         document.addEventListener('livewire:init', function() {
             if (window.Livewire && typeof window.Livewire.hook === 'function') {
