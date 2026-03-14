@@ -33,7 +33,7 @@ class TripExpensesSection extends Component
         'amount'       => 'required|numeric|min:0',
         'description'  => 'nullable|string|max:255',
         'expense_date' => 'nullable|date',
-        'expenseFile'  => 'nullable|file',
+        'expenseFile'  => 'nullable|file|mimes:jpg,jpeg,png,gif,webp',
     ];
 
     public function saveExpense()

@@ -83,17 +83,15 @@
         <div class="bg-gray-50 p-6 rounded-2xl shadow-inner mb-10">
             <h2 class="text-2xl font-semibold mb-4 border-b pb-2">{{ __('app.trailer.show.docs') }}</h2>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4">
-                @php $photos = [$trailer->tech_passport_photo]; @endphp
-                @foreach($photos as $photo)
-                    <div class="border rounded-2xl p-2 flex items-center justify-center h-56 bg-white shadow-sm">
-                        @if($photo)
-                            <img src="{{ asset('storage/' . $photo) }}" alt="Tech Passport Photo"
-                                 class="h-full object-contain rounded-xl">
-                        @else
-                            <span class="text-gray-400 text-sm">{{ __('app.trailer.show.no_image') }}</span>
-                        @endif
-                    </div>
-                @endforeach
+                @php $photoUrl = $trailer->tech_passport_photo_url; @endphp
+                <div class="border rounded-2xl p-2 flex items-center justify-center h-56 bg-white shadow-sm">
+                    @if($photoUrl)
+                        <img src="{{ $photoUrl }}" alt="Tech Passport Photo"
+                             class="h-full object-contain rounded-xl">
+                    @else
+                        <span class="text-gray-400 text-sm">{{ __('app.trailer.show.no_image') }}</span>
+                    @endif
+                </div>
             </div>
         </div>
 

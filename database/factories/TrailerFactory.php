@@ -49,10 +49,13 @@ class TrailerFactory extends Factory
             'tir_issued' => $tirIssued->format('Y-m-d'),
             'tir_expired' => $tirExpired->format('Y-m-d'),
 
+            // Тип прицепа (1 = тент и т.д. из config trailer-types)
+            'type_id' => $faker->numberBetween(1, 3),
+
             // ⚙️ Статус и принадлежность
-            'status'    => 1,
-            'is_active' => true,
-            'company'   => $faker->numberBetween(1, 2),
+            'status'     => 1,
+            'is_active'  => true,
+            'company_id' => $faker->numberBetween(1, 2),
         ];
     }
 }

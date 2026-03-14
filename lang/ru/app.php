@@ -4,6 +4,41 @@ return [
     // Общие (загрузка документов / расходов)
     'please_wait'           => 'Пожалуйста, подождите.',
 
+    // Stats / Driver events (Notikumi)
+    'stats.events.title'        => 'События водителя',
+    'stats.events.subtitle'     => 'Выезд / возврат / шаги / расходы водителя',
+    'stats.events.search'       => 'Поиск: водитель, машина, расходы, заметка...',
+    'stats.events.type'         => 'Тип',
+    'stats.events.driver'       => 'Водитель',
+    'stats.events.truck'        => 'Грузовик',
+    'stats.events.per_page'     => 'Строк на странице',
+    'stats.events.date_from'    => 'Дата с',
+    'stats.events.date_to'      => 'Дата по',
+    'stats.events.all'          => 'Все',
+    'stats.events.clear'        => 'Сбросить',
+    'stats.events.loading'      => 'Загрузка событий...',
+    'stats.events.no_events'    => 'События не найдены',
+    'stats.events.col_event'    => 'Событие',
+    'stats.events.col_timestamp'=> 'Время',
+    'stats.events.col_odo'      => 'Одометр',
+    'stats.events.col_amount'   => 'Сумма',
+    'stats.events.col_details'  => 'Детали',
+    'stats.events.badge_expense'=> 'Расходы водителя',
+    'stats.events.badge_step'   => 'Статус шага',
+    'stats.events.badge_step_prefix' => 'Шаг: :status',
+    'stats.events.badge_event'  => 'Событие',
+    'stats.events.hint_expenses' => 'Для топлива и AdBlue отображаются литры и одометр; для остальных расходов — без одометра.',
+    'stats.events.summary_title'  => 'Сводка расходов за период',
+    'stats.events.summary_period_all' => 'Весь период',
+    'stats.events.summary_from'   => 'С',
+    'stats.events.summary_to'    => 'По',
+    'stats.events.summary_total' => 'Всего расходы',
+    'stats.events.summary_liters'=> 'Всего литров',
+    'stats.events.export_pdf'    => 'Экспорт в PDF',
+    'stats.events.generating_pdf'=> 'Генерация PDF...',
+    'stats.departure_garage'   => 'Выезд из гаража',
+    'stats.return_garage'      => 'Возврат в гараж',
+
     // Driver app login
     'driver.login.title'    => 'Вход водителя',
     'driver.login.pin'      => 'PIN код',
@@ -222,5 +257,11 @@ return [
     'enums.odometer_event_type.step_completed' => 'Шаг завершён',
     'enums.odometer_event_type.run_end'        => 'Возврат в гараж',
     'enums.odometer_event_type.manual'         => 'Введено вручную',
+
+    // Receivables summary (invoices page)
+    'inv.receivables_title'        => 'Дебиторская задолженность',
+    'inv.receivables_total'        => 'Сумма задолженности',
+    'inv.receivables_with_balance' => 'Счётов с остатком',
+    'inv.receivables_overdue'      => 'Просрочено',
 ];
 

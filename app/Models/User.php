@@ -62,8 +62,8 @@ public function isAdmin(): bool
 }
 
     /**
-     * ID компаний, чьи машины пользователь видит на карте.
-     * Админ — все свои компании (Lakna, Padeks и т.д.); позже у менеджеров — только своя компания.
+     * ID компаний, чьи машины пользователь видит на карте и в событиях (events).
+     * Админ — все свои компании; при пустом mapon.keys — наши перевозчики из БД.
      *
      * @return array<int>
      */
@@ -71,7 +71,17 @@ public function isAdmin(): bool
     {
         if ($this->isAdmin()) {
             $keys = config('mapon.keys', []);
-            return array_values(array_map('intval', array_keys(array_filter($keys))));
+            $ids = array_values(array_map('intval', array_keys(array_filter($keys))));
+            if ($ids !== []) {
+                return $ids;
+            }
+            return \App\Models\Company::query()
+                ->where('type', 'carrier')
+                ->where(fn ($q) => $q->where('is_third_party', false)->orWhereNull('is_third_party'))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
         }
         $id = $this->company_id ?? null;
         return $id !== null ? [(int) $id] : [];

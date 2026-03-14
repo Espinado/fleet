@@ -29,6 +29,7 @@ class Driver extends Model
         'actual_street',
         'actual_building',
         'actual_room',
+        'actual_postcode',
         'phone',
         'email',
         'license_number',
@@ -90,23 +91,33 @@ class Driver extends Model
         return $this->status?->color() ?? 'gray';
     }
 
- public function getPhotoUrlAttribute(): ?string
-{
-    if (!$this->photo) {
-        return null;
+    /** URL для отображения фото (поддержка и storage path, и внешнего URL из сидера). */
+    protected function photoFieldToUrl(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $path = str_replace('public/', '', $value);
+        return asset('storage/' . $path);
     }
 
-    // Если фото уже полный URL
-    if (str_starts_with($this->photo, 'http://') || str_starts_with($this->photo, 'https://')) {
-        return $this->photo;
+    public function getPhotoUrlAttribute(): ?string
+    {
+        return $this->photoFieldToUrl($this->photo);
     }
 
-    // Проверяем, не содержит ли путь "public/"
-    $path = str_replace('public/', '', $this->photo);
+    public function getLicensePhotoUrlAttribute(): ?string
+    {
+        return $this->photoFieldToUrl($this->license_photo);
+    }
 
-    // Строим корректный URL для публичного доступа
-    return asset('storage/' . $path);
-}
+    public function getMedicalCertificatePhotoUrlAttribute(): ?string
+    {
+        return $this->photoFieldToUrl($this->medical_certificate_photo);
+    }
 
 public function user()
 {

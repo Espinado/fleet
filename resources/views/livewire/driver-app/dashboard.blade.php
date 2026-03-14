@@ -12,8 +12,8 @@
         <div class="flex items-center gap-4 min-w-0">
 
             <div class="w-16 h-16 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                @if($driver->photo)
-                    <img src="{{ Storage::url($driver->photo) }}" class="w-full h-full object-cover" alt="Driver photo">
+                @if($driver->photo_url)
+                    <img src="{{ $driver->photo_url }}" class="w-full h-full object-cover" alt="Driver photo">
                 @else
                     <div class="flex items-center justify-center h-full text-gray-500">
                         👤

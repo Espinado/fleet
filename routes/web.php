@@ -34,6 +34,9 @@ use App\Notifications\TestPushNotification;
 Route::redirect('/', '/dashboard');
 if (app()->environment('local')) {
     Route::get('/_dev/find-odometer', function () {
+        if (!app()->environment('local')) {
+            abort(404);
+        }
         $root = app_path();
         $rii = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)

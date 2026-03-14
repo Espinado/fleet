@@ -56,6 +56,20 @@ class Truck extends Model
         return "{$this->brand} {$this->model} ({$this->plate})";
     }
 
+    /** URL для отображения фото техпаспорта (поддержка и storage path, и внешнего URL из сидера). */
+    public function getTechPassportPhotoUrlAttribute(): ?string
+    {
+        $value = $this->tech_passport_photo;
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        $path = str_replace('public/', '', $value);
+        return asset('storage/' . $path);
+    }
+
     public function vehicleRuns(): HasMany
     {
         return $this->hasMany(\App\Models\VehicleRun::class);

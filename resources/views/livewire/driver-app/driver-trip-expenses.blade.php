@@ -209,7 +209,7 @@ x-data="{ fileUploading: false }"
                 <input
                     type="file"
                     wire:model="file"
-                    accept="image/*,application/pdf"
+                    accept="image/*"
                     capture="environment"
                     class="text-sm"
                 >

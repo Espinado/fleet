@@ -281,12 +281,12 @@
                         @else
                             <img src="{{ $tech_passport_photo->temporaryUrl() }}" class="h-40 rounded-xl shadow">
                         @endif
-                    @elseif ($existing_photo)
+                    @elseif ($truck->tech_passport_photo_url)
                         <p class="text-gray-700 mb-2 text-sm">Pašreizējais foto:</p>
-                        @if(str_ends_with(strtolower($existing_photo), '.pdf'))
-                            <a href="{{ asset('storage/'.$existing_photo) }}" target="_blank" rel="noopener" class="text-sm text-blue-600">📄 PDF</a>
+                        @if(str_ends_with(strtolower($existing_photo ?? ''), '.pdf'))
+                            <a href="{{ $truck->tech_passport_photo_url }}" target="_blank" rel="noopener" class="text-sm text-blue-600">📄 PDF</a>
                         @else
-                            <img src="{{ asset('storage/'.$existing_photo) }}" class="h-40 rounded-xl shadow">
+                            <img src="{{ $truck->tech_passport_photo_url }}" class="h-40 rounded-xl shadow" alt="">
                         @endif
                     @endif
                 </div>

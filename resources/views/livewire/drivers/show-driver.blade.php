@@ -6,10 +6,10 @@
     <div class="flex flex-col md:flex-row gap-8">
         {{-- Foto --}}
         <div class="w-full md:w-1/4 h-64">
-            @if($driver->photo && file_exists(storage_path('app/public/' . $driver->photo)))
-                <a href="{{ asset('storage/' . $driver->photo) }}" target="_blank">
-                    <img src="{{ asset('storage/' . $driver->photo) }}"
-                         class="w-full h-full object-cover rounded-lg border shadow">
+            @if($driver->photo_url)
+                <a href="{{ $driver->photo_url }}" target="_blank">
+                    <img src="{{ $driver->photo_url }}"
+                         class="w-full h-full object-cover rounded-lg border shadow" alt="">
                 </a>
             @else
                 <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">
@@ -187,18 +187,18 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             @php
                 $photos = [
-                    __('app.driver.show.photo_license') => $driver->license_photo,
-                    __('app.driver.show.photo_med')     => $driver->medical_certificate_photo,
-                    __('app.driver.show.photo_driver')  => $driver->photo,
+                    __('app.driver.show.photo_license') => $driver->license_photo_url,
+                    __('app.driver.show.photo_med')     => $driver->medical_certificate_photo_url,
+                    __('app.driver.show.photo_driver')  => $driver->photo_url,
                 ];
             @endphp
 
-            @foreach($photos as $title => $path)
+            @foreach($photos as $title => $url)
                 <div>
                     <h3 class="font-semibold mb-2 text-lg">{{ $title }}</h3>
-                    @if($path && file_exists(storage_path('app/public/' . $path)))
-                        <a href="{{ asset('storage/' . $path) }}" target="_blank">
-                            <img src="{{ asset('storage/' . $path) }}" class="rounded-lg border shadow w-full h-52 object-cover">
+                    @if($url)
+                        <a href="{{ $url }}" target="_blank">
+                            <img src="{{ $url }}" class="rounded-lg border shadow w-full h-52 object-cover" alt="">
                         </a>
                     @else
                         <div class="w-full h-52 bg-gray-200 flex items-center justify-center rounded-lg text-gray-500">

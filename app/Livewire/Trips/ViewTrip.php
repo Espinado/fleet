@@ -53,6 +53,7 @@ class ViewTrip extends Component
 
     private function reloadTrip(): void
     {
+        $this->trip->refresh();
         $this->trip->load([
             'driver',
             'truck',
@@ -71,7 +72,7 @@ class ViewTrip extends Component
     public function uploadStepDocument(int $stepId)
     {
         $this->validate([
-            "stepDocFile.$stepId"    => 'required|file|mimes:jpg,jpeg,png,gif,webp,pdf',
+            "stepDocFile.$stepId"    => 'required|file|mimes:jpg,jpeg,png,gif,webp',
             "stepDocType.$stepId"    => 'nullable|string|max:255',
             "stepDocComment.$stepId" => 'nullable|string|max:1000',
         ]);

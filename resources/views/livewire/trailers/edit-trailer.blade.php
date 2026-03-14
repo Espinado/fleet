@@ -180,11 +180,11 @@
                         @else
                             <img src="{{ $tech_passport_photo->temporaryUrl() }}" class="h-48 object-contain rounded">
                         @endif
-                    @elseif($current_photo)
-                        @if(str_ends_with(strtolower($current_photo), '.pdf'))
-                            <a href="{{ asset('storage/' . $current_photo) }}" target="_blank" rel="noopener" class="text-sm text-blue-600">📄 PDF</a>
+                    @elseif($trailer->tech_passport_photo_url ?? null)
+                        @if(str_ends_with(strtolower($current_photo ?? ''), '.pdf'))
+                            <a href="{{ $trailer->tech_passport_photo_url }}" target="_blank" rel="noopener" class="text-sm text-blue-600">📄 PDF</a>
                         @else
-                            <img src="{{ asset('storage/' . $current_photo) }}" class="h-48 object-contain rounded">
+                            <img src="{{ $trailer->tech_passport_photo_url }}" class="h-48 object-contain rounded" alt="">
                         @endif
                     @endif
                 </div>

@@ -79,6 +79,40 @@
             </div>
         @endif
 
+        {{-- Дебиторская задолженность (сводка по компании) --}}
+        <div class="mb-4 rounded-2xl bg-white border border-gray-200 shadow-sm p-4">
+            <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                {{ __('app.inv.receivables_title') }}
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.inv.receivables_total') }}</div>
+                    <div class="text-lg font-bold text-gray-900">
+                        {{ number_format($receivablesSummary->total_receivables, 2, '.', ' ') }}
+                        <span class="text-xs font-normal text-gray-500">EUR</span>
+                    </div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.inv.receivables_with_balance') }}</div>
+                    <div class="text-lg font-bold text-gray-900">
+                        {{ number_format($receivablesSummary->invoices_with_balance_count, 0, '.', ' ') }}
+                        @if($receivablesSummary->invoices_with_balance_count > 0)
+                            <span class="text-xs font-normal text-gray-500">({{ number_format($receivablesSummary->total_receivables, 2, '.', ' ') }} EUR)</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">{{ __('app.inv.receivables_overdue') }}</div>
+                    <div class="text-lg font-bold {{ $receivablesSummary->overdue_count > 0 ? 'text-amber-700' : 'text-gray-900' }}">
+                        {{ number_format($receivablesSummary->overdue_count, 0, '.', ' ') }}
+                        @if($receivablesSummary->overdue_count > 0)
+                            <span class="text-xs font-normal text-gray-500">({{ number_format($receivablesSummary->overdue_amount, 2, '.', ' ') }} EUR)</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ✅ DESKTOP TABLE --}}
         <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">

@@ -24,7 +24,7 @@ class TripDocumentsSection extends Component
     protected $rules = [
         'type'         => 'required|string',
         'name'         => 'required|string|min:3',
-        'documentFile' => 'required|file',
+        'documentFile' => 'required|file|mimes:jpg,jpeg,png,gif,webp',
     ];
 
     public function mount()
@@ -44,7 +44,7 @@ class TripDocumentsSection extends Component
 
         $path = ImageCompress::storeUpload($this->documentFile, "trip_documents/trip_{$this->trip->id}", 'public');
 
-        TripDocument::create([
+        $doc = TripDocument::create([
             'trip_id'     => $this->trip->id,
             'type'        => $this->type,
             'name'        => $this->name,
@@ -55,6 +55,7 @@ class TripDocumentsSection extends Component
 
         $this->reset(['name', 'documentFile']);
         session()->flash('success', '📄 Dokuments veiksmīgi augšupielādēts.');
+        $this->dispatch('document-added', id: $doc->id);
     }
 
     public function delete($id)
@@ -96,7 +97,8 @@ class TripDocumentsSection extends Component
 
         foreach ($tripDocs as $doc) {
             $list->push((object)[
-                'type_label'   => $doc->type?->label() ?? '—',
+                'id'          => (string) $doc->id,
+                'type_label'  => $doc->type?->label() ?? '—',
                 'name'         => $doc->name ?? '—',
                 'uploaded_at'  => $doc->uploaded_at,
                 'file_url'     => $doc->file_url ?? asset('storage/' . $doc->file_path),
@@ -111,7 +113,8 @@ class TripDocumentsSection extends Component
                 : ('Solis #' . $doc->trip_step_id);
 
             $list->push((object)[
-                'type_label'   => $doc->type?->label() ?? '—',
+                'id'          => 'step-' . $doc->id,
+                'type_label'  => $doc->type?->label() ?? '—',
                 'name'         => trim($doc->comment ?? $doc->original_name ?? '') ?: '—',
                 'uploaded_at'  => $doc->created_at,
                 'file_url'     => asset('storage/' . $doc->file_path),

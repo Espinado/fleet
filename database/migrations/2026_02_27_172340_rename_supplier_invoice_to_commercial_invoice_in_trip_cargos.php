@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('trip_cargos', function (Blueprint $table) {
-            // если раньше были supplier_invoice_*
+            // если раньше были supplier_invoice_* — переименовываем
             if (Schema::hasColumn('trip_cargos', 'supplier_invoice_nr') && !Schema::hasColumn('trip_cargos', 'commercial_invoice_nr')) {
                 $table->renameColumn('supplier_invoice_nr', 'commercial_invoice_nr');
             }
@@ -17,16 +17,19 @@ return new class extends Migration
             if (Schema::hasColumn('trip_cargos', 'supplier_invoice_amount') && !Schema::hasColumn('trip_cargos', 'commercial_invoice_amount')) {
                 $table->renameColumn('supplier_invoice_amount', 'commercial_invoice_amount');
             }
-
-            // если вдруг ни старых ни новых нет — создадим новые
-            if (!Schema::hasColumn('trip_cargos', 'commercial_invoice_nr')) {
-                $table->string('commercial_invoice_nr', 64)->nullable()->after('payer_type_id');
-            }
-
-            if (!Schema::hasColumn('trip_cargos', 'commercial_invoice_amount')) {
-                $table->decimal('commercial_invoice_amount', 12, 2)->nullable()->after('commercial_invoice_nr');
-            }
         });
+
+        // Добавляем колонки только если ни старых, ни новых нет (чтобы не дублировать после rename)
+        if (!Schema::hasColumn('trip_cargos', 'commercial_invoice_nr') && !Schema::hasColumn('trip_cargos', 'supplier_invoice_nr')) {
+            Schema::table('trip_cargos', function (Blueprint $table) {
+                $table->string('commercial_invoice_nr', 64)->nullable()->after('payer_type_id');
+            });
+        }
+        if (!Schema::hasColumn('trip_cargos', 'commercial_invoice_amount') && !Schema::hasColumn('trip_cargos', 'supplier_invoice_amount')) {
+            Schema::table('trip_cargos', function (Blueprint $table) {
+                $table->decimal('commercial_invoice_amount', 12, 2)->nullable()->after('commercial_invoice_nr');
+            });
+        }
     }
 
     public function down(): void

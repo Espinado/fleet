@@ -67,7 +67,7 @@
 
             <input type="file"
                    wire:model="file"
-                   accept="image/*,application/pdf"
+                   accept="image/*"
                    class="block w-full text-sm"
                    x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">
 

@@ -9,12 +9,11 @@ return new class extends Migration {
     {
         Schema::table('trips', function (Blueprint $table) {
             if (!Schema::hasColumn('trips', 'carrier_company_id')) {
-                $table->foreignId('carrier_company_id')
-                    ->nullable()
-                    ->after('id')
-                    ->constrained('companies')
-                    ->nullOnDelete()
-                    ->index();
+                $table->unsignedBigInteger('carrier_company_id')->nullable()->after('id');
+                $table->foreign('carrier_company_id', 'trips_carrier_company_id_foreign')
+                    ->references('id')
+                    ->on('companies')
+                    ->nullOnDelete();
             }
         });
     }
@@ -23,7 +22,8 @@ return new class extends Migration {
     {
         Schema::table('trips', function (Blueprint $table) {
             if (Schema::hasColumn('trips', 'carrier_company_id')) {
-                $table->dropConstrainedForeignId('carrier_company_id');
+                $table->dropForeign('trips_carrier_company_id_foreign');
+                $table->dropColumn('carrier_company_id');
             }
         });
     }

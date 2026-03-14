@@ -643,18 +643,31 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 
-    {{-- Chart.js: график по периодам --}}
+    {{-- Chart.js: график по периодам (с retry при первой загрузке, чтобы диаграмма появилась сразу) --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <script>
     (function() {
         window.statsChartInstance = null;
-        function renderStatsChart() {
-            if (window.statsChartInstance) { window.statsChartInstance.destroy(); window.statsChartInstance = null; }
+
+        function renderStatsChart(withRetry) {
             var dataEl = document.getElementById('stats-chart-data');
             var canvas = document.getElementById('stats-chart-canvas');
-            if (!dataEl || !canvas || typeof Chart === 'undefined') return;
-            var data = JSON.parse(dataEl.textContent);
+
+            if (!dataEl || !canvas || typeof Chart === 'undefined') {
+                if (withRetry) {
+                    window.setTimeout(function () { renderStatsChart(false); }, 400);
+                }
+                return;
+            }
+
+            var data = JSON.parse(dataEl.textContent || '{}');
             if (!data.labels || data.labels.length === 0) return;
+
+            if (window.statsChartInstance) {
+                window.statsChartInstance.destroy();
+                window.statsChartInstance = null;
+            }
+
             var ctx = canvas.getContext('2d');
             window.statsChartInstance = new Chart(ctx, {
                 type: 'bar',
@@ -675,10 +688,17 @@
                 }
             });
         }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderStatsChart);
-        else renderStatsChart();
-        document.addEventListener('livewire:navigated', renderStatsChart);
-        if (window.Livewire) Livewire.hook('morph.updated', function() { renderStatsChart(); });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { renderStatsChart(true); });
+        } else {
+            renderStatsChart(true);
+        }
+
+        document.addEventListener('livewire:navigated', function () { renderStatsChart(true); });
+        if (window.Livewire) {
+            Livewire.hook('morph.updated', function() { renderStatsChart(true); });
+        }
     })();
     </script>
 </div>

@@ -4,6 +4,7 @@ namespace App\Livewire\Stats;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 use App\Models\TripExpense;
@@ -11,6 +12,8 @@ use App\Models\TruckOdometerEvent;
 use App\Models\Driver;
 use App\Models\Truck;
 use App\Enums\TripExpenseCategory;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Response;
 
 class EventsTable extends Component
 {
@@ -18,12 +21,14 @@ class EventsTable extends Component
 
     // Filters
     public string $search = '';
-    public ?int $type = null;
+    /** @var int|null Приходит из query/select как string — нормализуем в mount/updatedType */
+    public $type = null;
     public ?int $driverId = null;
     public ?int $truckId = null;
     public ?string $dateFrom = null;
     public ?string $dateTo = null;
-    public array $ownCompanyIds = [1, 2];
+    /** @var array<int> ID компаний, по которым показывать события (из текущего пользователя) */
+    public array $ownCompanyIds = [];
 
     // Table: по умолчанию по дате, последние сначала (как в /trips)
     public string $sortField = 'timestamp';
@@ -49,8 +54,21 @@ class EventsTable extends Component
         'perPage' => ['except' => 25],
     ];
 
+    public function updatedType($value): void
+    {
+        $this->type = $value !== null && $value !== '' ? (int) $value : null;
+    }
+
     public function mount(): void
     {
+        $user = Auth::user();
+        $this->ownCompanyIds = $user ? $user->allowedMapCompanyIds() : [];
+        if ($this->type !== null && $this->type !== '') {
+            $this->type = (int) $this->type;
+        } elseif ($this->type === '') {
+            $this->type = null;
+        }
+
         $this->drivers = Driver::query()
             ->select(['id', 'first_name', 'last_name'])
             ->orderBy('first_name')
@@ -131,17 +149,20 @@ class EventsTable extends Component
             ->leftJoin('drivers as d', 'd.id', '=', 'toe.driver_id')
             ->leftJoin('trucks as tr', 'tr.id', '=', 'toe.truck_id')
             ->leftJoin('trips as t', 't.id', '=', 'toe.trip_id')
+            ->leftJoin('trip_steps as ts', 'ts.id', '=', 'toe.trip_step_id')
             ->select([
                 DB::raw("'event' as row_kind"),
                 'toe.id as id',
                 'toe.type as type',
 
-                // Trip linkage (for departure/return odo fallback)
                 't.id as trip_id',
                 't.odo_start_km as trip_odo_start_km',
                 't.odo_end_km as trip_odo_end_km',
 
-                // Expense-only поля (всегда NULL для events)
+                'toe.trip_step_id as trip_step_id',
+                'ts.address as step_address',
+                'ts.type as step_type',
+
                 DB::raw('NULL as expense_category'),
                 DB::raw('NULL as expense_date'),
                 DB::raw('NULL as amount'),
@@ -149,13 +170,11 @@ class EventsTable extends Component
                 DB::raw('NULL as te_liters'),
                 DB::raw('NULL as te_description'),
 
-                // Odometer / timestamps / step
                 'toe.odometer_km as odometer_km',
                 'toe.occurred_at as occurred_at',
                 'toe.step_status as step_status',
                 'toe.note as note',
 
-                // Driver / truck
                 'd.first_name as d_first_name',
                 'd.last_name as d_last_name',
                 'tr.brand as tr_brand',
@@ -163,8 +182,7 @@ class EventsTable extends Component
                 'tr.plate as tr_plate',
             ])
             ->whereNotNull('toe.driver_id')
-            ->whereIn('d.company_id', $ownCompanyIds)
-            // В этом списке не хотим TYPE_EXPENSE — расходы отдельными строками
+            ->whereIn('tr.company_id', $ownCompanyIds)
             ->where('toe.type', '!=', TruckOdometerEvent::TYPE_EXPENSE);
 
         /**
@@ -179,12 +197,14 @@ class EventsTable extends Component
                 'te.id as id',
                 DB::raw('NULL as type'),
 
-                // Trip linkage
                 't.id as trip_id',
                 't.odo_start_km as trip_odo_start_km',
                 't.odo_end_km as trip_odo_end_km',
 
-                // Категория расхода и money-поля
+                DB::raw('NULL as trip_step_id'),
+                DB::raw('NULL as step_address'),
+                DB::raw('NULL as step_type'),
+
                 'te.category as expense_category',
                 'te.expense_date as expense_date',
                 'te.amount as amount',
@@ -192,13 +212,11 @@ class EventsTable extends Component
                 'te.liters as te_liters',
                 'te.description as te_description',
 
-                // Odometer / timestamps / step
                 'te.odometer_km as odometer_km',
                 DB::raw('NULL as occurred_at'),
                 DB::raw('NULL as step_status'),
                 DB::raw('NULL as note'),
 
-                // Driver / truck
                 'd.first_name as d_first_name',
                 'd.last_name as d_last_name',
                 'tr.brand as tr_brand',
@@ -206,16 +224,11 @@ class EventsTable extends Component
                 'tr.plate as tr_plate',
             ])
             ->whereNotNull('t.driver_id')
-            ->whereIn('d.company_id', $ownCompanyIds)
-            // Исключаем subcontractor-расходы
+            ->whereIn('tr.company_id', $ownCompanyIds)
             ->where(function ($qq) {
                 $qq->whereNull('te.category')
                     ->orWhere('te.category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
             });
-
-        /**
-         * Общие фильтры (search, driver, truck, dates, type) применяем к обоим подзапросам.
-         */
 
         if ($search !== '') {
             $events->where(function ($qq) use ($search) {
@@ -248,21 +261,14 @@ class EventsTable extends Component
             $expenses->where('t.truck_id', (int) $this->truckId);
         }
 
-        // Фильтр по типу: для events — по toe.type, для expenses — только TYPE_EXPENSE
         if (!empty($this->type)) {
             $type = (int) $this->type;
-
             $events->where('toe.type', $type);
-
-            if ($type === TruckOdometerEvent::TYPE_EXPENSE) {
-                // показываем только expense-строки
-            } else {
-                // при других типах расходов не показываем
+            if ($type !== TruckOdometerEvent::TYPE_EXPENSE) {
                 $expenses->whereRaw('1=0');
             }
         }
 
-        // Даты: для events по occurred_at, для expenses по expense_date
         if ($this->dateFrom) {
             $events->whereDate('toe.occurred_at', '>=', $this->dateFrom);
             $expenses->whereDate('te.expense_date', '>=', $this->dateFrom);
@@ -273,14 +279,9 @@ class EventsTable extends Component
             $expenses->whereDate('te.expense_date', '<=', $this->dateTo);
         }
 
-        /**
-         * Объединяем события и расходы в единый поток строк.
-         */
         $base = $events->unionAll($expenses);
-
         $q = DB::query()->fromSub($base, 'rows');
 
-        // Специальная сортировка по времени
         if (in_array($this->sortField, ['timestamp', 'occurred_at'], true)) {
             $q->orderByRaw('COALESCE(occurred_at, expense_date) ' . $dir);
             return $q;
@@ -293,10 +294,7 @@ class EventsTable extends Component
             'odometer_km' => 'odometer_km',
             'amount'      => 'amount',
         ];
-
         $field = $fieldMap[$this->sortField] ?? 'expense_date';
-
-        // Для driver/truck сделаем сортировку стабильнее
         if ($field === 'd_first_name') {
             $q->orderBy('d_first_name', $dir)->orderBy('d_last_name', $dir);
         } elseif ($field === 'tr_plate') {
@@ -307,16 +305,228 @@ class EventsTable extends Component
 
         return $q;
     }
+
     public function getRowsProperty()
     {
-        return $this->query()->paginate($this->perPage);
+        $paginator = $this->query()->paginate($this->perPage);
+        $expenseIds = $paginator->getCollection()
+            ->filter(fn ($row) => ($row->row_kind ?? '') === 'expense')
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $expensesById = $expenseIds !== []
+            ? TripExpense::whereIn('id', $expenseIds)->get()->keyBy('id')
+            : collect();
+
+        $paginator->getCollection()->transform(function ($row) use ($expensesById) {
+            if (($row->row_kind ?? '') !== 'expense') {
+                return $row;
+            }
+            $expense = $expensesById->get($row->id);
+            if ($expense) {
+                $row->amount = $expense->amount;
+                $row->te_currency = $expense->currency ?? 'EUR';
+                $row->expense_date = $expense->expense_date?->format('Y-m-d');
+                $row->odometer_km = $expense->odometer_km;
+                $row->te_liters = $expense->liters;
+                $row->expense_category = $expense->category?->value;
+            }
+            if ($expense?->category && $expense->category !== TripExpenseCategory::SUBCONTRACTOR) {
+                $row->expense_type_label = $expense->category->label();
+                $row->expense_is_fuel_like = in_array($expense->category, [
+                    TripExpenseCategory::FUEL,
+                    TripExpenseCategory::ADBLUE,
+                ], true);
+            } else {
+                $row->expense_type_label = __('app.stats.events.badge_expense');
+                $row->expense_is_fuel_like = false;
+            }
+            return $row;
+        });
+        return $paginator;
+    }
+
+    public function getSummaryProperty(): array
+    {
+        $ownCompanyIds = $this->ownCompanyIds;
+        if ($ownCompanyIds === []) {
+            return [
+                'liters_items'  => [],
+                'by_category'   => [],
+                'total_amount'  => 0.0,
+                'total_liters'  => 0.0,
+                'period_label'  => $this->periodLabel(),
+            ];
+        }
+
+        // Сводка по расходам: показываем всегда за весь период (по фильтрам), кроме случая когда выбран тип «только не расходы»
+        $typeInt = $this->type !== null && $this->type !== '' ? (int) $this->type : null;
+        if ($typeInt !== null && $typeInt !== TruckOdometerEvent::TYPE_EXPENSE) {
+            return [
+                'liters_items'  => [],
+                'by_category'   => [],
+                'total_amount'  => 0.0,
+                'total_liters'  => 0.0,
+                'period_label'  => $this->periodLabel(),
+            ];
+        }
+
+        $q = DB::table('trip_expenses as te')
+            ->leftJoin('trips as t', 't.id', '=', 'te.trip_id')
+            ->leftJoin('trucks as tr', 'tr.id', '=', 't.truck_id')
+            ->whereNotNull('t.driver_id')
+            ->whereIn('tr.company_id', $ownCompanyIds)
+            ->where(function ($qq) {
+                $qq->whereNull('te.category')
+                    ->orWhere('te.category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
+            });
+
+        if ($this->dateFrom) {
+            $q->whereDate('te.expense_date', '>=', $this->dateFrom);
+        }
+        if ($this->dateTo) {
+            $q->whereDate('te.expense_date', '<=', $this->dateTo);
+        }
+        if (!empty($this->driverId)) {
+            $q->where('t.driver_id', (int) $this->driverId);
+        }
+        if (!empty($this->truckId)) {
+            $q->where('t.truck_id', (int) $this->truckId);
+        }
+
+        $litersCategories = [
+            TripExpenseCategory::FUEL->value,
+            TripExpenseCategory::ADBLUE->value,
+            TripExpenseCategory::WASHER_FLUID->value,
+        ];
+
+        $rows = $q->select('te.category')
+            ->selectRaw('COALESCE(SUM(te.amount), 0) as total_amount')
+            ->selectRaw('COALESCE(SUM(te.liters), 0) as total_liters')
+            ->groupBy('te.category')
+            ->get();
+
+        $litersItems = [];
+        $byCategory = [];
+        $totalAmount = 0.0;
+        $totalLiters = 0.0;
+
+        foreach ($rows as $r) {
+            $cat = $r->category;
+            $label = $cat ? (function () use ($cat) {
+                try {
+                    return TripExpenseCategory::from($cat)->label();
+                } catch (\Throwable $e) {
+                    return $cat;
+                }
+            })() : __('app.stats.events.badge_expense');
+            $amt = (float) $r->total_amount;
+            $lit = (float) $r->total_liters;
+            $totalAmount += $amt;
+            $totalLiters += $lit;
+
+            if ($cat && in_array($cat, $litersCategories, true)) {
+                $litersItems[$cat] = ['label' => $label, 'liters' => $lit];
+            } else {
+                $byCategory[] = [
+                    'label'  => $label,
+                    'amount' => $amt,
+                    'liters' => $lit,
+                ];
+            }
+        }
+
+        $litersOrdered = [];
+        foreach ($litersCategories as $key) {
+            $litersOrdered[] = $litersItems[$key] ?? [
+                'label' => TripExpenseCategory::from($key)->label(),
+                'liters' => 0.0,
+            ];
+        }
+
+        return [
+            'liters_items'  => $litersOrdered,
+            'by_category'   => $byCategory,
+            'total_amount'  => $totalAmount,
+            'total_liters'  => $totalLiters,
+            'period_label'  => $this->periodLabel(),
+        ];
+    }
+
+    protected function periodLabel(): string
+    {
+        if ($this->dateFrom && $this->dateTo) {
+            return $this->dateFrom . ' — ' . $this->dateTo;
+        }
+        if ($this->dateFrom) {
+            return __('app.stats.events.summary_from') . ' ' . $this->dateFrom;
+        }
+        if ($this->dateTo) {
+            return __('app.stats.events.summary_to') . ' ' . $this->dateTo;
+        }
+        return __('app.stats.events.summary_period_all');
+    }
+
+    public function exportPdf()
+    {
+        $query = $this->query();
+        $allRows = $query->get();
+
+        $expenseIds = $allRows->filter(fn ($row) => ($row->row_kind ?? '') === 'expense')->pluck('id')->filter()->unique()->values()->all();
+        $expensesById = $expenseIds !== []
+            ? TripExpense::whereIn('id', $expenseIds)->get()->keyBy('id')
+            : collect();
+
+        $rows = $allRows->map(function ($row) use ($expensesById) {
+            $obj = (object) (array) $row;
+            if (($row->row_kind ?? '') === 'expense') {
+                $expense = $expensesById->get($row->id);
+                if ($expense) {
+                    $obj->amount = $expense->amount;
+                    $obj->te_currency = $expense->currency ?? 'EUR';
+                    $obj->expense_date = $expense->expense_date?->format('Y-m-d');
+                    $obj->odometer_km = $expense->odometer_km;
+                    $obj->te_liters = $expense->liters;
+                    $obj->expense_category = $expense->category?->value;
+                    if ($expense->category && $expense->category !== TripExpenseCategory::SUBCONTRACTOR) {
+                        $obj->expense_type_label = $expense->category->label();
+                    } else {
+                        $obj->expense_type_label = __('app.stats.events.badge_expense');
+                    }
+                }
+            }
+            return $obj;
+        });
+
+        $summary = $this->summary;
+
+        $html = view('pdf.stats-events', [
+            'rows'    => $rows,
+            'summary' => $summary,
+            'title'   => __('app.stats.events.title'),
+        ])->render();
+
+        $pdf = Pdf::loadHTML($html);
+        $pdf->setPaper('A4', 'landscape');
+
+        $filename = 'notikumi-' . ($this->dateFrom ?: '') . ($this->dateTo ? '-' . $this->dateTo : '') . '.pdf';
+        $filename = preg_replace('/^--/', '', $filename) ?: 'notikumi.pdf';
+
+        return Response::streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, $filename, [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     public function render()
     {
         return view('livewire.stats.events-table', [
-            'rows'  => $this->rows,
-            'types' => $this->typeOptions,
+            'rows'    => $this->rows,
+            'types'   => $this->typeOptions,
+            'summary' => $this->summary,
         ])->layout('layouts.app', [
             'title' => __('app.stats.events.title'),
         ]);

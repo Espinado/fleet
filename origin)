@@ -1,5 +1,5 @@
 
-                                                            
-  No arguments expected for "migrate" command, got "INFO".  
-                                                            
+                                                                        
+  Too many arguments to "db:seed" command, expected arguments "class".  
+                                                                        
 

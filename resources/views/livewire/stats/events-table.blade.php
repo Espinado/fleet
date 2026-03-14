@@ -38,11 +38,29 @@
 
 <div class="space-y-4">
 
+    {{-- Полноэкранный спиннер при экспорте PDF (z выше глобального) --}}
+    <div wire:loading.flex
+         wire:target="exportPdf"
+         class="fixed inset-0 z-[260] flex items-center justify-center bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm"
+         aria-live="polite"
+         aria-label="{{ __('app.please_wait') }}">
+        <div class="flex flex-col items-center gap-6 p-10 rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-200 dark:border-gray-700">
+            <svg class="animate-spin h-20 w-20 text-sky-600 dark:text-sky-400 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span class="font-semibold text-gray-800 dark:text-gray-200 text-xl">{{ __('app.stats.events.generating_pdf') }}</span>
+        </div>
+    </div>
+
     {{-- Header --}}
     <div class="flex items-center justify-between gap-3">
         <div>
             <h1 class="text-xl font-bold text-gray-900 dark:text-gray-100">🧾 {{ __('app.stats.events.title') }}</h1>
             <div class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.stats.events.subtitle') }}</div>
+            <div class="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-2xl">
+                {{ __('app.stats.events.hint_expenses') }}
+            </div>
         </div>
 
         <button
@@ -131,6 +149,51 @@
         </div>
     </div>
 
+    {{-- Сводка по расходам за период + кнопка экспорта PDF --}}
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-sm font-bold text-gray-700 dark:text-gray-300">
+                {{ __('app.stats.events.summary_title') }}
+                @if($summary['period_label'] ?? '')
+                    <span class="font-normal text-gray-500 dark:text-gray-400">({{ $summary['period_label'] }})</span>
+                @endif
+            </h2>
+            <button type="button"
+                    wire:click="exportPdf"
+                    wire:loading.attr="disabled"
+                    wire:target="exportPdf"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-sm font-semibold shadow-sm disabled:opacity-70 disabled:cursor-not-allowed">
+                📄 {{ __('app.stats.events.export_pdf') }}
+            </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+            <div class="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4">
+                <div class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide">{{ __('app.stats.events.summary_total') }}</div>
+                <div class="mt-1 text-2xl font-bold text-emerald-900 dark:text-emerald-100">
+                    EUR {{ number_format((float)($summary['total_amount'] ?? 0), 2, ',', ' ') }}
+                </div>
+            </div>
+            @if(count($summary['by_category'] ?? []) > 0)
+                <div class="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-4">
+                    <div class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">{{ __('app.stats.events.col_event') }} / {{ __('app.stats.events.col_amount') }}</div>
+                    <ul class="space-y-1.5 text-sm">
+                        @foreach($summary['by_category'] as $item)
+                            <li class="flex justify-between gap-2">
+                                <span class="text-gray-700 dark:text-gray-300">{{ $item['label'] }}</span>
+                                <span class="font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                                    EUR {{ number_format((float)$item['amount'], 2, ',', ' ') }}
+                                    @if((float)$item['liters'] > 0)
+                                        <span class="text-gray-500 dark:text-gray-400 font-normal">/ {{ number_format((float)$item['liters'], 2, ',', ' ') }} L</span>
+                                    @endif
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <div wire:loading class="text-sm text-gray-500 dark:text-gray-400">⏳ {{ __('app.stats.events.loading') }}</div>
 
     {{-- MOBILE cards (PWA) --}}
@@ -184,40 +247,46 @@
 
                 $liters = $isExpenseRow ? ($row->te_liters ?? null) : null;
                 $odoExpense = $isExpenseRow ? ($row->odometer_km ?? null) : null;
-                $fuelLike = $isExpenseRow ? $isFuelLike($cat) : false;
+                $fuelLike = $isExpenseRow ? ($row->expense_is_fuel_like ?? $isFuelLike($cat)) : false;
 
-                // Для driver expenses одометр в "шапке" показываем только для Degviela / AdBlue
                 if ($isExpenseRow && !$fuelLike) {
                     $odoMainValue = null;
                     $odoExpense = null;
+                }
+                if ($isExpenseRow && $fuelLike && ($row->odometer_km ?? null) !== null) {
+                    $odoMainValue = (float) $row->odometer_km;
                 }
 
                 $odoMain = $odoMainValue !== null
                     ? number_format((float)$odoMainValue, 1, ',', ' ') . ' km'
                     : null;
 
-                // Тип/бейдж:
-                // - row_kind=expense  -> Driver expenses (зелёный)
-                // - row_kind=event + TYPE_STEP      -> Step + статус шага (голубой)
-                // - row_kind=event + RUN_START/END  -> OdometerEventType (amber/violet)
-                // - остальное                       -> Event (серый)
                 $typeLabel = null;
                 $badgeClass = null;
 
-                        if ($isExpenseRow) {
-                            $typeLabel = __('app.stats.events.badge_expense');
+                if ($isExpenseRow) {
+                    $typeLabel = $row->expense_type_label ?? __('app.stats.events.badge_expense');
+                    if ($fuelLike && $liters !== null) {
+                        $typeLabel .= ' • ' . number_format((float)$liters, 2, ',', ' ') . ' L';
+                    }
                     $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
                 } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
-                            $stepLabel = $stepStatusLabel($row->step_status ?? null);
-                            $typeLabel = $stepLabel
-                                ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
-                                : __('app.stats.events.badge_step');
+                    $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                    $stepName = trim((string)($row->step_address ?? ''));
+                    if ($stepName !== '') {
+                        $suffix = $stepLabel ? ' — ' . $stepLabel : '';
+                        $typeLabel = $stepName . $suffix;
+                    } else {
+                        $typeLabel = $stepLabel
+                            ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
+                            : __('app.stats.events.badge_step');
+                    }
                     $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
                 } elseif ($isEventRow && $typeEnum) {
                     $typeLabel = $typeEnum->label();
                     $badgeClass = $typeEnum->badgeClass();
                 } else {
-                            $typeLabel = __('app.stats.events.badge_event');
+                    $typeLabel = __('app.stats.events.badge_event');
                     $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
                 }
             @endphp
@@ -229,7 +298,6 @@
                             <div class="font-semibold text-gray-900 dark:text-gray-100 truncate">👨‍✈️ {{ $driver }}</div>
                             <div class="text-sm text-gray-600 dark:text-gray-300 truncate">🚛 {{ $truck }}</div>
                         </div>
-
                         <span class="shrink-0 inline-flex items-center px-2 py-1 rounded-lg border text-xs font-semibold {{ $badgeClass }}">
                             {{ $typeLabel }}
                         </span>
@@ -245,7 +313,7 @@
                     @if($isExpenseRow)
                         <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 p-3 space-y-1">
                             <div class="font-semibold text-gray-900 dark:text-gray-100">
-                                {{ $catLabel ?? ($cat ?? '—') }}
+                                {{ $row->expense_type_label ?? __('app.stats.events.badge_expense') }}
                             </div>
 
                             <div class="text-sm text-gray-800 dark:text-gray-200">
@@ -369,12 +437,14 @@
 
                         $liters = $isExpenseRow ? ($row->te_liters ?? null) : null;
                         $odoExpense = $isExpenseRow ? ($row->odometer_km ?? null) : null;
-                        $fuelLike = $isExpenseRow ? $isFuelLike($cat) : false;
+                        $fuelLike = $isExpenseRow ? ($row->expense_is_fuel_like ?? $isFuelLike($cat)) : false;
 
-                        // Для driver expenses одометр в колонке Odo показываем только для Degviela / AdBlue
                         if ($isExpenseRow && !$fuelLike) {
                             $odoMainValue = null;
                             $odoExpense = null;
+                        }
+                        if ($isExpenseRow && $fuelLike && ($row->odometer_km ?? null) !== null) {
+                            $odoMainValue = (float) $row->odometer_km;
                         }
 
                         $odo = $odoMainValue !== null
@@ -384,20 +454,29 @@
                         $typeLabel = null;
                         $badgeClass = null;
 
-                if ($isExpenseRow) {
-                    $typeLabel = __('app.stats.events.badge_expense');
+                        if ($isExpenseRow) {
+                            $typeLabel = $row->expense_type_label ?? __('app.stats.events.badge_expense');
+                            if ($fuelLike && $liters !== null) {
+                                $typeLabel .= ' • ' . number_format((float)$liters, 2, ',', ' ') . ' L';
+                            }
                             $badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-200 dark:border-emerald-800';
                         } elseif ($isEventRow && $typeVal === TruckOdometerEvent::TYPE_STEP) {
-                    $stepLabel = $stepStatusLabel($row->step_status ?? null);
-                    $typeLabel = $stepLabel
-                        ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
-                        : __('app.stats.events.badge_step');
+                            $stepLabel = $stepStatusLabel($row->step_status ?? null);
+                            $stepName = trim((string)($row->step_address ?? ''));
+                            if ($stepName !== '') {
+                                $suffix = $stepLabel ? ' — ' . $stepLabel : '';
+                                $typeLabel = $stepName . $suffix;
+                            } else {
+                                $typeLabel = $stepLabel
+                                    ? __('app.stats.events.badge_step_prefix', ['status' => $stepLabel])
+                                    : __('app.stats.events.badge_step');
+                            }
                             $badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-900/20 dark:text-sky-200 dark:border-sky-800';
                         } elseif ($isEventRow && $typeEnum) {
                             $typeLabel = $typeEnum->label();
                             $badgeClass = $typeEnum->badgeClass();
                         } else {
-                    $typeLabel = __('app.stats.events.badge_event');
+                            $typeLabel = __('app.stats.events.badge_event');
                             $badgeClass = 'bg-gray-50 text-gray-800 border-gray-200 dark:bg-gray-800/40 dark:text-gray-200 dark:border-gray-700';
                         }
                     @endphp
@@ -428,7 +507,7 @@
                                 @if($isExpenseRow)
                                     <div class="space-y-1">
                                         <div class="font-semibold text-gray-900 dark:text-gray-100">
-                                            {{ $catLabel ?? ($cat ?? '—') }}
+                                            {{ $row->expense_type_label ?? ($catLabel ?? ($cat ?? '—')) }}
                                         </div>
 
                                         @if($fuelLike)
@@ -467,3 +546,17 @@
     </div>
 
 </div>
+
+<script>
+    (function() {
+        if (typeof window.Livewire === 'undefined' || typeof window.Livewire.hook !== 'function') return;
+        window.Livewire.hook('request', function({ succeed, fail }) {
+            var hideGlobal = function() {
+                var el = document.getElementById('global-navigate-overlay');
+                if (el) el.classList.add('hidden');
+            };
+            succeed(hideGlobal);
+            fail(hideGlobal);
+        });
+    })();
+</script>

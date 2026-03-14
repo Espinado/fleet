@@ -989,7 +989,7 @@
                         <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 border-t border-gray-100 dark:border-gray-800 pt-3">
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">{{ __('app.trip.edit.price') }}</label>
-                                <input type="text" wire:model.live="cargos.{{ $index }}.price" class="{{ $baseInput }} text-xs">
+                                <input type="text" wire:model.blur="cargos.{{ $index }}.price" class="{{ $baseInput }} text-xs">
                                 @error("cargos.$index.price") <div class="text-[11px] text-red-600 mt-1">❗ {{ $message }}</div> @enderror
                             </div>
 

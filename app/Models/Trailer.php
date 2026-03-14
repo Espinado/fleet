@@ -61,6 +61,20 @@ public function getTypeIconAttribute(): ?string
     return $key ? config("trailer-types.icons.$key") : null;
 }
 
+/** URL для отображения фото техпаспорта (поддержка и storage path, и внешнего URL из сидера). */
+public function getTechPassportPhotoUrlAttribute(): ?string
+{
+    $value = $this->tech_passport_photo;
+    if ($value === null || $value === '') {
+        return null;
+    }
+    if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+        return $value;
+    }
+    $path = str_replace('public/', '', $value);
+    return asset('storage/' . $path);
+}
+
 public function company()
 {
     return $this->belongsTo(\App\Models\Company::class);

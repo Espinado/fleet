@@ -205,7 +205,7 @@ DROP TABLE IF EXISTS `trailers`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `trailers` (
   `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `company` int unsigned DEFAULT NULL,
+  `company_id` bigint unsigned DEFAULT NULL,
   `brand` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `plate` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `year` year NOT NULL,

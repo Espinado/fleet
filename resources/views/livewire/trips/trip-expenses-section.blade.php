@@ -123,7 +123,7 @@
                 </label>
                 <input type="file"
                        wire:model="expenseFile"
-                       accept="image/*,application/pdf"
+                       accept="image/*"
                        class="text-sm file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0
                               file:bg-indigo-50 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-300"
                        x-on:click="fileUploading = true; if(cancelTimeout) clearTimeout(cancelTimeout); cancelTimeout = setTimeout(() => { fileUploading = false; cancelTimeout = null }, 15000)">

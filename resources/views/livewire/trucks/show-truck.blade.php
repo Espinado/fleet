@@ -330,17 +330,15 @@
     <div>
         <h2 class="text-xl font-semibold mb-3 border-b pb-1">{{ __('app.truck.show.docs_title') }}</h2>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-3">
-            @php $photos = [$truck->tech_passport_photo]; @endphp
-            @foreach($photos as $photo)
-                <div class="border rounded-lg p-2 flex items-center justify-center h-48 bg-gray-50">
-                    @if($photo)
-                        <img src="{{ asset('storage/' . $photo) }}" alt="Tech Passport Photo"
-                             class="h-full object-contain rounded">
-                    @else
-                        <span class="text-gray-400 text-sm">{{ __('app.truck.show.no_image') }}</span>
-                    @endif
-                </div>
-            @endforeach
+            @php $photoUrl = $truck->tech_passport_photo_url; @endphp
+            <div class="border rounded-lg p-2 flex items-center justify-center h-48 bg-gray-50">
+                @if($photoUrl)
+                    <img src="{{ $photoUrl }}" alt="Tech Passport Photo"
+                         class="h-full object-contain rounded">
+                @else
+                    <span class="text-gray-400 text-sm">{{ __('app.truck.show.no_image') }}</span>
+                @endif
+            </div>
         </div>
     </div>
 

@@ -20,7 +20,7 @@
 
             {{-- Фото --}}
             <div class="flex flex-col items-center">
-                <img src="{{ $driver->photo ? asset('storage/' . $driver->photo) : '/default-avatar.png' }}"
+                <img src="{{ $driver->photo_url ?: '/default-avatar.png' }}"
                      class="w-28 h-28 rounded-full object-cover shadow">
 
                 <div class="mt-3">

@@ -168,10 +168,65 @@ class InvoicesTable extends Component
 
         $rows = $q->orderBy($sortBy, $sortDir)->paginate($this->perPage);
 
+        $receivablesSummary = $this->getReceivablesSummary($user);
+
         return view('livewire.invoices.invoices-table', [
             'rows' => $rows,
+            'receivablesSummary' => $receivablesSummary,
         ])->layout('layouts.app', [
             'title' => __('app.inv.title'),
         ]);
+    }
+
+    /**
+     * Сводка по дебиторской задолженности (глобально по компании, без учёта фильтров таблицы).
+     */
+    private function getReceivablesSummary($user): object
+    {
+        $summary = (object) [
+            'total_receivables' => 0.0,
+            'invoices_with_balance_count' => 0,
+            'overdue_count' => 0,
+            'overdue_amount' => 0.0,
+        ];
+
+        $q = Invoice::query()
+            ->select('invoices.id', 'invoices.total', 'invoices.due_date')
+            ->selectSub(function ($sub) {
+                $sub->from('invoice_payments')
+                    ->selectRaw('COALESCE(SUM(amount), 0)')
+                    ->whereColumn('invoice_id', 'invoices.id');
+            }, 'paid_total');
+
+        if (!$user || (!$user->isAdmin() && $user->company_id === null)) {
+            return $summary;
+        }
+        if (!$user->isAdmin()) {
+            $q->whereHas('trip', fn ($sub) => $sub->where('carrier_company_id', (int) $user->company_id));
+        }
+
+        $items = $q->get();
+
+        foreach ($items as $inv) {
+            $total = (float) $inv->total;
+            $paid = (float) $inv->paid_total;
+            $balance = $total - $paid;
+            if ($balance <= 0) {
+                continue;
+            }
+            $summary->total_receivables += $balance;
+            $summary->invoices_with_balance_count++;
+
+            $dueDate = $inv->due_date;
+            if ($dueDate && \Carbon\Carbon::parse($dueDate)->isPast()) {
+                $summary->overdue_count++;
+                $summary->overdue_amount += $balance;
+            }
+        }
+
+        $summary->total_receivables = round($summary->total_receivables, 2);
+        $summary->overdue_amount = round($summary->overdue_amount, 2);
+
+        return $summary;
     }
 }

@@ -52,10 +52,10 @@ class DriverFactory extends Factory
         $birthDate = $faker->dateTimeBetween('1970-01-01', '2000-12-31');
         $persCode  = $birthDate->format('ymd') . '-' . $faker->numerify('#####');
 
-        // === 📸 Фото (placeholder)
-        $photoPerson  = 'https://placehold.co/400x400?text=Driver';
-        $photoLicense = 'https://placehold.co/400x400?text=License';
-        $photoMedical = 'https://placehold.co/400x400?text=Medical';
+        // === 📸 Фото (сидируем все поля фотографий)
+        $photoPerson  = 'https://placehold.co/400x500?text=Driver+Photo';
+        $photoLicense = 'https://placehold.co/600x400?text=License';
+        $photoMedical = 'https://placehold.co/600x400?text=Medical+Certificate';
 
         // === 🩺 Медосмотр
         $passed  = $faker->dateTimeBetween('-1 month', 'yesterday');
@@ -81,11 +81,12 @@ class DriverFactory extends Factory
             // 🏠 Адреса
             'declared_street'   => $faker->streetName(),
             'declared_building' => $faker->buildingNumber(),
-            'declared_room'     => $faker->numberBetween(1, 100),
+            'declared_room'     => (string) $faker->numberBetween(1, 100),
             'declared_postcode' => $faker->postcode(),
             'actual_street'     => $faker->streetName(),
             'actual_building'   => $faker->buildingNumber(),
-            'actual_room'       => $faker->numberBetween(1, 100),
+            'actual_room'       => (string) $faker->numberBetween(1, 100),
+            'actual_postcode'   => $faker->postcode(),
 
             // 📞 Контакты
             'phone' => $faker->e164PhoneNumber(),
@@ -93,7 +94,7 @@ class DriverFactory extends Factory
 
             // 🚗 Водительские данные
             'license_number' => $faker->unique()->bothify('LV#######'),
-            'license_issued' => $faker->dateTimeBetween('-10 years', '-5 years'),
+            'license_issued' => $faker->dateTimeBetween('-10 years', '-5 years')->format('Y-m-d'),
             'license_end'    => $faker->dateTimeBetween('+15 days', '+6 months')->format('Y-m-d'),
 
             'code95_issued'  => $faker->dateTimeBetween('-5 years', '-2 years')->format('Y-m-d'),
@@ -118,8 +119,8 @@ class DriverFactory extends Factory
             'status'    => 1,
             'is_active' => true,
 
-            // 🔗 Привязка к компании-экспедитору
-            'company' => $faker->numberBetween(1, 2),
+            // 🔗 Привязка к компании
+            'company_id' => $faker->numberBetween(1, 2),
         ];
     }
 }

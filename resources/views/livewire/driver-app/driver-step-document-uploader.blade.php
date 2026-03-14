@@ -53,7 +53,7 @@
             <label class="text-xs font-semibold">{{ __('app.driver.step_docs.file') }}</label>
             <input type="file"
                    wire:model="file"
-                   accept="image/*,application/pdf"
+                   accept="image/*"
                    capture="environment"
                    class="text-sm">
             @if($file ?? null)

@@ -58,6 +58,15 @@ return [
     'stats.events.badge_step'   => 'Soļa statuss',
     'stats.events.badge_step_prefix' => 'Solis: :status',
     'stats.events.badge_event'  => 'Notikums',
+    'stats.events.hint_expenses' => 'Degvielai un AdBlue tiek rādīti litri un odometrs; citi vadītāja izdevumi – bez odometra.',
+    'stats.events.summary_title'  => 'Izdevumu kopsavilkums par periodu',
+    'stats.events.summary_period_all' => 'Viss periods',
+    'stats.events.summary_from'   => 'No',
+    'stats.events.summary_to'    => 'Līdz',
+    'stats.events.summary_total' => 'Kopā izdevumi',
+    'stats.events.summary_liters'=> 'Kopā litri',
+    'stats.events.export_pdf'    => 'Eksportēt PDF',
+    'stats.events.generating_pdf'=> 'Ģenerē PDF...',
 
     // Sidebar / navigation
     'nav.dashboard'         => 'Panelis',
@@ -793,6 +802,12 @@ return [
     'inv.payment.save'      => 'Saglabāt',
     'inv.payment.cancel'    => 'Atcelt',
     'inv.payment.add'       => '➕ Maksājums',
+
+    // Receivables summary (invoices page)
+    'inv.receivables_title'       => 'Debitoru parādi',
+    'inv.receivables_total'       => 'Kopā parāds',
+    'inv.receivables_with_balance'=> 'Rēķini ar atlikumu',
+    'inv.receivables_overdue'     => 'Kavēti rēķini',
 
     // Driver app: bottom bar
     'driver.nav.home'           => 'Sākums',
