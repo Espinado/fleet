@@ -225,7 +225,24 @@
                 <option value="50">50</option>
             </select>
         </div>
-        <div class="overflow-x-auto">
+        {{-- Мобильные карточки --}}
+        <div class="md:hidden space-y-3">
+            @foreach($driverTripsPaginator->items() as $t)
+                <a href="{{ route('trips.show', $t['id']) }}" wire:navigate
+                   class="block bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 transition">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-semibold text-blue-600">#{{ $t['id'] }}</span>
+                        <span class="text-lg font-bold text-gray-900 tabular-nums">{{ number_format($t['distance_km'], 0, ',', ' ') }} km</span>
+                    </div>
+                    <div class="mt-2 flex justify-between text-sm text-gray-600">
+                        <span>{{ __('app.truck.show.mileage_col_departure') }}: {{ $t['departure_date'] ? \Carbon\Carbon::parse($t['departure_date'])->format('d.m.Y') : '—' }}</span>
+                        <span>{{ __('app.truck.show.mileage_col_return') }}: {{ $t['return_date'] ? \Carbon\Carbon::parse($t['return_date'])->format('d.m.Y') : '—' }}</span>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+        {{-- Десктоп: таблица --}}
+        <div class="hidden md:block overflow-x-auto">
             <table class="min-w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
                 <thead class="bg-gray-50">
                     <tr>

@@ -86,15 +86,28 @@
 
         @if($transportOrder->steps->isNotEmpty())
             <div class="border-t border-gray-200 p-4 sm:p-6">
-                <h2 class="text-sm font-semibold text-gray-700 mb-3">{{ __('app.orders.col_requested_dates') }} / {{ __('app.trip.show.step_column') }}</h2>
-                <ul class="space-y-2">
+                <h2 class="text-sm font-semibold text-gray-700 mb-3">{{ __('app.orders.steps_title') }}</h2>
+                <ul class="space-y-3">
                     @foreach($transportOrder->steps as $step)
-                        <li class="flex items-center gap-2 text-sm">
-                            <span class="px-2 py-0.5 rounded {{ $step->type === 'loading' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800' }}">
-                                {{ $step->type === 'loading' ? __('app.stats.departure_garage') : __('app.stats.return_garage') }}
+                        @php
+                            $country = $step->country_id && function_exists('getCountryById') ? getCountryById((int)$step->country_id) : null;
+                            $city = ($step->country_id && $step->city_id && function_exists('getCityNameByCountryId')) ? getCityNameByCountryId((int)$step->country_id, $step->city_id) : null;
+                        @endphp
+                        <li class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 text-sm">
+                            <span class="shrink-0 px-2 py-0.5 rounded text-xs font-medium {{ $step->type === 'loading' ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800' }}">
+                                {{ $step->type === 'loading' ? __('app.orders.step_type_loading') : __('app.orders.step_type_unloading') }}
                             </span>
-                            {{ $step->date?->format('d.m.Y') ?? '—' }}
-                            @if($step->address) — {{ $step->address }} @endif
+                            <span class="font-medium text-gray-700">{{ $step->date?->format('d.m.Y') ?? '—' }}{{ $step->time ? ' ' . $step->time : '' }}</span>
+                            <span class="text-gray-600">
+                                @php
+                                    $parts = array_filter([$city, $country]);
+                                    $location = implode(', ', $parts);
+                                    if ($step->address) {
+                                        $location = $location ? $location . ' — ' . $step->address : $step->address;
+                                    }
+                                @endphp
+                                {{ $location ?: '—' }}
+                            </span>
                         </li>
                     @endforeach
                 </ul>
