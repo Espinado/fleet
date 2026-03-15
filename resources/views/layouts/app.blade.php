@@ -266,6 +266,18 @@
                     closeSidebarMenu();
                 }
             });
+
+            // Аккордеон: при открытии одного подменю закрывать остальные
+            var nav = document.querySelector('#sidebar nav');
+            if (nav) {
+                nav.addEventListener('toggle', function(e) {
+                    if (e.target.tagName !== 'DETAILS' || !e.target.open) return;
+                    var allDetails = nav.querySelectorAll('details');
+                    allDetails.forEach(function(d) {
+                        if (d !== e.target) d.removeAttribute('open');
+                    });
+                }, true);
+            }
         })();
     </script>
 
