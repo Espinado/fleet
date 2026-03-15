@@ -36,17 +36,17 @@
                    class="inline-flex items-center gap-1 bg-green-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg shadow hover:bg-green-700">
                     ➕ {{ __('app.orders.add') }}
                 </a>
-                <div class="hidden md:flex items-center gap-2">
-                    <label class="text-sm text-gray-600">{{ __('app.orders.rows') }}</label>
-                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-gray-600 whitespace-nowrap">{{ __('app.orders.rows') }}</label>
+                    <select wire:model.live="perPage" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-16">
                         <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
                     </select>
                 </div>
-                <div class="hidden md:flex items-center gap-2">
-                    <label class="text-sm text-gray-600">{{ __('app.orders.status_label') }}</label>
-                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm w-40">
+                <div class="flex items-center gap-2 min-w-0">
+                    <label class="text-sm text-gray-600 whitespace-nowrap">{{ __('app.orders.status_label') }}</label>
+                    <select wire:model.live="status" class="border rounded-lg px-2 py-1 text-sm shadow-sm min-w-0 flex-1 md:w-40">
                         <option value="">{{ __('app.orders.status_all') }}</option>
                         @foreach($statuses as $s)
                             <option value="{{ $s->value }}">{{ $s->label() }}</option>
@@ -56,7 +56,39 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        {{-- Мобильная карточная раскладка (PWA на телефоне) — по умолчанию удобно на маленьком экране --}}
+        <div class="md:hidden space-y-3" wire:loading.class="opacity-50">
+            @forelse($orders as $order)
+                @php $status = $order->status instanceof \App\Enums\OrderStatus ? $order->status : \App\Enums\OrderStatus::tryFrom($order->status); @endphp
+                <a href="{{ route('orders.show', $order) }}" wire:navigate
+                   class="block bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-4 transition">
+                    <div class="flex items-start justify-between gap-2">
+                        <span class="font-semibold text-gray-900">{{ $order->number }}</span>
+                        @if($status)
+                            <span class="shrink-0 px-2 py-0.5 rounded text-xs font-medium {{ $status->color() }}">{{ $status->label() }}</span>
+                        @endif
+                    </div>
+                    <div class="mt-2 text-sm text-gray-600">{{ $order->expeditor?->name ?? '—' }}</div>
+                    @if($order->customer?->company_name)
+                        <div class="text-sm text-gray-500 truncate">{{ $order->customer->company_name }}</div>
+                    @endif
+                    <div class="mt-2 flex items-center justify-between text-xs text-gray-500">
+                        <span>{{ $order->order_date?->format('d.m.Y') ?? '—' }}</span>
+                        @if($order->quoted_price !== null)
+                            <span class="font-medium text-gray-700">{{ number_format((float)$order->quoted_price, 2, '.', ' ') }} {{ $order->currency }}</span>
+                        @endif
+                    </div>
+                    @if($order->trip_id)
+                        <div class="mt-1 text-xs text-gray-400">🔗 {{ __('app.orders.linked_trip') }}</div>
+                    @endif
+                </a>
+            @empty
+                <div class="py-8 text-center text-gray-500">{{ __('app.orders.empty') }}</div>
+            @endforelse
+        </div>
+
+        {{-- Десктоп: таблица --}}
+        <div class="hidden md:block overflow-x-auto">
             <table class="w-full border-collapse">
                 <thead class="bg-gray-100 text-gray-700 border-b text-sm">
                     <tr>

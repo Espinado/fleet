@@ -11,6 +11,7 @@ class OrdersTable extends Component
 {
     use WithPagination;
 
+    public int $page = 1;
     public string $search = '';
     public string $status = '';
     public int $perPage = 10;
