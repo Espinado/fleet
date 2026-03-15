@@ -100,6 +100,7 @@ class TripsFullSeeder extends Seeder
                         $endDate,
                         $status
                     );
+                    $this->applyTripContainerAndCustoms($trip, $trailer);
 
                     $steps = $this->createStepsAndCargosForTrip($trip, $clients, 2, 2, $startDate);
                     $this->generateCmrForTrip($trip);
@@ -136,6 +137,7 @@ class TripsFullSeeder extends Seeder
             $endDate = $startDate->copy()->addDays(1);
 
             $trip = $this->createTrip($company, $company, $driver->id, $truck->id, $trailer->id, $startDate, $endDate, TripStatus::COMPLETED);
+            $this->applyTripContainerAndCustoms($trip, $trailer);
 
             $others = $clients->where('id', '!=', $client->id)->random(min(4, $clients->count() - 1))->values();
             $steps = $this->createStepsForClientTrip($trip, $client, $others);
@@ -260,6 +262,28 @@ class TripsFullSeeder extends Seeder
         return $trip;
     }
 
+    /** Контейнер: номер контейнера и пломбы для прицепов-контейнеров; TIR: таможенный адрес для части рейсов. */
+    private function applyTripContainerAndCustoms(Trip $trip, Trailer $trailer): void
+    {
+        $updates = [];
+        if ((int) $trailer->type_id === 2) {
+            $updates['cont_nr'] = 'CONT-' . strtoupper(bin2hex(random_bytes(4)));
+            $updates['seal_nr'] = 'SEAL-' . str_pad((string) rand(1, 999999), 6, '0', STR_PAD_LEFT);
+        }
+        if (rand(1, 100) <= 30) {
+            $updates['customs'] = true;
+            $updates['customs_address'] = Arr::random([
+                'Rīga, muitas terminālis, Eksporta iela 3',
+                'Klaipēda, TIR zona, Jūrų g. 15',
+                'Tallinn, customs terminal, Sadama 25',
+                'Warsaw, TIR office, ul. Celna 5',
+            ]);
+        }
+        if ($updates !== []) {
+            $trip->update($updates);
+        }
+    }
+
     private function createStepsAndCargosForTrip(Trip $trip, $clients, int $numCargos, int $itemsPerCargo, Carbon $startDate): \Illuminate\Support\Collection
     {
         $steps = collect();
@@ -318,7 +342,8 @@ class TripsFullSeeder extends Seeder
             }
             $calc = CalculateTax::forItems($items);
 
-            $cargo = TripCargo::create([
+            $withDelay = rand(1, 100) <= 25;
+            $cargoData = [
                 'trip_id' => $trip->id,
                 'customer_id' => $customer->id,
                 'shipper_id' => $shipper->id,
@@ -330,7 +355,13 @@ class TripsFullSeeder extends Seeder
                 'currency' => 'EUR',
                 'payment_days' => 30,
                 'payer_type_id' => Arr::random([1, 2, 3]),
-            ]);
+            ];
+            if ($withDelay) {
+                $cargoData['has_delay'] = true;
+                $cargoData['delay_days'] = 1;
+                $cargoData['delay_amount'] = 100.00;
+            }
+            $cargo = TripCargo::create($cargoData);
 
             foreach ($calc['items'] as $item) {
                 TripCargoItem::create([
@@ -418,7 +449,8 @@ class TripsFullSeeder extends Seeder
             }
             $calc = CalculateTax::forItems($items);
 
-            $cargo = TripCargo::create([
+            $withDelay = rand(1, 100) <= 25;
+            $cargoData = [
                 'trip_id' => $trip->id,
                 'customer_id' => $roles['customer']->id,
                 'shipper_id' => $roles['shipper']->id,
@@ -430,7 +462,13 @@ class TripsFullSeeder extends Seeder
                 'currency' => 'EUR',
                 'payment_days' => 30,
                 'payer_type_id' => Arr::random([1, 2, 3]),
-            ]);
+            ];
+            if ($withDelay) {
+                $cargoData['has_delay'] = true;
+                $cargoData['delay_days'] = 1;
+                $cargoData['delay_amount'] = 100.00;
+            }
+            $cargo = TripCargo::create($cargoData);
 
             foreach ($calc['items'] as $item) {
                 TripCargoItem::create([

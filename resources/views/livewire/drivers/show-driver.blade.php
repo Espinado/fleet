@@ -181,6 +181,92 @@
         </div>
     </div>
 
+    {{-- Рейсы за период (выезд из гаража — заезд в гараж) --}}
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold mb-3 border-b pb-1">{{ __('app.driver.show.trips_period_title') }}</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end mb-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">{{ __('app.truck.show.mileage_date_departure') }}</label>
+                <input type="date" wire:model.live="tripsPeriodFrom"
+                       class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">{{ __('app.truck.show.mileage_date_return') }}</label>
+                <input type="date" wire:model.live="tripsPeriodTo"
+                       class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm">
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <button type="button" wire:click="setTripsPeriod(30)"
+                        class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium">30 {{ __('app.stats.clients.days') }}</button>
+                <button type="button" wire:click="setTripsPeriod(90)"
+                        class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium">90 {{ __('app.stats.clients.days') }}</button>
+                <button type="button" wire:click="clearTripsPeriod"
+                        class="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-600"
+                        title="{{ __('app.stats.clients.all_time') }}">∞</button>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <div class="bg-gray-50 border rounded-xl p-4">
+                <p class="text-sm text-gray-500 mb-1">{{ __('app.truck.show.mileage_total_km') }}</p>
+                <p class="text-2xl font-bold text-gray-900">{{ number_format($driverTripsStats['total_km'], 0, ',', ' ') }} km</p>
+            </div>
+            <div class="bg-gray-50 border rounded-xl p-4">
+                <p class="text-sm text-gray-500 mb-1">{{ __('app.truck.show.mileage_trips_count') }}</p>
+                <p class="text-2xl font-bold text-gray-900">{{ $driverTripsStats['trips_count'] }}</p>
+            </div>
+        </div>
+        @if($driverTripsPaginator->total() > 0)
+        <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="text-sm text-gray-600">{{ __('app.truck.show.mileage_per_page') }}</span>
+            <select wire:model.live="driverTripsPerPage" class="rounded-lg border border-gray-300 text-sm py-1.5 px-2">
+                <option value="10">10</option>
+                <option value="15">15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full text-sm border border-gray-200 rounded-xl overflow-hidden">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left font-semibold text-gray-700">{{ __('app.truck.show.mileage_col_trip') }}</th>
+                        <th class="px-4 py-2 text-left font-semibold text-gray-700">{{ __('app.truck.show.mileage_col_departure') }}</th>
+                        <th class="px-4 py-2 text-left font-semibold text-gray-700">{{ __('app.truck.show.mileage_col_return') }}</th>
+                        <th class="px-4 py-2 text-right font-semibold text-gray-700">{{ __('app.truck.show.mileage_col_km') }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($driverTripsPaginator->items() as $t)
+                    <tr class="border-t border-gray-100">
+                        <td class="px-4 py-2">
+                            <a href="{{ route('trips.show', $t['id']) }}" wire:navigate class="text-blue-600 hover:underline font-medium">#{{ $t['id'] }}</a>
+                        </td>
+                        <td class="px-4 py-2 text-gray-700">{{ $t['departure_date'] ? \Carbon\Carbon::parse($t['departure_date'])->format('d.m.Y') : '—' }}</td>
+                        <td class="px-4 py-2 text-gray-700">{{ $t['return_date'] ? \Carbon\Carbon::parse($t['return_date'])->format('d.m.Y') : '—' }}</td>
+                        <td class="px-4 py-2 text-right tabular-nums">{{ number_format($t['distance_km'], 0, ',', ' ') }} km</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            @if($driverTripsPaginator->currentPage() > 1)
+                <button type="button" wire:click="setDriverTripsPage({{ $driverTripsPaginator->currentPage() - 1 }})"
+                        class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium">{{ __('app.pagination.previous') }}</button>
+            @endif
+            <span class="text-sm text-gray-600">
+                {{ __('app.pagination.page_of', ['current' => $driverTripsPaginator->currentPage(), 'last' => $driverTripsPaginator->lastPage()]) }}
+            </span>
+            @if($driverTripsPaginator->currentPage() < $driverTripsPaginator->lastPage())
+                <button type="button" wire:click="setDriverTripsPage({{ $driverTripsPaginator->currentPage() + 1 }})"
+                        class="px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium">{{ __('app.pagination.next') }}</button>
+            @endif
+        </div>
+        @else
+        <p class="text-gray-500 text-sm">{{ __('app.driver.show.trips_no_trips') }}</p>
+        @endif
+    </div>
+
     {{-- Foto dokumentiem --}}
     <div>
         <h2 class="text-2xl font-bold mb-4">{{ __('app.driver.show.photo_block') }}</h2>

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             DriverSeeder::class,
             AdminUserSeeder::class,
             TripsFullSeeder::class,
+            OrdersSeeder::class,
         ]);
     }
 }

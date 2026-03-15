@@ -126,6 +126,11 @@ public function cargos()
         return $this->hasMany(TripDocument::class);
     }
 
+    public function transportOrder()
+    {
+        return $this->hasOne(TransportOrder::class);
+    }
+
     /** ========================
      *  ACCESSORS
      * ======================== */

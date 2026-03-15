@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Stats;
 
+use App\Enums\TripExpenseCategory;
 use App\Models\Trip;
 use App\Models\TripCargo;
 use App\Models\TripExpense;
@@ -262,6 +263,50 @@ class TripsStatsTable extends Component
         ];
     }
 
+    /**
+     * Расходы по категориям за период (по дате рейса), без SUBCONTRACTOR.
+     * Возвращает: ['items' => [...], 'total_amount' => float]
+     */
+    private function getExpensesByCategory(): array
+    {
+        $q = TripExpense::query()
+            ->whereHas('trip', function (Builder $t) {
+                if ($this->dateFrom) {
+                    $t->whereDate('trips.start_date', '>=', $this->dateFrom);
+                }
+                if ($this->dateTo) {
+                    $t->whereDate('trips.start_date', '<=', $this->dateTo);
+                }
+            })
+            ->where('category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
+
+        $rows = $q
+            ->selectRaw('category, COALESCE(SUM(amount), 0) as total_amount, COALESCE(SUM(liters), 0) as total_liters')
+            ->groupBy('category')
+            ->orderByRaw('SUM(amount) DESC')
+            ->get();
+
+        $totalAmount = $rows->sum('total_amount');
+        $items = $rows->map(function ($r) use ($totalAmount) {
+            $label = $r->category
+                ? ($r->category instanceof TripExpenseCategory ? $r->category->label() : (TripExpenseCategory::tryFrom((string) $r->category)?->label() ?? (string) $r->category))
+                : '—';
+            $pct = $totalAmount > 0 ? round((float) $r->total_amount / $totalAmount * 100, 1) : 0;
+            return [
+                'category' => $r->category,
+                'label'    => $label,
+                'amount'   => (float) $r->total_amount,
+                'liters'   => (float) $r->total_liters,
+                'percent'  => $pct,
+            ];
+        })->values()->all();
+
+        return [
+            'items'        => $items,
+            'total_amount' => round($totalAmount, 2),
+        ];
+    }
+
     public function render()
     {
         $allowedSort = [
@@ -294,12 +339,32 @@ class TripsStatsTable extends Component
 
         // Сводка по тем же фильтрам (без дублирования: те же dateFrom/dateTo/search)
         $summaryQuery = (clone $q)->get();
+        $totalKm = $summaryQuery->sum(function ($t) {
+            $dep = (float) ($t->departure_odometer ?? $t->odo_start_km ?? 0);
+            $ret = (float) ($t->return_odometer ?? $t->odo_end_km ?? 0);
+            return $ret > $dep ? $ret - $dep : 0;
+        });
+        $tripIds = $summaryQuery->pluck('id')->filter()->values()->all();
+        $totalExpensesExclSub = 0.0;
+        if ($tripIds !== []) {
+            $totalExpensesExclSub = (float) TripExpense::query()
+                ->whereIn('trip_id', $tripIds)
+                ->where(function (Builder $qb) {
+                    $qb->whereNull('category')
+                        ->orWhere('category', '!=', TripExpenseCategory::SUBCONTRACTOR->value);
+                })
+                ->sum('amount');
+        }
+        $costPerKm = $totalKm > 0 ? round($totalExpensesExclSub / $totalKm, 2) : null;
+
         $summary = (object) [
             'trips_count'        => $summaryQuery->count(),
             'total_freight'      => round($summaryQuery->sum('freight_total'), 2),
             'total_expenses'     => round($summaryQuery->sum('expenses_total'), 2),
             'total_profit'       => round($summaryQuery->sum('profit'), 2),
             'avg_margin_percent' => null,
+            'total_km'           => round($totalKm, 1),
+            'cost_per_km'        => $costPerKm,
         ];
         $withFreight = $summaryQuery->filter(fn ($t) => (float) ($t->freight_total ?? 0) > 0);
         if ($withFreight->isNotEmpty()) {
@@ -312,7 +377,10 @@ class TripsStatsTable extends Component
         // График по периодам: группировка по неделе или месяцу
         $chartData = $this->buildChartData($summaryQuery);
 
-        return view('livewire.stats.trips-stats-table', compact('rows', 'summary', 'chartData'))->layout('layouts.app', [
+        // Расходы по категориям за тот же период (по дате рейса), без SUBCONTRACTOR
+        $expensesByCategory = $this->getExpensesByCategory();
+
+        return view('livewire.stats.trips-stats-table', compact('rows', 'summary', 'chartData', 'expensesByCategory'))->layout('layouts.app', [
             'title' => 'Trips stats'
         ]);
     }

@@ -58,6 +58,21 @@ class CompaniesSeeder extends Seeder
                     1 => ['name' => 'Swedbank', 'iban' => 'LV40HABA0551045751481', 'bic' => 'HABALV22'],
                 ],
             ],
+            [
+                'slug'   => 'expeditor-2',
+                'name'   => 'SIA Krava Ekspedīcija',
+                'type'   => 'expeditor',
+                'reg_nr' => '40203888777',
+                'country'=> 'Latvia',
+                'city'   => 'Riga',
+                'address'=> 'Dzirnavu iela 5',
+                'post_code' => 'LV-1012',
+                'email'  => 'info@krava-ekspedicija.lv',
+                'phone'  => '+371 20000004',
+                'banks_json' => [
+                    1 => ['name' => 'SEB', 'iban' => 'LV77UNLA0050001234567', 'bic' => 'UNLALV2X'],
+                ],
+            ],
         ];
 
         foreach ($ourCompanies as $data) {

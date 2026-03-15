@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
 use App\Models\Company;
+use App\Models\TransportOrder;
 use App\Models\TripExpense;
 use App\Models\{
     Trip,
@@ -102,6 +103,9 @@ class CreateTrip extends Component
     public $trucks = [];
     public $trailers = [];
 
+    /** When creating trip from order (query from_order=ID), link order to trip after save */
+    public ?int $from_order_id = null;
+
     /** ============================================================
      *  TRIP
      * ============================================================ */
@@ -156,8 +160,129 @@ class CreateTrip extends Component
         // trailer meta init
         $this->updatedTrailerId($this->trailer_id);
 
-        $this->addStep();
-        $this->addCargo();
+        // Prefill from order when from_order=ID in query (e.g. /trips/create?from_order=123). All order data → trip form.
+        $fromOrderId = request()->query('from_order');
+        if ($fromOrderId && is_numeric($fromOrderId)) {
+            $this->from_order_id = (int) $fromOrderId;
+            $order = TransportOrder::with(['expeditor', 'steps', 'cargos'])->find($this->from_order_id);
+            if ($order) {
+                $this->expeditor_id = $order->expeditor_id;
+                $this->hydrateExpeditor();
+                $dateFrom = $order->requested_date_from?->format('Y-m-d');
+                $dateTo = $order->requested_date_to?->format('Y-m-d');
+                if ($order->cargos->isNotEmpty()) {
+                    $fromCargos = $order->cargos->pluck('requested_date_from')->filter()->map(fn ($d) => $d->format('Y-m-d'));
+                    $toCargos = $order->cargos->pluck('requested_date_to')->filter()->map(fn ($d) => $d->format('Y-m-d'));
+                    if ($fromCargos->isNotEmpty()) {
+                        $dateFrom = $fromCargos->min();
+                    }
+                    if ($toCargos->isNotEmpty()) {
+                        $dateTo = $toCargos->max();
+                    }
+                }
+                $this->start_date = $dateFrom;
+                $this->end_date = $dateTo;
+                $this->currency = $order->currency ?? 'EUR';
+                $this->customs = (bool) $order->customs;
+                $this->customs_address = $order->customs_address;
+
+                // Steps from order → trip steps (city in city_id, address separate)
+                $this->steps = [];
+                $this->stepCities = [];
+                $orderNum = 0;
+                foreach ($order->steps->sortBy('order') as $os) {
+                    $uid = (string) Str::uuid();
+                    $this->steps[] = [
+                        'uid'             => $uid,
+                        'type'            => $os->type ?? 'loading',
+                        'country_id'      => $os->country_id,
+                        'city_id'         => $os->city_id,
+                        'address'         => $os->address,
+                        'contact_phone_1'  => $os->contact_phone,
+                        'contact_phone_2'  => null,
+                        'date'            => $os->date?->format('Y-m-d'),
+                        'time'            => $os->time,
+                        'order'           => ++$orderNum,
+                        'notes'           => $os->notes,
+                    ];
+                    $this->stepCities[] = [
+                        'cities' => $os->country_id && function_exists('getCitiesByCountryId')
+                            ? (getCitiesByCountryId((int) $os->country_id) ?? [])
+                            : [],
+                    ];
+                }
+                $loadingUids = [];
+                $unloadingUids = [];
+                foreach ($this->steps as $s) {
+                    if (($s['type'] ?? '') === 'loading') {
+                        $loadingUids[] = $s['uid'];
+                    }
+                    if (($s['type'] ?? '') === 'unloading') {
+                        $unloadingUids[] = $s['uid'];
+                    }
+                }
+                $this->trip_loading_step_ids = array_slice($loadingUids, 0, 1);
+                $this->trip_unloading_step_ids = array_slice($unloadingUids, 0, 1);
+
+                // Cargos from order → trip cargos (one item per order cargo)
+                $this->cargos = [];
+                foreach ($order->cargos as $oc) {
+                    $price = $oc->quoted_price !== null ? (string) $oc->quoted_price : '';
+                    $this->cargos[] = [
+                        'uid'                      => (string) Str::uuid(),
+                        'customer_id'              => $oc->customer_id,
+                        'shipper_id'               => $oc->shipper_id ?? $oc->customer_id,
+                        'consignee_id'             => $oc->consignee_id ?? $oc->customer_id,
+                        'loading_step_ids'         => $this->trip_loading_step_ids,
+                        'unloading_step_ids'       => $this->trip_unloading_step_ids,
+                        'price'                    => $price,
+                        'tax_percent'              => 21,
+                        'total_tax_amount'        => 0,
+                        'price_with_tax'           => 0,
+                        'currency'                 => 'EUR',
+                        'payment_terms'            => null,
+                        'payment_days'             => 30,
+                        'payer_type_id'            => null,
+                        'commercial_invoice_nr'    => null,
+                        'commercial_invoice_amount' => null,
+                        'items'                    => [
+                            [
+                                'uid'             => (string) Str::uuid(),
+                                'description'     => $oc->description ?? '',
+                                'customs_code'    => $oc->customs_code,
+                                'packages'        => $oc->packages,
+                                'pallets'         => $oc->pallets,
+                                'units'           => $oc->units,
+                                'net_weight'      => $oc->net_weight,
+                                'gross_weight'    => $oc->gross_weight,
+                                'tonnes'          => $oc->tonnes,
+                                'volume'          => $oc->volume_m3,
+                                'loading_meters'  => $oc->loading_meters,
+                                'hazmat'          => $oc->hazmat ?? '',
+                                'temperature'     => $oc->temperature ?? '',
+                                'stackable'       => (bool) ($oc->stackable ?? false),
+                                'instructions'    => $oc->instructions ?? '',
+                                'remarks'         => $oc->remarks ?? '',
+                            ],
+                        ],
+                    ];
+                }
+                if (empty($this->cargos)) {
+                    $this->addCargo();
+                } else {
+                    foreach (array_keys($this->cargos) as $idx) {
+                        $this->recalcCargoTotals($idx);
+                    }
+                }
+            }
+        }
+
+        if (empty($this->steps)) {
+            $this->addStep();
+        }
+        if (empty($this->cargos)) {
+            $this->addCargo();
+        }
     }
 
     /** ============================================================
@@ -1347,6 +1472,13 @@ class CreateTrip extends Component
             }
 
             DB::commit();
+
+            if ($this->from_order_id) {
+                TransportOrder::where('id', $this->from_order_id)->update([
+                    'trip_id' => $trip->id,
+                    'status'  => \App\Enums\OrderStatus::CONVERTED->value,
+                ]);
+            }
 
             $this->redirectRoute('trips.show', $trip->id);
         } catch (\Throwable $e) {

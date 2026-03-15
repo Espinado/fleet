@@ -11,6 +11,8 @@ use App\Livewire\TrailersTable;
 use App\Livewire\ClientsTable;
 
 use App\Livewire\Stats\TripsStatsTable;
+use App\Livewire\Stats\ClientsStatsTable;
+use App\Livewire\Stats\DowntimeStatsTable;
 
 use App\Livewire\Drivers\{ShowDriver, EditDriver, CreateDriver};
 use App\Livewire\Trucks\{ShowTruck, EditTruck, CreateTruck};
@@ -19,6 +21,7 @@ use App\Livewire\Clients\{ShowClient, EditClient, CreateClient};
 
 use App\Livewire\TripsTable;
 use App\Livewire\Trips\{CreateTrip, ViewTrip, EditTrip};
+use App\Livewire\Orders\{OrdersTable, ShowOrder, CreateOrder, EditOrder};
 
 use App\Livewire\Invoices\InvoicesTable;
 use App\Models\Invoice;
@@ -125,6 +128,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/clients/{client}', ShowClient::class)->name('clients.show');
     Route::get('/clients/{client}/edit', EditClient::class)->name('clients.edit');
 
+    // Orders (transport orders)
+    Route::get('/orders', OrdersTable::class)->name('orders.index');
+    Route::get('/orders/create', CreateOrder::class)->name('orders.create');
+    Route::get('/orders/{transportOrder}', ShowOrder::class)->name('orders.show');
+    Route::get('/orders/{transportOrder}/edit', EditOrder::class)->name('orders.edit');
+
     // Trips
     Route::get('/trips', TripsTable::class)->name('trips.index');
     Route::get('/trips/create', CreateTrip::class)->name('trips.create');
@@ -135,6 +144,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/stats', TripsStatsTable::class)->name('stats.index');
 
      Route::get('/stats/events', EventsTable::class)->name('stats.events');
+     Route::get('/stats/clients', ClientsStatsTable::class)->name('stats.clients');
+    Route::get('/stats/downtime', DowntimeStatsTable::class)->name('stats.downtime');
 
     // CMR generate
     Route::post('/cmr/{cargo}/generate', [CmrController::class, 'generateAndSave'])

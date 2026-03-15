@@ -20,9 +20,12 @@ class TrailerSeeder extends Seeder
         }
 
         $count = 0;
+        $typeByIndex = [1, 1, 2, 3]; // cargo, cargo, container, ref
         foreach ($carrierCompanies as $companyId) {
-            Trailer::factory()->count(4)->create(['company_id' => $companyId]);
-            $count += 4;
+            foreach ($typeByIndex as $typeId) {
+                Trailer::factory()->create(['company_id' => $companyId, 'type_id' => $typeId]);
+                $count++;
+            }
         }
         $this->command->info("Created {$count} trailers.");
     }

@@ -62,10 +62,16 @@
             $statsOpen          = request()->routeIs('stats.*');
             $statsOverviewActive = request()->routeIs('stats.index');
             $statsEventsActive   = request()->routeIs('stats.events') || request()->routeIs('stats.events.*');
-             $transportOpen = request()->routeIs('trucks.*') || request()->routeIs('trailers.*');
-
-    $trucksActive = request()->routeIs('trucks.*');
-    $trailersActive = request()->routeIs('trailers.*');
+            $statsClientsActive   = request()->routeIs('stats.clients');
+            $statsDowntimeActive   = request()->routeIs('stats.downtime');
+            $transportOpen = request()->routeIs('drivers.*') || request()->routeIs('trucks.*') || request()->routeIs('trailers.*') || request()->routeIs('map.*');
+            $tripsOrdersOpen = request()->routeIs('orders.*') || request()->routeIs('trips.*');
+            $trucksActive = request()->routeIs('trucks.*');
+            $trailersActive = request()->routeIs('trailers.*');
+            $driversActive = request()->routeIs('drivers.*');
+            $mapActive = request()->routeIs('map.*');
+            $ordersActive = request()->routeIs('orders.*');
+            $tripsActive = request()->routeIs('trips.*');
         @endphp
 
         <nav class="p-4 space-y-2">
@@ -74,50 +80,66 @@
                 📊 {{ __('app.nav.dashboard') }}
             </a>
 
-            <a href="{{ route('drivers.index') }}" wire:navigate
-               @class([$navBase, request()->routeIs('drivers.*') ? $navActive : $navIdle])>
-                👨‍✈️ {{ __('app.nav.drivers') }}
-            </a>
-
             <details class="rounded" @if($transportOpen) open @endif>
-    <summary
-        class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
-               {{ $transportOpen ? $navActive : $navIdle }}"
-    >
-        <span>🚚 {{ __('app.nav.transport') }}</span>
-        <span class="text-xs opacity-70">
-            @if($transportOpen) ▲ @else ▼ @endif
-        </span>
-    </summary>
+                <summary
+                    class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
+                           {{ $transportOpen ? $navActive : $navIdle }}"
+                >
+                    <span>🚚 {{ __('app.nav.transport') }}</span>
+                    <span class="text-xs opacity-70">
+                        @if($transportOpen) ▲ @else ▼ @endif
+                    </span>
+                </summary>
 
-    <div class="mt-1 ml-3 space-y-1">
+                <div class="mt-1 ml-3 space-y-1">
+                    <a href="{{ route('drivers.index') }}" wire:navigate
+                       @class([$navBase, $driversActive ? $navActive : $navIdle])>
+                        👨‍✈️ {{ __('app.nav.drivers') }}
+                    </a>
 
-        <a href="{{ route('trucks.index') }}" wire:navigate
-           @class([$navBase, $trucksActive ? $navActive : $navIdle])>
-            🚛 {{ __('app.nav.trucks') }}
-        </a>
+                    <a href="{{ route('trucks.index') }}" wire:navigate
+                       @class([$navBase, $trucksActive ? $navActive : $navIdle])>
+                        🚛 {{ __('app.nav.trucks') }}
+                    </a>
 
-        <a href="{{ route('trailers.index') }}" wire:navigate
-           @class([$navBase, $trailersActive ? $navActive : $navIdle])>
-            🚚 {{ __('app.nav.trailers') }}
-        </a>
+                    <a href="{{ route('trailers.index') }}" wire:navigate
+                       @class([$navBase, $trailersActive ? $navActive : $navIdle])>
+                        🚚 {{ __('app.nav.trailers') }}
+                    </a>
 
-    </div>
-</details>
+                    <a href="{{ route('map.index') }}" wire:navigate
+                       @class([$navBase, $mapActive ? $navActive : $navIdle])>
+                        🗺️ {{ __('app.nav.map') }}
+                    </a>
+                </div>
+            </details>
+
+            <details class="rounded" @if($tripsOrdersOpen) open @endif>
+                <summary
+                    class="{{ $navBase }} cursor-pointer list-none flex items-center justify-between
+                           {{ $tripsOrdersOpen ? $navActive : $navIdle }}"
+                >
+                    <span>📋 {{ __('app.nav.trips_and_orders') }}</span>
+                    <span class="text-xs opacity-70">
+                        @if($tripsOrdersOpen) ▲ @else ▼ @endif
+                    </span>
+                </summary>
+
+                <div class="mt-1 ml-3 space-y-1">
+                    <a href="{{ route('orders.index') }}" wire:navigate
+                       @class([$navBase, $ordersActive ? $navActive : $navIdle])>
+                        📋 {{ __('app.nav.orders') }}
+                    </a>
+                    <a href="{{ route('trips.index') }}" wire:navigate
+                       @class([$navBase, $tripsActive ? $navActive : $navIdle])>
+                        🧭 {{ __('app.nav.trips') }}
+                    </a>
+                </div>
+            </details>
 
             <a href="{{ route('clients.index') }}" wire:navigate
                @class([$navBase, request()->routeIs('clients.*') ? $navActive : $navIdle])>
                 🏢 {{ __('app.nav.clients') }}
-            </a>
-
-            <a href="{{ route('trips.index') }}" wire:navigate
-               @class([$navBase, request()->routeIs('trips.*') ? $navActive : $navIdle])>
-                🧭 {{ __('app.nav.trips') }}
-            </a>
-
-            <a href="{{ route('map.index') }}" wire:navigate
-               @class([$navBase, request()->routeIs('map.*') ? $navActive : $navIdle])>
-                🗺️ {{ __('app.nav.map') }}
             </a>
 
             {{-- ✅ STATS (dropdown) --}}
@@ -141,6 +163,16 @@
                     <a href="{{ route('stats.events') }}" wire:navigate
                        @class([$navBase, $statsEventsActive ? $navActive : $navIdle])>
                         🧾 {{ __('app.nav.stats_events') }}
+                    </a>
+
+                    <a href="{{ route('stats.clients') }}" wire:navigate
+                       @class([$navBase, $statsClientsActive ? $navActive : $navIdle])>
+                        🏢 {{ __('app.nav.stats_clients') }}
+                    </a>
+
+                    <a href="{{ route('stats.downtime') }}" wire:navigate
+                       @class([$navBase, $statsDowntimeActive ? $navActive : $navIdle])>
+                        ⏱ {{ __('app.nav.stats_downtime') }}
                     </a>
                 </div>
             </details>
