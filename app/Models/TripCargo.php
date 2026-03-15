@@ -11,6 +11,7 @@ class TripCargo extends Model
 
     protected $fillable = [
         'trip_id',
+        'transport_order_id',
 
         // Relations
         'customer_id',
@@ -71,6 +72,11 @@ class TripCargo extends Model
     public function trip()
     {
         return $this->belongsTo(Trip::class);
+    }
+
+    public function transportOrder()
+    {
+        return $this->belongsTo(TransportOrder::class, 'transport_order_id');
     }
 
     public function customer()

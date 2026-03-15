@@ -703,6 +703,23 @@ return [
     'trip.step.contact_phone_1' => 'Kontakttālrunis 1',
     'trip.step.contact_phone_2' => 'Kontakttālrunis 2',
 
+    // Trip create — выбор заказов
+    'trip.create.select_orders_title'  => 'Pievienot reisam no pasūtījumiem',
+    'trip.create.select_orders_hint'   => 'Izvēlieties vienu vai vairākus pasūtījumus (bez reisa). Maršruts un kravas tiks apvienoti.',
+    'trip.create.select_orders_hold'   => 'Turiet Ctrl (Cmd), lai izvēlētos vairākus.',
+    'trip.create.select_orders_apply'   => 'Pielietot',
+    'trip.create.select_orders_linked' => 'Piesaistīts :count pasūtījums(-i).',
+
+    // Trip show — заказы в рейсе
+    'trip.show.orders_in_trip'    => 'Pasūtījumi reisā',
+    'trip.show.add_orders_to_trip'=> 'Pievienot pasūtījumus reisam',
+    'trip.show.add_orders_modal_title' => 'Izvēlēties pasūtījumus',
+    'trip.show.add_orders_done'   => 'Pasūtījumi pievienoti.',
+    'trip.show.orders_in_trip_empty' => 'Reisā vēl nav pasūtījumu.',
+    'trip.show.order_loading'   => 'Iekraušana',
+    'trip.show.order_unloading' => 'Izkraušana',
+    'trip.show.add_orders_error' => 'Neizdevās pievienot pasūtījumus.',
+
     // Trip edit page
     'trip.edit.title'             => 'Labot reisu',
     'trip.edit.header'            => 'Reisa labošana (vairākas kravas)',

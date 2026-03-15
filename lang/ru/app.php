@@ -181,6 +181,23 @@ return [
     'trip.step.contact_phone_1' => 'Контактный телефон 1',
     'trip.step.contact_phone_2' => 'Контактный телефон 2',
 
+    // Trip create — выбор заказов
+    'trip.create.select_orders_title'  => 'Добавить в рейс из заказов',
+    'trip.create.select_orders_hint'   => 'Выберите один или несколько заказов (без рейса). Маршрут и грузы будут объединены.',
+    'trip.create.select_orders_hold'   => 'Удерживайте Ctrl (Cmd) для выбора нескольких.',
+    'trip.create.select_orders_apply'  => 'Применить',
+    'trip.create.select_orders_linked' => 'Привязано заказов: :count.',
+
+    // Trip show — заказы в рейсе
+    'trip.show.orders_in_trip'    => 'Заказы в рейсе',
+    'trip.show.add_orders_to_trip'=> 'Добавить заказы в рейс',
+    'trip.show.add_orders_modal_title' => 'Выбрать заказы',
+    'trip.show.add_orders_done'   => 'Заказы добавлены.',
+    'trip.show.orders_in_trip_empty' => 'В рейсе пока нет заказов.',
+    'trip.show.order_loading'   => 'Погрузка',
+    'trip.show.order_unloading' => 'Разгрузка',
+    'trip.show.add_orders_error' => 'Не удалось добавить заказы.',
+
     // Driver app: offline (PWA)
     'driver.offline.title'   => 'Нет соединения',
     'driver.offline.message' => 'Вы в офлайне. Проверьте интернет и попробуйте снова.',

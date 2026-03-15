@@ -5,10 +5,15 @@ namespace App\Livewire\Trips;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
+use App\Enums\OrderStatus;
 use App\Models\Trip;
+use App\Models\TransportOrder;
+use App\Models\TripStep;
 use App\Models\TripStepDocument;
 use App\Models\TripCargo;
+use App\Models\TripCargoItem;
 use App\Models\Invoice;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\CmrController;
 use App\Helpers\CalculateTax;
 
@@ -33,22 +38,14 @@ class ViewTrip extends Component
     public array $delayDays = [];    // cargo_id => int|string
     public array $delayAmount = [];  // cargo_id => float|string (without VAT)
 
+    /** Выбор заказов для «Добавить в рейс» */
+    public array $add_orders_selection = [];
+
     public function mount($trip)
     {
         $this->trip = $trip instanceof Trip ? $trip : Trip::findOrFail($trip);
 
         $this->reloadTrip();
-
-        // заполнить поля ввода номеров и delay из БД
-        foreach ($this->trip->cargos as $cargo) {
-            $cid = (int) $cargo->id;
-            $this->cmrNr[$cid]   = (string)($cargo->cmr_nr ?? '');
-            $this->orderNr[$cid] = (string)($cargo->order_nr ?? '');
-            $this->invNr[$cid]   = (string)($cargo->inv_nr ?? '');
-            $this->delayChecked[$cid] = (bool) ($cargo->has_delay ?? false);
-            $this->delayDays[$cid]    = $cargo->delay_days !== null ? (string) $cargo->delay_days : '';
-            $this->delayAmount[$cid]  = $cargo->delay_amount !== null ? (string) $cargo->delay_amount : '';
-        }
     }
 
     private function reloadTrip(): void
@@ -58,6 +55,9 @@ class ViewTrip extends Component
             'driver',
             'truck',
             'trailer',
+            'transportOrders.expeditor',
+            'transportOrders.customer',
+            'transportOrders.steps',
 
             'cargos.shipper',
             'cargos.consignee',
@@ -67,6 +67,205 @@ class ViewTrip extends Component
 
             'steps.cargos',
         ]);
+
+        $this->syncMissingCargosFromOrders();
+        $this->hydrateCargoInputsFromTrip();
+    }
+
+    /** Fill cmrNr, orderNr, invNr, delayChecked, delayDays, delayAmount for all current cargos (fixes Entangle after sync adds new cargos). */
+    protected function hydrateCargoInputsFromTrip(): void
+    {
+        foreach ($this->trip->cargos as $cargo) {
+            $cid = (int) $cargo->id;
+            $this->cmrNr[$cid]        = (string)($cargo->cmr_nr ?? '');
+            $this->orderNr[$cid]      = (string)($cargo->order_nr ?? '');
+            $this->invNr[$cid]        = (string)($cargo->inv_nr ?? '');
+            $this->delayChecked[$cid] = (bool) ($cargo->has_delay ?? false);
+            $this->delayDays[$cid]    = $cargo->delay_days !== null ? (string) $cargo->delay_days : '';
+            $this->delayAmount[$cid]  = $cargo->delay_amount !== null ? (string) $cargo->delay_amount : '';
+        }
+    }
+
+    /**
+     * For trips that have linked orders but missing TripCargos (e.g. orders were added before we created cargos),
+     * backfill transport_order_id on existing cargos then create TripSteps and TripCargos for orders that have none.
+     */
+    protected function syncMissingCargosFromOrders(): void
+    {
+        $orders = $this->trip->transportOrders;
+        if ($orders === null || $orders->isEmpty()) {
+            return;
+        }
+
+        $ordersSorted = $orders->sortBy('id')->values();
+        $cargosWithoutOrder = TripCargo::where('trip_id', $this->trip->id)
+            ->whereNull('transport_order_id')
+            ->orderBy('id')
+            ->get();
+        foreach ($cargosWithoutOrder as $i => $cargo) {
+            if (isset($ordersSorted[$i])) {
+                $cargo->update(['transport_order_id' => $ordersSorted[$i]->id]);
+            }
+        }
+
+        $synced = false;
+        foreach ($orders as $order) {
+            $hasCargo = TripCargo::where('trip_id', $this->trip->id)
+                ->where('transport_order_id', $order->id)
+                ->exists();
+            if (!$hasCargo) {
+                $order->load(['steps' => fn ($q) => $q->orderBy('order')], 'cargos');
+                $this->appendOrderStepsAndCargosToTrip($order);
+                $synced = true;
+            }
+        }
+
+        if ($synced) {
+            $this->trip->refresh();
+            $this->trip->load([
+                'driver', 'truck', 'trailer',
+                'transportOrders.expeditor', 'transportOrders.customer', 'transportOrders.steps',
+                'cargos.shipper', 'cargos.consignee', 'cargos.customer', 'cargos.items', 'cargos.steps.documents',
+                'steps.cargos',
+            ]);
+            $this->hydrateCargoInputsFromTrip();
+        }
+    }
+
+    /**
+     * Добавить выбранные заказы в рейс (confirmed, без trip_id). Статус заказов → CONVERTED.
+     * Для каждого заказа создаются шаги (TripStep) и грузы (TripCargo + TripCargoItem) из данных заказа.
+     */
+    public function addOrdersToTrip(): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $this->add_orders_selection))));
+        if (empty($ids)) {
+            return;
+        }
+
+        $orders = TransportOrder::with(['steps' => fn ($q) => $q->orderBy('order')], 'cargos')
+            ->whereIn('id', $ids)
+            ->whereIn('status', ['draft', 'quoted', 'confirmed'])
+            ->whereNull('trip_id')
+            ->get();
+
+        if ($orders->isEmpty()) {
+            $this->add_orders_selection = [];
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($orders as $order) {
+                $this->appendOrderStepsAndCargosToTrip($order);
+            }
+
+            $processedIds = $orders->pluck('id')->toArray();
+            if (!empty($processedIds)) {
+                TransportOrder::whereIn('id', $processedIds)->update([
+                    'trip_id' => $this->trip->id,
+                    'status'  => OrderStatus::CONVERTED->value,
+                ]);
+            }
+
+            DB::commit();
+            $this->add_orders_selection = [];
+            $this->reloadTrip();
+            session()->flash('success', __('app.trip.show.add_orders_done'));
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+            session()->flash('error', __('app.trip.show.add_orders_error'));
+        }
+    }
+
+    /**
+     * Create TripSteps and TripCargos from one TransportOrder and attach to current trip.
+     */
+    protected function appendOrderStepsAndCargosToTrip(TransportOrder $order): void
+    {
+        $trip = $this->trip;
+        $maxOrder = (int) $trip->steps()->max('order');
+
+        $newStepIdsByType = ['loading' => null, 'unloading' => null];
+
+        foreach ($order->steps as $os) {
+            $maxOrder++;
+            $dbStep = TripStep::create([
+                'trip_id'          => $trip->id,
+                'order'            => $maxOrder,
+                'type'             => $os->type ?? 'loading',
+                'country_id'       => $os->country_id,
+                'city_id'          => $os->city_id,
+                'address'          => $os->address,
+                'contact_phone_1'   => $os->contact_phone,
+                'contact_phone_2'  => null,
+                'date'             => $os->date,
+                'time'             => $os->time,
+                'notes'            => $os->notes,
+            ]);
+            $type = $os->type ?? 'loading';
+            if (($type === 'loading' && $newStepIdsByType['loading'] === null) || ($type === 'unloading' && $newStepIdsByType['unloading'] === null)) {
+                $newStepIdsByType[$type] = $dbStep->id;
+            }
+        }
+
+        $loadingStepId = $newStepIdsByType['loading'] ?? $trip->steps()->where('type', 'loading')->orderBy('order')->value('id');
+        $unloadingStepId = $newStepIdsByType['unloading'] ?? $trip->steps()->where('type', 'unloading')->orderBy('order')->value('id');
+
+        foreach ($order->cargos as $oc) {
+            $price = (float) ($oc->quoted_price ?? 0);
+            $taxPercent = 21.0;
+            $tax = CalculateTax::calculate($price, $taxPercent);
+
+            $cargo = TripCargo::create([
+                'trip_id'             => $trip->id,
+                'transport_order_id'  => $order->id,
+                'customer_id'         => $oc->customer_id,
+                'shipper_id'          => $oc->shipper_id ?? $oc->customer_id,
+                'consignee_id'        => $oc->consignee_id ?? $oc->customer_id,
+                'price'               => $price,
+                'tax_percent'         => $taxPercent,
+                'total_tax_amount'    => $tax['tax_amount'],
+                'price_with_tax'      => $tax['price_with_tax'],
+                'currency'            => 'EUR',
+                'payment_terms'       => null,
+                'payment_days'        => 30,
+                'payer_type_id'       => null,
+                'commercial_invoice_nr' => null,
+                'commercial_invoice_amount' => null,
+            ]);
+
+            $cargo->items()->create([
+                'description'     => $oc->description ?? '',
+                'customs_code'    => $oc->customs_code,
+                'packages'        => (int) ($oc->packages ?? 0),
+                'pallets'         => (int) ($oc->pallets ?? 0),
+                'units'           => (int) ($oc->units ?? 0),
+                'net_weight'      => (float) ($oc->net_weight ?? $oc->weight_kg ?? 0),
+                'gross_weight'    => (float) ($oc->gross_weight ?? $oc->weight_kg ?? 0),
+                'tonnes'          => (float) ($oc->tonnes ?? 0),
+                'volume'          => (float) ($oc->volume_m3 ?? 0),
+                'loading_meters'  => (float) ($oc->loading_meters ?? 0),
+                'hazmat'          => $oc->hazmat ?? '',
+                'temperature'     => $oc->temperature ?? '',
+                'stackable'       => (bool) ($oc->stackable ?? false),
+                'instructions'    => $oc->instructions ?? '',
+                'remarks'         => $oc->remarks ?? '',
+            ]);
+
+            $pivot = [];
+            if ($loadingStepId) {
+                $pivot[$loadingStepId] = ['role' => 'loading'];
+            }
+            if ($unloadingStepId && $unloadingStepId !== $loadingStepId) {
+                $pivot[$unloadingStepId] = ['role' => 'unloading'];
+            }
+            if ($pivot) {
+                $cargo->steps()->attach($pivot);
+            }
+        }
     }
 
     public function uploadStepDocument(int $stepId)
@@ -254,8 +453,16 @@ class ViewTrip extends Component
 
     public function render()
     {
+        $availableOrdersForTrip = TransportOrder::with(['expeditor', 'customer'])
+            ->whereIn('status', ['draft', 'quoted', 'confirmed'])
+            ->whereNull('trip_id')
+            ->orderBy('order_date')
+            ->orderBy('id')
+            ->get(['id', 'number', 'order_date', 'expeditor_id', 'customer_id', 'status']);
+
         return view('livewire.trips.view-trip', [
-            'trip' => $this->trip,
+            'trip'                    => $this->trip,
+            'availableOrdersForTrip'  => $availableOrdersForTrip,
         ])
             ->layout('layouts.app', [
             'title' => __('app.trip.show.title'),

@@ -168,6 +168,38 @@
             </div>
         @enderror
 
+        {{-- Выбор заказов для рейса (один или несколько): маршрут и грузы объединяются --}}
+        @if(isset($availableOrders) && $availableOrders->isNotEmpty())
+            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-3 border border-gray-100 dark:border-gray-800">
+                <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    📋 {{ __('app.trip.create.select_orders_title') }}
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ __('app.trip.create.select_orders_hint') }}</p>
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="min-w-[200px] flex-1">
+                        <select wire:model="selected_order_ids_input" multiple
+                                class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 min-h-[100px]">
+                            @foreach($availableOrders as $o)
+                                <option value="{{ $o->id }}">
+                                    {{ $o->number }} — {{ $o->order_date?->format('d.m.Y') ?? '—' }} — {{ $o->expeditor?->name ?? '—' }}{{ $o->customer ? ' / ' . $o->customer->company_name : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">{{ __('app.trip.create.select_orders_hold') }}</p>
+                    </div>
+                    <button type="button" wire:click="setOrdersForTrip"
+                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white shadow">
+                        {{ __('app.trip.create.select_orders_apply') }}
+                    </button>
+                </div>
+                @if(!empty($from_order_ids))
+                    <p class="text-sm text-green-700 dark:text-green-400">
+                        {{ __('app.trip.create.select_orders_linked', ['count' => count($from_order_ids)]) }}
+                    </p>
+                @endif
+            </section>
+        @endif
+
         {{-- EXPEDITOR + CARRIER --}}
         <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-4 border border-gray-100 dark:border-gray-800">
             <div class="flex items-center justify-between gap-2">

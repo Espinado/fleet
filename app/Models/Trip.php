@@ -126,9 +126,16 @@ public function cargos()
         return $this->hasMany(TripDocument::class);
     }
 
+    /** Один рейс может объединять несколько заказов (консолидация). */
+    public function transportOrders()
+    {
+        return $this->hasMany(TransportOrder::class);
+    }
+
+    /** Первый заказ рейса (обратная совместимость). */
     public function transportOrder()
     {
-        return $this->hasOne(TransportOrder::class);
+        return $this->hasOne(TransportOrder::class)->oldest('id');
     }
 
     /** ========================

@@ -213,6 +213,66 @@
         </div>
     @endif
 
+    {{-- Заказы в рейсе + добавить заказы --}}
+    <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-3 border border-gray-100 dark:border-gray-800">
+        <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">{{ __('app.trip.show.orders_in_trip') }}</h2>
+        @if($trip->transportOrders && $trip->transportOrders->isNotEmpty())
+            <ul class="space-y-2">
+                @foreach($trip->transportOrders as $order)
+                    @php
+                        $loadingStep = $order->steps->where('type', 'loading')->sortBy('order')->first();
+                        $unloadingStep = $order->steps->where('type', 'unloading')->sortBy('order')->first();
+                        $loadingDate = $loadingStep?->date ? $loadingStep->date->format('d.m.Y') : null;
+                        $unloadingDate = $unloadingStep?->date ? $unloadingStep->date->format('d.m.Y') : null;
+                        $loadingAddr = $loadingStep?->address ?? null;
+                        $unloadingAddr = $unloadingStep?->address ?? null;
+                    @endphp
+                    <li>
+                        <a href="{{ route('orders.show', $order) }}" wire:navigate
+                           class="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium">
+                            📋 {{ $order->number }}
+                            — {{ $order->expeditor?->name ?? '—' }}
+                            @if($order->customer) / {{ $order->customer->company_name }} @endif
+                        </a>
+                        @if($loadingDate || $unloadingDate)
+                            <div class="text-sm text-gray-600 dark:text-gray-400 mt-0.5 ml-6">
+                                @if($loadingDate)
+                                    <span>{{ __('app.trip.show.order_loading') }}: {{ $loadingDate }}{{ $loadingAddr ? ' — ' . $loadingAddr : '' }}</span>
+                                @endif
+                                @if($unloadingDate)
+                                    @if($loadingDate) <span class="mx-1">|</span> @endif
+                                    <span>{{ __('app.trip.show.order_unloading') }}: {{ $unloadingDate }}{{ $unloadingAddr ? ' — ' . $unloadingAddr : '' }}</span>
+                                @endif
+                            </div>
+                        @endif
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.trip.show.orders_in_trip_empty') }}</p>
+        @endif
+        @if(isset($availableOrdersForTrip) && $availableOrdersForTrip->isNotEmpty() && $trip->status !== \App\Enums\TripStatus::COMPLETED)
+            <div class="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ __('app.trip.show.add_orders_modal_title') }}</p>
+                <div class="flex flex-wrap items-end gap-3">
+                    <div class="min-w-[200px] flex-1">
+                        <select wire:model="add_orders_selection" multiple
+                                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm px-3 py-2 min-h-[80px]">
+                            @foreach($availableOrdersForTrip as $o)
+                                <option value="{{ $o->id }}">
+                                    {{ $o->number }} — {{ $o->order_date?->format('d.m.Y') ?? '—' }} — {{ $o->expeditor?->name ?? '—' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="button" wire:click="addOrdersToTrip"
+                            class="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white">
+                        {{ __('app.trip.show.add_orders_to_trip') }}
+                    </button>
+                </div>
+            </div>
+        @endif
+    </div>
 
     {{-- ===================================================================== --}}
     {{-- 🖥 DESKTOP HEADER                                                     --}}
