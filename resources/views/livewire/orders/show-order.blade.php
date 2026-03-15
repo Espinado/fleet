@@ -26,10 +26,12 @@
                     🔗 {{ __('app.orders.linked_trip') }}
                 </a>
             @endif
-            <a href="{{ route('orders.edit', $transportOrder) }}" wire:navigate
-               class="inline-flex items-center gap-1 bg-gray-200 text-gray-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-300">
-                ✏️ {{ __('app.orders.edit') }}
-            </a>
+            @if($status?->value !== 'converted')
+                <a href="{{ route('orders.edit', $transportOrder) }}" wire:navigate
+                   class="inline-flex items-center gap-1 bg-gray-200 text-gray-800 text-sm font-medium px-3 py-2 rounded-lg hover:bg-gray-300">
+                    ✏️ {{ __('app.orders.edit') }}
+                </a>
+            @endif
         </div>
     </div>
 

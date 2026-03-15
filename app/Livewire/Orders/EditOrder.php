@@ -34,6 +34,11 @@ class EditOrder extends Component
     public function mount(TransportOrder $transportOrder): void
     {
         $this->transportOrder = $transportOrder->load(['steps', 'cargos']);
+
+        if ($transportOrder->status === OrderStatus::CONVERTED) {
+            $this->redirect(route('orders.show', $transportOrder), navigate: true);
+            return;
+        }
         $this->order_date = $transportOrder->order_date?->format('Y-m-d') ?? '';
         $this->expeditor_id = $transportOrder->expeditor_id;
         $this->currency = $transportOrder->currency ?? 'EUR';

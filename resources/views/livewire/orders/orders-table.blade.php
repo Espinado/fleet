@@ -155,7 +155,9 @@
                             </td>
                             <td class="px-3 py-2 text-right text-sm whitespace-nowrap">
                                 <a href="{{ route('orders.show', $order) }}" wire:navigate class="text-blue-600 hover:underline mr-2">{{ __('app.orders.view') }}</a>
-                                <a href="{{ route('orders.edit', $order) }}" wire:navigate class="text-gray-600 hover:underline">{{ __('app.orders.edit') }}</a>
+                                @if(($order->status instanceof \App\Enums\OrderStatus ? $order->status->value : $order->status) !== 'converted')
+                                    <a href="{{ route('orders.edit', $order) }}" wire:navigate class="text-gray-600 hover:underline">{{ __('app.orders.edit') }}</a>
+                                @endif
                             </td>
                         </tr>
                     @empty
