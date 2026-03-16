@@ -62,6 +62,7 @@
             // Stats dropdown behavior + active states
             $statsOpen          = request()->routeIs('stats.*');
             $statsOverviewActive = request()->routeIs('stats.index');
+            $statsOwnerActive   = request()->routeIs('stats.owner');
             $statsEventsActive   = request()->routeIs('stats.events') || request()->routeIs('stats.events.*');
             $statsClientsActive   = request()->routeIs('stats.clients');
             $statsDowntimeActive   = request()->routeIs('stats.downtime');
@@ -106,6 +107,11 @@
                     <a href="{{ route('trailers.index') }}" wire:navigate
                        @class([$navBase, $trailersActive ? $navActive : $navIdle])>
                         🚚 {{ __('app.nav.trailers') }}
+                    </a>
+
+                    <a href="{{ route('carriers.index') }}" wire:navigate
+                       @class([$navBase, request()->routeIs('carriers.*') ? $navActive : $navIdle])>
+                        🚛 {{ __('app.nav.carriers') }}
                     </a>
 
                     <a href="{{ route('map.index') }}" wire:navigate
@@ -154,6 +160,10 @@
                 </summary>
 
                 <div class="mt-1 ml-3 space-y-1">
+                    <a href="{{ route('stats.owner') }}" wire:navigate
+                       @class([$navBase, $statsOwnerActive ? $navActive : $navIdle])>
+                        📋 {{ __('app.nav.stats_owner') }}
+                    </a>
                     {{-- существующий stats.index -> внутрь как Overview --}}
                     <a href="{{ route('stats.index') }}" wire:navigate
                        @class([$navBase, $statsOverviewActive ? $navActive : $navIdle])>

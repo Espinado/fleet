@@ -24,6 +24,8 @@ class Company extends Model
         'post_code',
         'email',
         'phone',
+        'contact_person',
+        'rating',
         'banks_json',
         'is_system',
         'is_active',

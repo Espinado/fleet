@@ -274,7 +274,13 @@ class OrdersSeeder extends Seeder
             ],
         ]);
 
-        $this->command->info('OrdersSeeder: orders with all cases created.');
+        // 9–12. Заказы с полностью заполненными всеми полями
+        $this->createOrder($this->fullOrderData($nextExpeditor, $clients, 1, 'Rīga', 'Vilnius', 16, 17, 'Rīga, ostas nams', 'Vilnius, logistikos centras'));
+        $this->createOrder($this->fullOrderData($nextExpeditor, $clients, 2, 'Daugavpils', 'Kaunas', 16, 17, 'Daugavpils, rūpniecības iela 10', 'Kaunas, Sanaidos g. 5', 2));
+        $this->createOrder($this->fullOrderData($nextExpeditor, $clients, 3, 'Rīga', 'Tallinn', 16, 8, 'Rīga, Zemitāna iela 1', 'Tallinn, Sadama 25', 1, true, 'TIR robežpunkts LV/EE'));
+        $this->createOrder($this->fullOrderData($nextExpeditor, $clients, 4, 'Liepāja', 'Berlin', 16, 11, 'Liepāja, ostas 12', 'Berlin, Lagerstraße 7', 3));
+
+        $this->command->info('OrdersSeeder: orders with all cases and full-field orders created.');
     }
 
     /**
@@ -355,6 +361,123 @@ class OrdersSeeder extends Seeder
         }
 
         return $order;
+    }
+
+    /**
+     * Данные заказа с полностью заполненными полями (TransportOrder, OrderStep, OrderCargo).
+     *
+     * @param callable $nextExpeditor
+     * @param \Illuminate\Support\Collection<int, Client> $clients
+     * @param int $variant 1–4 для разнообразия дат и сумм
+     * @param string $loadCityName
+     * @param string $unloadCityName
+     * @param int $loadCountryId
+     * @param int $unloadCountryId
+     * @param string $loadAddress
+     * @param string $unloadAddress
+     * @param int $cargosCount 1–3
+     * @param bool $customs
+     * @param string|null $customsAddress
+     * @return array<string, mixed>
+     */
+    private function fullOrderData(
+        callable $nextExpeditor,
+        $clients,
+        int $variant,
+        string $loadCityName,
+        string $unloadCityName,
+        int $loadCountryId,
+        int $unloadCountryId,
+        string $loadAddress,
+        string $unloadAddress,
+        int $cargosCount = 1,
+        bool $customs = false,
+        ?string $customsAddress = null
+    ): array {
+        $baseDate = now()->addDays(10 + $variant * 3);
+        $dateFrom = $baseDate->copy();
+        $dateTo = $baseDate->copy()->addDays(2);
+
+        $c0 = $clients[0]->id;
+        $c1 = $clients[1]->id;
+        $c2 = $clients[2]->id;
+        $c3 = $clients->get(3)?->id ?? $c0;
+        $c4 = $clients->get(4)?->id ?? $c1;
+
+        $cargos = [];
+        $prices = [1100.00, 950.00, 1350.00];
+        $descriptions = [
+            'Pārtikas preces, paletes 120x80. Temperatūra +2..+6 °C.',
+            'Būvmateriāli, bigbēgi. Nestackable.',
+            'Elektronika, kartonu kastes. Fragile.',
+        ];
+        for ($i = 0; $i < $cargosCount; $i++) {
+            $cust = [$c0, $c1, $c2][$i % 3];
+            $cargos[] = [
+                'customer_id'          => $cust,
+                'shipper_id'            => $cust,
+                'consignee_id'          => [$c1, $c2, $c3][$i % 3],
+                'weight_kg'             => 8000 + $i * 2000,
+                'net_weight'            => 7800 + $i * 2000,
+                'gross_weight'          => 8200 + $i * 2000,
+                'tonnes'                => round((8000 + $i * 2000) / 1000, 3),
+                'volume_m3'             => 35.5 + $i * 10,
+                'loading_meters'        => 10.0 + $i * 1.5,
+                'pallets'               => 20 + $i * 4,
+                'packages'              => 80 + $i * 20,
+                'units'                 => 400 + $i * 100,
+                'description'           => $descriptions[$i] ?? 'Kravas apraksts #' . ($i + 1),
+                'customs_code'          => $i === 0 ? '0402 10 11' : null,
+                'hazmat'                => $i === 0 ? 'ADR 3' : '',
+                'temperature'           => $i === 0 ? '+2..+6' : '',
+                'stackable'             => $i !== 1,
+                'instructions'          => 'Ielādēt pēc saraksta. Pārbaudīt marķējumu.',
+                'remarks'               => 'Pasūtījums ar pilnu aizpildījumu.',
+                'quoted_price'          => $prices[$i] ?? 1000.00,
+                'requested_date_from'   => $dateFrom,
+                'requested_date_to'     => $dateTo,
+            ];
+        }
+
+        $totalPrice = array_sum(array_column($cargos, 'quoted_price'));
+
+        return [
+            'expeditor_id'        => $nextExpeditor(),
+            'customer_id'         => $c0,
+            'requested_date_from' => $dateFrom,
+            'requested_date_to'   => $dateTo,
+            'quoted_price'        => $totalPrice,
+            'currency'            => 'EUR',
+            'status'              => OrderStatus::QUOTED,
+            'notes'               => 'Pilns aizpildījums — visi lauki aizpildīti (sīds).',
+            'customs'             => $customs,
+            'customs_address'     => $customsAddress,
+            'steps'               => [
+                [
+                    'type'          => 'loading',
+                    'country_id'    => $loadCountryId,
+                    'city_name'     => $loadCityName,
+                    'address'      => $loadAddress,
+                    'date'         => $dateFrom,
+                    'time'         => '08:00',
+                    'contact_phone' => '+371 21234567',
+                    'order'        => 1,
+                    'notes'        => 'Iekraušanas punkts. Sazināties ar noliktavas vadītāju.',
+                ],
+                [
+                    'type'          => 'unloading',
+                    'country_id'    => $unloadCountryId,
+                    'city_name'     => $unloadCityName,
+                    'address'      => $unloadAddress,
+                    'date'         => $dateTo,
+                    'time'         => '16:00',
+                    'contact_phone' => '+371 29876543',
+                    'order'        => 2,
+                    'notes'        => 'Izkraušanas punkts. Piekļuve no 14:00.',
+                ],
+            ],
+            'cargos' => $cargos,
+        ];
     }
 
     /**

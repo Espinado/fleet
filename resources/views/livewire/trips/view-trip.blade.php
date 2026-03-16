@@ -217,34 +217,88 @@
     <div class="bg-white dark:bg-gray-900 shadow rounded-xl p-4 sm:p-6 space-y-3 border border-gray-100 dark:border-gray-800">
         <h2 class="text-base font-semibold text-gray-800 dark:text-gray-100">{{ __('app.trip.show.orders_in_trip') }}</h2>
         @if($trip->transportOrders && $trip->transportOrders->isNotEmpty())
-            <ul class="space-y-2">
+            <ul class="space-y-4">
                 @foreach($trip->transportOrders as $order)
                     @php
-                        $loadingStep = $order->steps->where('type', 'loading')->sortBy('order')->first();
-                        $unloadingStep = $order->steps->where('type', 'unloading')->sortBy('order')->first();
-                        $loadingDate = $loadingStep?->date ? $loadingStep->date->format('d.m.Y') : null;
-                        $unloadingDate = $unloadingStep?->date ? $unloadingStep->date->format('d.m.Y') : null;
-                        $loadingAddr = $loadingStep?->address ?? null;
-                        $unloadingAddr = $unloadingStep?->address ?? null;
+                        $loadingSteps = $order->steps->where('type', 'loading')->sortBy('order')->values();
+                        $unloadingSteps = $order->steps->where('type', 'unloading')->sortBy('order')->values();
+                        $cargos = $order->cargos;
                     @endphp
-                    <li>
-                        <a href="{{ route('orders.show', $order) }}" wire:navigate
-                           class="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium">
-                            📋 {{ $order->number }}
-                            — {{ $order->expeditor?->name ?? '—' }}
-                            @if($order->customer) / {{ $order->customer->company_name }} @endif
-                        </a>
-                        @if($loadingDate || $unloadingDate)
-                            <div class="text-sm text-gray-600 dark:text-gray-400 mt-0.5 ml-6">
-                                @if($loadingDate)
-                                    <span>{{ __('app.trip.show.order_loading') }}: {{ $loadingDate }}{{ $loadingAddr ? ' — ' . $loadingAddr : '' }}</span>
-                                @endif
-                                @if($unloadingDate)
-                                    @if($loadingDate) <span class="mx-1">|</span> @endif
-                                    <span>{{ __('app.trip.show.order_unloading') }}: {{ $unloadingDate }}{{ $unloadingAddr ? ' — ' . $unloadingAddr : '' }}</span>
-                                @endif
-                            </div>
-                        @endif
+                    <li class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/30 overflow-hidden">
+                        <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 bg-white/50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700">
+                            <a href="{{ route('orders.show', $order) }}" wire:navigate
+                               class="inline-flex items-center gap-2 text-blue-600 hover:underline font-medium">
+                                📋 {{ $order->number }}
+                                — {{ $order->expeditor?->name ?? '—' }}
+                                @if($order->customer) / {{ $order->customer->company_name }} @endif
+                            </a>
+                            @if($trip->status !== \App\Enums\TripStatus::COMPLETED)
+                                <a href="#"
+                                   wire:click.prevent="removeOrderFromTrip({{ $order->id }})"
+                                   data-no-loading-overlay
+                                   class="shrink-0 inline-block px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-200 dark:hover:bg-red-900/60">
+                                    {{ __('app.trip.show.remove_order') }}
+                                </a>
+                            @endif
+                        </div>
+                        <div class="p-3 sm:p-4 space-y-2">
+                            @if($cargos->isEmpty())
+                                <p class="text-sm text-gray-500 dark:text-gray-400 py-1">{{ __('app.trip.show.order_no_cargos') }}</p>
+                            @elseif($cargos->count() > 1)
+                                <div x-data="{ open: false }">
+                                    <button type="button" @click="open = !open"
+                                            class="flex items-center gap-2 w-full text-left text-sm font-medium text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 py-1">
+                                        <span x-show="!open" aria-hidden="true">▶</span>
+                                        <span x-show="open" x-cloak aria-hidden="true">▼</span>
+                                        {{ __('app.trip.show.cargos_count', ['count' => $cargos->count()]) }}
+                                    </button>
+                                    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-cloak class="space-y-2 mt-2">
+                                        @foreach($cargos as $idx => $cargo)
+                                            @php
+                                                $loadStep = $loadingSteps->get($idx) ?? $loadingSteps->first();
+                                                $unloadStep = $unloadingSteps->get($idx) ?? $unloadingSteps->first();
+                                                $senderName = $cargo->shipper?->company_name ?? $order->customer?->company_name ?? '—';
+                                                $receiverName = $cargo->consignee?->company_name ?? '—';
+                                                $loadingDate = $loadStep?->date ? $loadStep->date->format('d.m.Y') . ($loadStep->time ? ' ' . $loadStep->time : '') : '—';
+                                                $unloadingDate = $unloadStep?->date ? $unloadStep->date->format('d.m.Y') . ($unloadStep->time ? ' ' . $unloadStep->time : '') : '—';
+                                                $loadingAddr = $loadStep?->address ?? '';
+                                                $unloadingAddr = $unloadStep?->address ?? '';
+                                            @endphp
+                                            <div class="text-sm text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 space-y-0.5">
+                                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $senderName }}</div>
+                                                <div class="text-gray-500">—</div>
+                                                <div>{{ __('app.trip.show.order_loading') }}: {{ $loadingDate }}{{ $loadingAddr ? ' — ' . $loadingAddr : '' }}</div>
+                                                <div class="text-gray-400">|</div>
+                                                <div class="font-medium text-gray-900 dark:text-gray-100">{{ $receiverName }}</div>
+                                                <div class="text-gray-500">—</div>
+                                                <div>{{ __('app.trip.show.order_unloading') }}: {{ $unloadingDate }}{{ $unloadingAddr ? ' — ' . $unloadingAddr : '' }}</div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @else
+                                @php
+                                    $cargo = $cargos->first();
+                                    $loadStep = $loadingSteps->first();
+                                    $unloadStep = $unloadingSteps->first();
+                                    $senderName = $cargo->shipper?->company_name ?? $order->customer?->company_name ?? '—';
+                                    $receiverName = $cargo->consignee?->company_name ?? '—';
+                                    $loadingDate = $loadStep?->date ? $loadStep->date->format('d.m.Y') . ($loadStep->time ? ' ' . $loadStep->time : '') : '—';
+                                    $unloadingDate = $unloadStep?->date ? $unloadStep->date->format('d.m.Y') . ($unloadStep->time ? ' ' . $unloadStep->time : '') : '—';
+                                    $loadingAddr = $loadStep?->address ?? '';
+                                    $unloadingAddr = $unloadStep?->address ?? '';
+                                @endphp
+                                <div class="text-sm text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg bg-white dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 space-y-0.5">
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $senderName }}</div>
+                                    <div class="text-gray-500">—</div>
+                                    <div>{{ __('app.trip.show.order_loading') }}: {{ $loadingDate }}{{ $loadingAddr ? ' — ' . $loadingAddr : '' }}</div>
+                                    <div class="text-gray-400">|</div>
+                                    <div class="font-medium text-gray-900 dark:text-gray-100">{{ $receiverName }}</div>
+                                    <div class="text-gray-500">—</div>
+                                    <div>{{ __('app.trip.show.order_unloading') }}: {{ $unloadingDate }}{{ $unloadingAddr ? ' — ' . $unloadingAddr : '' }}</div>
+                                </div>
+                            @endif
+                        </div>
                     </li>
                 @endforeach
             </ul>
@@ -257,13 +311,31 @@
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="min-w-[200px] flex-1">
                         <select wire:model="add_orders_selection" multiple
-                                class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm px-3 py-2 min-h-[80px]">
+                                class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm px-3 py-2.5 min-h-[140px] focus:ring-2 focus:ring-amber-500 focus:border-amber-500 [&>option]:whitespace-pre [&>option]:py-2 [&>option]:leading-relaxed">
                             @foreach($availableOrdersForTrip as $o)
-                                <option value="{{ $o->id }}">
-                                    {{ $o->number }} — {{ $o->order_date?->format('d.m.Y') ?? '—' }} — {{ $o->expeditor?->name ?? '—' }}
-                                </option>
+                                @php
+                                    $loadingSteps = $o->steps->where('type', 'loading')->sortBy('order')->values();
+                                    $unloadingSteps = $o->steps->where('type', 'unloading')->sortBy('order')->values();
+                                    $cargos = $o->cargos;
+                                    $lines = ["📋 {$o->number}" . ($o->customer ? ' / ' . $o->customer->company_name : '')];
+                                    foreach ($cargos as $idx => $cargo) {
+                                        $loadStep = $loadingSteps->get($idx) ?? $loadingSteps->first();
+                                        $unloadStep = $unloadingSteps->get($idx) ?? $unloadingSteps->first();
+                                        $senderName = $cargo->shipper?->company_name ?? $o->customer?->company_name ?? '—';
+                                        $receiverName = $cargo->consignee?->company_name ?? '—';
+                                        $loadDt = $loadStep ? ($loadStep->date?->format('d.m.Y') . ($loadStep->time ? ' ' . $loadStep->time : '') . ($loadStep->address ? ' — ' . $loadStep->address : '')) : '—';
+                                        $unloadDt = $unloadStep ? ($unloadStep->date?->format('d.m.Y') . ($unloadStep->time ? ' ' . $unloadStep->time : '') . ($unloadStep->address ? ' — ' . $unloadStep->address : '')) : '—';
+                                        $lines[] = $senderName . ' / ' . $loadDt . ' — ' . $receiverName . ' / ' . $unloadDt;
+                                    }
+                                    if ($cargos->isEmpty()) {
+                                        $lines[] = '—';
+                                    }
+                                    $optionLabel = implode("\n", $lines);
+                                @endphp
+                                <option value="{{ $o->id }}">{{ $optionLabel }}</option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ __('app.trip.show.add_orders_select_hint') }}</p>
                     </div>
                     <button type="button" wire:click="addOrdersToTrip"
                             class="px-4 py-2 rounded-lg text-sm font-semibold bg-amber-600 hover:bg-amber-700 text-white">
@@ -378,6 +450,47 @@
                     ⬅ {{ __('app.trip.show.back_to_trips') }}
                 </a>
             </div>
+        </div>
+
+        {{-- Публичные ссылки отслеживания по грузу (клиент видит только свой груз; после разгрузки ссылка недействительна) --}}
+        <div class="mt-4 space-y-3">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('app.track.link_title') }}</p>
+            @foreach($trip->cargos as $cargo)
+                @php
+                    $sender = $cargo->shipper?->company_name ?? $cargo->customer?->company_name ?? '—';
+                    $recipient = $cargo->consignee?->company_name ?? '—';
+                @endphp
+                <div class="p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50" x-data="{ copied: false }">
+                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{{ __('app.track.cargo_for', ['sender' => $sender, 'recipient' => $recipient]) }}</p>
+                    @if($cargo->tracking_token)
+                        <div class="flex flex-wrap items-center gap-2">
+                            <code class="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded truncate max-w-full">{{ route('track.show', $cargo->tracking_token) }}</code>
+                            <button type="button"
+                                    @click="navigator.clipboard && navigator.clipboard.writeText('{{ route('track.show', $cargo->tracking_token) }}').then(() => { copied = true; setTimeout(() => copied = false, 2000); })"
+                                    class="shrink-0 px-2 py-1 rounded text-xs font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200">
+                                <span x-show="!copied">{{ __('app.track.copy_link') }}</span>
+                                <span x-show="copied" x-cloak>{{ __('app.track.copied') }}</span>
+                            </button>
+                            <a href="{{ route('track.show', $cargo->tracking_token) }}" target="_blank" rel="noopener"
+                               class="shrink-0 text-xs text-blue-600 hover:underline">↗ {{ __('app.track.title') }}</a>
+                            @if($trip->status !== \App\Enums\TripStatus::COMPLETED)
+                                <button type="button" wire:click="disableCargoTracking({{ $cargo->id }})" data-no-loading-overlay
+                                        class="shrink-0 px-2 py-1 rounded text-xs font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                    {{ __('app.track.disable') }}
+                                </button>
+                            @endif
+                        </div>
+                    @else
+                        <button type="button" wire:click="enableCargoTracking({{ $cargo->id }})" data-no-loading-overlay
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-200">
+                            {{ __('app.track.enable') }}
+                        </button>
+                    @endif
+                </div>
+            @endforeach
+            @if($trip->cargos->isEmpty())
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('app.trip.show.cargos') }}: 0. {{ __('app.track.link_per_cargo') }}</p>
+            @endif
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4 text-xs sm:text-sm">

@@ -30,7 +30,7 @@
     // data safety
     $expeditors        = $expeditors        ?? collect();
     $carrierCompanies  = $carrierCompanies  ?? collect();
-    $thirdPartyCarriers = $thirdPartyCarriers ?? collect();
+    $externalCarriers   = $externalCarriers   ?? collect();
     $banks             = $banks             ?? [];
     $expeditorData     = $expeditorData     ?? [];
     $taxRates          = $taxRates          ?? [0, 5, 10, 21];
@@ -45,19 +45,26 @@
     $steps             = $steps             ?? [];
     $stepCities        = $stepCities        ?? [];
     $cargos            = $cargos            ?? [];
+    $attachedOrders    = $attachedOrders    ?? collect();
+
+    /** Format order for display: number — Sender / load date time — Recipient / unload date time */
+    $orderLine = $orderLine ?? function ($o) {
+        $loadStep = $o->steps->where('type', 'loading')->sortBy('order')->first();
+        $unloadStep = $o->steps->where('type', 'unloading')->sortBy('order')->first();
+        $firstCargo = $o->cargos->first();
+        $sender = $firstCargo?->shipper?->company_name ?? $o->customer?->company_name ?? '—';
+        $recipient = $firstCargo?->consignee?->company_name ?? '—';
+        $loadDt = $loadStep ? ($loadStep->date?->format('d.m.Y') . ($loadStep->time ? ' ' . $loadStep->time : '')) : '—';
+        $unloadDt = $unloadStep ? ($unloadStep->date?->format('d.m.Y') . ($unloadStep->time ? ' ' . $unloadStep->time : '')) : '—';
+        return $o->number . ' — ' . $sender . ' / ' . trim($loadDt) . ' — ' . $recipient . ' / ' . trim($unloadDt);
+    };
 
     $needsCarrier = (bool)($needsCarrierSelect ?? false);
 
     $carrier_company_select = $carrier_company_select ?? '';
-    $thirdPartySelected     = ($carrier_company_select === '__third_party__');
-    $thirdPartyOptionLabel   = null;
-    if ($thirdPartySelected) {
-        $name = trim((string)($third_party_name ?? ''));
-        $plate = trim((string)($third_party_truck_plate ?? ''));
-        if ($name !== '' || $plate !== '') {
-            $thirdPartyOptionLabel = __('app.trip.edit.third_party') . ': ' . ($name ?: '—') . ' — ' . ($plate ?: '—');
-        }
-    }
+    $isNewExternalCarrier   = ($carrier_company_select === '__third_party_new__');
+    $selectedExternalFromDir = $carrier_company_id && $externalCarriers->contains('id', $carrier_company_id);
+    $thirdPartySelected     = $isNewExternalCarrier || $selectedExternalFromDir;
 
     // keys
     $kExp  = 'expeditor_id';
@@ -76,7 +83,7 @@
     $kThirdTrailer = 'third_party_trailer_plate';
     $kThirdPrice   = 'third_party_price';
 
-    $thirdPartyNameWarn  = ($thirdPartySelected && $isBlank($third_party_name ?? null) && !$errors->has($kThirdName));
+    $thirdPartyNameWarn  = ($isNewExternalCarrier && $isBlank($third_party_name ?? null) && !$errors->has($kThirdName));
     $thirdPartyTruckWarn = ($thirdPartySelected && $isBlank($third_party_truck_plate ?? null) && !$errors->has($kThirdTruck));
     $thirdPartyPriceWarn = ($thirdPartySelected && $isBlank($third_party_price ?? null) && !$errors->has($kThirdPrice));
 
@@ -170,7 +177,8 @@
 
         {{-- Выбор заказов для рейса (один или несколько): маршрут и грузы объединяются --}}
         @if(isset($availableOrders) && $availableOrders->isNotEmpty())
-            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-3 border border-gray-100 dark:border-gray-800">
+            <section class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm px-4 py-4 sm:px-6 sm:py-5 space-y-3 border border-gray-100 dark:border-gray-800"
+                     x-data="{ pendingRemoveOrderId: null }">
                 <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
                     📋 {{ __('app.trip.create.select_orders_title') }}
                 </h2>
@@ -181,7 +189,7 @@
                                 class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-sm px-3 py-2 min-h-[100px]">
                             @foreach($availableOrders as $o)
                                 <option value="{{ $o->id }}">
-                                    {{ $o->number }} — {{ $o->order_date?->format('d.m.Y') ?? '—' }} — {{ $o->expeditor?->name ?? '—' }}{{ $o->customer ? ' / ' . $o->customer->company_name : '' }}
+                                    {{ $orderLine($o) }}
                                 </option>
                             @endforeach
                         </select>
@@ -192,11 +200,47 @@
                         {{ __('app.trip.create.select_orders_apply') }}
                     </button>
                 </div>
-                @if(!empty($from_order_ids))
-                    <p class="text-sm text-green-700 dark:text-green-400">
-                        {{ __('app.trip.create.select_orders_linked', ['count' => count($from_order_ids)]) }}
-                    </p>
+                @if(!empty($from_order_ids) && isset($attachedOrders) && $attachedOrders->isNotEmpty())
+                    <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                        <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ __('app.trip.create.select_orders_linked', ['count' => count($from_order_ids)]) }}
+                        </p>
+                        <ul class="space-y-2">
+                            @foreach($attachedOrders as $att)
+                                <li class="flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 text-sm">
+                                    <span class="text-gray-800 dark:text-gray-200">{{ $orderLine($att) }}</span>
+                                    <button type="button"
+                                            @click="pendingRemoveOrderId = {{ $att->id }}"
+                                            class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-200 dark:hover:bg-red-900/60">
+                                        {{ __('app.trip.create.remove_order') }}
+                                    </button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
                 @endif
+
+                {{-- Тост подтверждения удаления заказа из рейса --}}
+                <div x-show="pendingRemoveOrderId"
+                     x-cloak
+                     x-transition:enter="transition ease-out duration-200"
+                     x-transition:enter-start="opacity-0 translate-y-2"
+                     x-transition:leave="transition ease-in duration-150"
+                     class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-[calc(100%-2rem)] px-4 py-3 rounded-xl shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    <p class="text-sm text-gray-700 dark:text-gray-200 mb-3">{{ __('app.trip.create.confirm_remove_order') }}</p>
+                    <div class="flex gap-2 justify-end">
+                        <button type="button"
+                                @click="pendingRemoveOrderId = null"
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
+                            {{ __('app.trip.create.remove_order_cancel') }}
+                        </button>
+                        <button type="button"
+                                @click="$wire.removeOrderFromTrip(pendingRemoveOrderId); pendingRemoveOrderId = null"
+                                class="px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                            {{ __('app.trip.create.remove_order_confirm') }}
+                        </button>
+                    </div>
+                </div>
             </section>
         @endif
 
@@ -286,14 +330,22 @@
                                     'input-error' => ($errors->has($kCarrierSelect) || $errors->has($kCarrierId))
                                 ])
                             >
-                                <option value="">— выберите перевозчика —</option>
-                                <option value="__third_party__">➕ {{ $thirdPartyOptionLabel ?? __('app.trip.edit.third_party') }}</option>
-
-                                @foreach(($carrierCompanies ?? []) as $c)
-                                    <option value="{{ $c->id }}">
-                                        {{ $c->name }}@if(!empty($c->type)) — {{ $c->type }}@endif
-                                    </option>
-                                @endforeach
+                                <option value="">— {{ __('app.trip.edit.choose_carrier') ?? 'выберите перевозчика' }} —</option>
+                                <optgroup label="{{ __('app.carriers.our_carriers') ?? 'Наши перевозчики' }}">
+                                    @foreach(($carrierCompanies ?? []) as $c)
+                                        <option value="{{ $c->id }}">
+                                            {{ $c->name }}@if(!empty($c->type)) — {{ $c->type }}@endif
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                                @if($externalCarriers->isNotEmpty())
+                                    <optgroup label="{{ __('app.carriers.external_from_directory') ?? 'Ārējie (no direktorijas)' }}">
+                                        @foreach($externalCarriers as $ext)
+                                            <option value="{{ $ext->id }}">{{ $ext->name }}{{ $ext->country ? ' · ' . $ext->country : '' }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                                <option value="__third_party_new__">➕ {{ __('app.carriers.new_external') ?? 'Jauns ārējais pārvadātājs' }}</option>
                             </select>
 
                             @error('carrier_company_select')
@@ -359,29 +411,37 @@
                     </div>
                 </div>
 
-                {{-- THIRD PARTY --}}
+                {{-- THIRD PARTY (external from directory or new) --}}
                 @if($needsCarrier && $thirdPartySelected)
                     <div class="sm:col-span-3">
                         <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4 space-y-3">
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
-                                <div class="sm:col-span-5 min-w-0">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
-                                        Название третьей стороны {!! $reqBadge() !!}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        wire:model.blur="third_party_name"
-                                        list="third-party-carriers-list-create"
-                                        placeholder="Напр. SIA New Carrier"
-                                        @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])
-                                    >
-                                    <datalist id="third-party-carriers-list-create">
-                                        @foreach(($thirdPartyCarriers ?? []) as $tp)
-                                            <option value="{{ $tp->name }}">{{ $tp->name }}</option>
-                                        @endforeach
-                                    </datalist>
-                                    @error('third_party_name') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
+                            @if($selectedExternalFromDir)
+                                @php $selCarrier = $externalCarriers->firstWhere('id', $carrier_company_id); @endphp
+                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ __('app.carriers.title') }}: <span class="text-amber-700">{{ $selCarrier->name ?? '—' }}</span>
                                 </div>
+                            @endif
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                                @if($isNewExternalCarrier)
+                                    <div class="sm:col-span-5 min-w-0">
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
+                                            {{ __('app.carriers.name') }} {!! $reqBadge() !!}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            wire:model.blur="third_party_name"
+                                            list="third-party-carriers-list-create"
+                                            placeholder="{{ __('app.carriers.create_hint') }}"
+                                            @class([$baseInput, $warnInput => $thirdPartyNameWarn, $errInput => $errors->has($kThirdName), 'input-error' => $errors->has($kThirdName)])
+                                        >
+                                        <datalist id="third-party-carriers-list-create">
+                                            @foreach($externalCarriers as $tp)
+                                                <option value="{{ $tp->name }}">{{ $tp->name }}</option>
+                                            @endforeach
+                                        </datalist>
+                                        @error('third_party_name') <div class="text-xs text-red-600 mt-1">❗ {{ $message }}</div> @enderror
+                                    </div>
+                                @endif
 
                                 <div class="sm:col-span-3 min-w-0">
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-300 mb-1">
@@ -422,7 +482,7 @@
                             </div>
 
                             <div class="text-[11px] text-gray-500 dark:text-gray-400">
-                                Внешний перевозчик: укажите название, номера тягача/прицепа и фрахт (EUR), который экспедитор оплатит третьей стороне.
+                                Внешний перевозчик: укажите название, номера тягача/прицепа и стоимость их услуг (EUR) по этому рейсу.
                             </div>
                         </div>
                     </div>
@@ -1209,6 +1269,21 @@
             </button>
         </div>
     </div>
+
+    {{-- Зелёное уведомление в углу: заказы добавлены в рейс --}}
+    @if($showOrderAddedMessage ?? false)
+        <div class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg bg-green-600 text-white text-sm font-medium flex items-center gap-2"
+             x-data="{ show: true }"
+             x-show="show"
+             x-init="setTimeout(() => { show = false; $wire.set('showOrderAddedMessage', false) }, 4000)"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-y-2"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-end="opacity-0 translate-y-2">
+            <span class="inline-block w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">✓</span>
+            {{ __('app.trip.create.order_added_toast') }}
+        </div>
+    @endif
 </div>
 
 <script>

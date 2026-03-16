@@ -37,6 +37,7 @@ class Trip extends Model
 
         // Misc
         'notes',
+        'tracking_token',
     ];
 
     protected $casts = [
@@ -188,6 +189,30 @@ public function scopeActiveForDriver($query, int $driverId)
             $q->where('status', 'open');
         });
 }
+
+    /** Найти рейс по публичному токену отслеживания (без учёта глобального scope). */
+    public static function findByTrackingToken(string $token): ?self
+    {
+        return static::withoutGlobalScopes()->where('tracking_token', $token)->first();
+    }
+
+    /** Сгенерировать и сохранить токен для публичной ссылки отслеживания. */
+    public function enableTracking(): string
+    {
+        if ($this->tracking_token) {
+            return $this->tracking_token;
+        }
+        $this->tracking_token = \Illuminate\Support\Str::random(48);
+        $this->saveQuietly();
+        return $this->tracking_token;
+    }
+
+    /** Отключить публичное отслеживание. */
+    public function disableTracking(): void
+    {
+        $this->tracking_token = null;
+        $this->saveQuietly();
+    }
 public function invoices()
 {
     return $this->hasMany(\App\Models\Invoice::class);

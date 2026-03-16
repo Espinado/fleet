@@ -45,6 +45,9 @@ class TripCargo extends Model
         'has_delay',
         'delay_days',
         'delay_amount',
+
+        // Public tracking (per cargo; invalid after unloading completed)
+        'tracking_token',
     ];
 
     protected $casts = [
@@ -114,4 +117,44 @@ public function invoice()
     return $this->hasOne(\App\Models\Invoice::class, 'trip_cargo_id');
 }
 
+    /** Найти груз по публичному токену отслеживания. */
+    public static function findByTrackingToken(string $token): ?self
+    {
+        return static::where('tracking_token', $token)->first();
+    }
+
+    /** Включить отслеживание по ссылке для этого груза (генерация токена). */
+    public function enableTracking(): string
+    {
+        if ($this->tracking_token) {
+            return $this->tracking_token;
+        }
+        $this->tracking_token = \Illuminate\Support\Str::random(48);
+        $this->saveQuietly();
+        return $this->tracking_token;
+    }
+
+    /** Отключить отслеживание по ссылке. */
+    public function disableTracking(): void
+    {
+        $this->tracking_token = null;
+        $this->saveQuietly();
+    }
+
+    /** Ссылка недействительна после разгрузки этого груза (шаг разгрузки завершён). */
+    public function isTrackingLinkExpired(): bool
+    {
+        $unloadStep = $this->steps()->wherePivot('role', 'unloading')->first();
+        if (!$unloadStep) {
+            return false;
+        }
+        if ($unloadStep->completed_at) {
+            return true;
+        }
+        $status = $unloadStep->status;
+        if ($status && method_exists($status, 'value')) {
+            return (int) $status->value === \App\Enums\TripStepStatus::COMPLETED->value;
+        }
+        return false;
+    }
 }

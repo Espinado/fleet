@@ -16,24 +16,34 @@ return new class extends Migration {
             }
         });
 
-        // проверяем, есть ли уже FK (по имени)
-        $exists = DB::selectOne("
-            SELECT CONSTRAINT_NAME
-            FROM information_schema.KEY_COLUMN_USAGE
-            WHERE TABLE_SCHEMA = DATABASE()
-              AND TABLE_NAME = 'trips'
-              AND COLUMN_NAME = 'carrier_company_id'
-              AND REFERENCED_TABLE_NAME IS NOT NULL
-            LIMIT 1
-        ");
-
+        // проверяем, есть ли уже FK (по имени) — MySQL; для SQLite (тесты) просто пробуем добавить
+        $driver = Schema::getConnection()->getDriverName();
+        $exists = false;
+        if ($driver !== 'sqlite') {
+            $exists = (bool) DB::selectOne("
+                SELECT CONSTRAINT_NAME
+                FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = 'trips'
+                  AND COLUMN_NAME = 'carrier_company_id'
+                  AND REFERENCED_TABLE_NAME IS NOT NULL
+                LIMIT 1
+            ");
+        }
         if (!$exists) {
-            Schema::table('trips', function (Blueprint $table) {
-                $table->foreign('carrier_company_id', 'trips_carrier_company_id_fk')
-                    ->references('id')
-                    ->on('companies')
-                    ->nullOnDelete();
-            });
+            try {
+                Schema::table('trips', function (Blueprint $table) {
+                    $table->foreign('carrier_company_id', 'trips_carrier_company_id_fk')
+                        ->references('id')
+                        ->on('companies')
+                        ->nullOnDelete();
+                });
+            } catch (\Throwable $e) {
+                // SQLite или уже существует — игнорируем
+                if ($driver !== 'sqlite') {
+                    throw $e;
+                }
+            }
         }
     }
 

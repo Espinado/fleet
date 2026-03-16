@@ -17,14 +17,19 @@ return new class extends Migration {
         }
     });
 
-    // 2) индекс (проверяем, есть ли уже)
-    $db = DB::getDatabaseName();
-
-    $hasIndex = DB::table('information_schema.STATISTICS')
-        ->where('TABLE_SCHEMA', $db)
-        ->where('TABLE_NAME', 'trips')
-        ->where('INDEX_NAME', 'trips_vehicle_run_id_index')
-        ->exists();
+    // 2) индекс (проверяем, есть ли уже) — совместимо с MySQL и SQLite (тесты)
+    $driver = Schema::getConnection()->getDriverName();
+    if ($driver === 'sqlite') {
+        $indexes = DB::select("PRAGMA index_list('trips')");
+        $hasIndex = collect($indexes)->pluck('name')->contains('trips_vehicle_run_id_index');
+    } else {
+        $db = DB::getDatabaseName();
+        $hasIndex = DB::table('information_schema.STATISTICS')
+            ->where('TABLE_SCHEMA', $db)
+            ->where('TABLE_NAME', 'trips')
+            ->where('INDEX_NAME', 'trips_vehicle_run_id_index')
+            ->exists();
+    }
 
     if (!$hasIndex) {
         Schema::table('trips', function (Blueprint $table) {
@@ -38,29 +43,37 @@ return new class extends Migration {
 
     public function down(): void
     {
-        $db = DB::getDatabaseName();
+        $driver = Schema::getConnection()->getDriverName();
 
-        // FK
-        $hasFk = DB::table('information_schema.KEY_COLUMN_USAGE')
-            ->where('TABLE_SCHEMA', $db)
-            ->where('TABLE_NAME', 'trips')
-            ->where('COLUMN_NAME', 'vehicle_run_id')
-            ->where('CONSTRAINT_NAME', 'trips_vehicle_run_id_foreign')
-            ->exists();
-
-        if ($hasFk) {
-            Schema::table('trips', function (Blueprint $table) {
-                try { $table->dropForeign('trips_vehicle_run_id_foreign'); } catch (\Throwable $e) {}
-            });
+        // FK (только MySQL)
+        if ($driver !== 'sqlite') {
+            $db = DB::getDatabaseName();
+            $hasFk = DB::table('information_schema.KEY_COLUMN_USAGE')
+                ->where('TABLE_SCHEMA', $db)
+                ->where('TABLE_NAME', 'trips')
+                ->where('COLUMN_NAME', 'vehicle_run_id')
+                ->where('CONSTRAINT_NAME', 'trips_vehicle_run_id_foreign')
+                ->exists();
+            if ($hasFk) {
+                Schema::table('trips', function (Blueprint $table) {
+                    try { $table->dropForeign('trips_vehicle_run_id_foreign'); } catch (\Throwable $e) {}
+                });
+            }
         }
 
         // index
-        $hasIndex = DB::table('information_schema.STATISTICS')
-            ->where('TABLE_SCHEMA', $db)
-            ->where('TABLE_NAME', 'trips')
-            ->where('INDEX_NAME', 'trips_vehicle_run_id_index')
-            ->exists();
-
+        $hasIndex = false;
+        if ($driver === 'sqlite') {
+            $indexes = DB::select("PRAGMA index_list('trips')");
+            $hasIndex = collect($indexes)->pluck('name')->contains('trips_vehicle_run_id_index');
+        } else {
+            $db = DB::getDatabaseName();
+            $hasIndex = DB::table('information_schema.STATISTICS')
+                ->where('TABLE_SCHEMA', $db)
+                ->where('TABLE_NAME', 'trips')
+                ->where('INDEX_NAME', 'trips_vehicle_run_id_index')
+                ->exists();
+        }
         if ($hasIndex) {
             Schema::table('trips', function (Blueprint $table) {
                 try { $table->dropIndex('trips_vehicle_run_id_index'); } catch (\Throwable $e) {}

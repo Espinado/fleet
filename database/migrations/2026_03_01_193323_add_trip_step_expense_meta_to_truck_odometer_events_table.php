@@ -15,8 +15,11 @@ return new class extends Migration
          * - хуже целостность и надёжность
          *
          * Переводим в InnoDB сразу, пока таблица маленькая.
+         * (только MySQL; SQLite не поддерживает ENGINE)
          */
-        DB::statement("ALTER TABLE `truck_odometer_events` ENGINE=InnoDB");
+        if (Schema::getConnection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE `truck_odometer_events` ENGINE=InnoDB");
+        }
 
         Schema::table('truck_odometer_events', function (Blueprint $table) {
             // Links
