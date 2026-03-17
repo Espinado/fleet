@@ -147,7 +147,39 @@
     </div>
 </section>
 
-
+        {{-- ========================================================= --}}
+        {{-- 🔧 APKOPE / TО (Fleet Maintenance) — neobligāti --}}
+        {{-- ========================================================= --}}
+        <section class="space-y-4">
+            <h3 class="text-xl font-semibold border-b pb-2">🔧 {{ __('app.maintenance.section_title') }}</h3>
+            <p class="text-sm text-gray-600">{{ __('app.maintenance.section_hint') }}</p>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label class="block mb-1 font-medium">{{ __('app.maintenance.next_service_km') }}</label>
+                    <input type="number" wire:model.blur="next_service_km" min="0" step="1" placeholder="—"
+                           class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('next_service_km') border-red-500 @enderror">
+                    @error('next_service_km') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block mb-1 font-medium">{{ __('app.maintenance.next_service_date') }}</label>
+                    <input type="date" wire:model.blur="next_service_date"
+                           class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('next_service_date') border-red-500 @enderror">
+                    @error('next_service_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block mb-1 font-medium">{{ __('app.maintenance.service_interval_km') }}</label>
+                    <input type="number" wire:model.blur="service_interval_km" min="0" step="1000" placeholder="—"
+                           class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('service_interval_km') border-red-500 @enderror">
+                    @error('service_interval_km') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block mb-1 font-medium">{{ __('app.maintenance.service_interval_months') }}</label>
+                    <input type="number" wire:model.blur="service_interval_months" min="0" max="120" step="1" placeholder="—"
+                           class="w-full border rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 @error('service_interval_months') border-red-500 @enderror">
+                    @error('service_interval_months') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+            </div>
+        </section>
 
         {{-- ========================================================= --}}
         {{-- 2️⃣ TEHNISKĀ APSKATE --}}

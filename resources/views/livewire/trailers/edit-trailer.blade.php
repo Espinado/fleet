@@ -127,6 +127,34 @@
                 </div>
             </div>
 
+            {{-- Apkope / TО (Fleet Maintenance) — neobligāti --}}
+            <div class="border-t border-gray-200 pt-4 mt-4">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">🔧 {{ __('app.maintenance.section_title') }}</h3>
+                <p class="text-sm text-gray-600 mb-3">{{ __('app.maintenance.section_hint') }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block font-medium">{{ __('app.maintenance.next_service_km') }}</label>
+                        <input type="number" wire:model.blur="next_service_km" min="0" step="1" placeholder="—" class="border rounded px-3 py-2 w-full">
+                        @error('next_service_km') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block font-medium">{{ __('app.maintenance.next_service_date') }}</label>
+                        <input type="date" wire:model.blur="next_service_date" class="border rounded px-3 py-2 w-full">
+                        @error('next_service_date') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block font-medium">{{ __('app.maintenance.service_interval_km') }}</label>
+                        <input type="number" wire:model.blur="service_interval_km" min="0" step="1000" placeholder="—" class="border rounded px-3 py-2 w-full">
+                        @error('service_interval_km') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block font-medium">{{ __('app.maintenance.service_interval_months') }}</label>
+                        <input type="number" wire:model.blur="service_interval_months" min="0" max="120" step="1" placeholder="—" class="border rounded px-3 py-2 w-full">
+                        @error('service_interval_months') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
+
             {{-- VIN --}}
             <div>
                 <label>VIN</label>

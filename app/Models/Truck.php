@@ -38,6 +38,10 @@ class Truck extends Model
         'tech_passport_issued',
         'tech_passport_expired',
         'tech_passport_photo',
+        'next_service_km',
+        'next_service_date',
+        'service_interval_km',
+        'service_interval_months',
     ];
 
     protected $casts = [
@@ -49,6 +53,7 @@ class Truck extends Model
         'tech_passport_expired' => 'date',
         'license_issued'  => 'date',
         'license_expired' => 'date',
+        'next_service_date' => 'date',
     ];
 
     public function getDisplayNameAttribute(): string
@@ -84,5 +89,10 @@ class Truck extends Model
     public function company(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Company::class);
+    }
+
+    public function maintenanceRecords(): HasMany
+    {
+        return $this->hasMany(\App\Models\VehicleMaintenance::class, 'truck_id')->orderByDesc('performed_at');
     }
 }

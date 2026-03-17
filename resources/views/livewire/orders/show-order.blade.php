@@ -1,6 +1,11 @@
 {{-- resources/views/livewire/orders/show-order.blade.php --}}
 
 <div class="p-4 sm:p-6 max-w-5xl mx-auto">
+    @if (session('error'))
+        <div class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm sm:text-base">
+            ⚠️ {{ session('error') }}
+        </div>
+    @endif
 
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div class="flex items-center gap-3">
@@ -14,10 +19,19 @@
                 <span class="px-2 py-0.5 rounded text-xs font-medium {{ $status->color() }}">{{ $status->label() }}</span>
             @endif
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             @if(!$transportOrder->trip_id)
+                @php
+                    $canAddToTrip = in_array($status?->value ?? $transportOrder->status ?? '', ['draft', 'quoted', 'confirmed'], true);
+                @endphp
+                @if($canAddToTrip)
+                    <button type="button" wire:click="openAddToTripModal"
+                            class="inline-flex items-center gap-1.5 bg-slate-600 text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow hover:bg-slate-700 min-h-[44px] touch-manipulation">
+                        ➕ {{ __('app.orders.add_to_trip.btn') }}
+                    </button>
+                @endif
                 <a href="{{ route('trips.create', ['from_order' => $transportOrder->id]) }}" wire:navigate
-                   class="inline-flex items-center gap-1 bg-green-600 text-white text-sm font-medium px-3 py-2 rounded-lg shadow hover:bg-green-700">
+                   class="inline-flex items-center gap-1.5 bg-green-600 text-white text-sm font-medium px-3 py-2.5 rounded-lg shadow hover:bg-green-700 min-h-[44px] touch-manipulation">
                     🚛 {{ __('app.orders.show.create_trip') }}
                 </a>
             @else
@@ -145,4 +159,74 @@
             </div>
         @endif
     </div>
+
+    {{-- Модалка: добавить заказ в существующий рейс (только незавершённые) --}}
+    @if($showAddToTripModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog">
+            <div class="fixed inset-0 bg-black/50" wire:click="closeAddToTripModal" aria-hidden="true"></div>
+            <div class="flex min-h-full items-center justify-center p-4 sm:p-6">
+                <div class="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-xl bg-white shadow-xl border border-gray-200">
+                    <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-200 shrink-0">
+                        <h2 class="text-base sm:text-lg font-semibold text-gray-900">
+                            {{ __('app.orders.add_to_trip.modal_title') }}
+                        </h2>
+                        <button type="button" wire:click="closeAddToTripModal"
+                                class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 touch-manipulation"
+                                aria-label="Close">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                    <p class="px-4 sm:px-5 pt-2 text-sm text-gray-600">
+                        {{ __('app.orders.add_to_trip.modal_hint') }}
+                    </p>
+                    <div class="flex-1 overflow-y-auto px-4 sm:px-5 py-3 space-y-2">
+                        @if(count($availableTrips) === 0)
+                            <p class="py-6 text-center text-gray-500 text-base">
+                                {{ __('app.orders.add_to_trip.no_trips') }}
+                            </p>
+                        @else
+                            @foreach($availableTrips as $t)
+                                @php
+                                    $tripStatus = $t->status instanceof \App\Enums\TripStatus ? $t->status : \App\Enums\TripStatus::tryFrom($t->status);
+                                @endphp
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:bg-gray-50">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-semibold text-gray-900 text-base">#{{ $t->id }}</span>
+                                            @if($tripStatus)
+                                                <span class="px-2 py-0.5 rounded text-xs font-medium {{ $tripStatus->color() }}">{{ $tripStatus->label() }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="mt-1 text-sm text-gray-600">
+                                            {{ $t->start_date?->format('d.m.Y') ?? '—' }}
+                                            @if($t->end_date && $t->end_date->format('Y-m-d') !== $t->start_date?->format('Y-m-d'))
+                                                — {{ $t->end_date->format('d.m.Y') }}
+                                            @endif
+                                        </div>
+                                        @if($t->carrierCompany || $t->driver)
+                                            <p class="mt-0.5 text-xs text-gray-500 truncate">
+                                                {{ $t->carrierCompany?->name ?? $t->driver?->full_name ?? '' }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                    <div class="shrink-0">
+                                        <button type="button"
+                                                wire:click="addOrderToTrip({{ $t->id }})"
+                                                @disabled($addingTripId === $t->id)
+                                                class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 bg-green-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg hover:bg-green-700 min-h-[44px] touch-manipulation disabled:opacity-50">
+                                            @if($addingTripId === $t->id)
+                                                <span class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                            @else
+                                                {{ __('app.orders.add_trip.select') }}
+                                            @endif
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>

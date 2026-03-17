@@ -190,6 +190,140 @@ public function scopeActiveForDriver($query, int $driverId)
         });
 }
 
+    /**
+     * Добавить заказ в рейс: создать TripStep и TripCargo из OrderStep/OrderCargo, привязать заказ (trip_id, status CONVERTED).
+     * Вызывается из ViewTrip::addOrdersToTrip и из ShowOrder::addOrderToTrip.
+     */
+    public function appendOrder(TransportOrder $order): void
+    {
+        $order->loadMissing(['steps' => fn ($q) => $q->orderBy('order')], 'cargos');
+
+        $maxOrder = (int) $this->steps()->max('order');
+        $newStepIdsByType = ['loading' => null, 'unloading' => null];
+
+        foreach ($order->steps as $os) {
+            $maxOrder++;
+            $dbStep = TripStep::create([
+                'trip_id'         => $this->id,
+                'order'           => $maxOrder,
+                'type'            => $os->type ?? 'loading',
+                'country_id'      => $os->country_id,
+                'city_id'         => $os->city_id,
+                'address'         => $os->address,
+                'contact_phone_1'  => $os->contact_phone,
+                'contact_phone_2'  => null,
+                'date'            => $os->date,
+                'time'            => $os->time,
+                'notes'           => $os->notes,
+            ]);
+            $type = $os->type ?? 'loading';
+            if (($type === 'loading' && $newStepIdsByType['loading'] === null) || ($type === 'unloading' && $newStepIdsByType['unloading'] === null)) {
+                $newStepIdsByType[$type] = $dbStep->id;
+            }
+        }
+
+        $loadingStepId = $newStepIdsByType['loading'] ?? $this->steps()->where('type', 'loading')->orderBy('order')->value('id');
+        $unloadingStepId = $newStepIdsByType['unloading'] ?? $this->steps()->where('type', 'unloading')->orderBy('order')->value('id');
+
+        $customerId = $order->customer_id;
+        if ($customerId === null && $order->cargos->isNotEmpty()) {
+            $customerId = $order->cargos->first()->customer_id;
+        }
+
+        foreach ($order->cargos as $oc) {
+            $price = (float) ($oc->quoted_price ?? 0);
+            $taxPercent = 21.0;
+            $tax = \App\Helpers\CalculateTax::calculate($price, $taxPercent);
+
+            $cargo = TripCargo::create([
+                'trip_id'             => $this->id,
+                'transport_order_id'  => $order->id,
+                'customer_id'         => $oc->customer_id,
+                'shipper_id'          => $oc->shipper_id ?? $oc->customer_id,
+                'consignee_id'        => $oc->consignee_id ?? $oc->customer_id,
+                'price'               => $price,
+                'tax_percent'         => $taxPercent,
+                'total_tax_amount'    => $tax['tax_amount'],
+                'price_with_tax'      => $tax['price_with_tax'],
+                'currency'            => 'EUR',
+                'payment_terms'       => null,
+                'payment_days'        => 30,
+                'payer_type_id'       => null,
+                'commercial_invoice_nr' => null,
+                'commercial_invoice_amount' => null,
+            ]);
+
+            $cargo->items()->create([
+                'description'     => $oc->description ?? '',
+                'customs_code'    => $oc->customs_code,
+                'packages'        => (int) ($oc->packages ?? 0),
+                'pallets'         => (int) ($oc->pallets ?? 0),
+                'units'           => (int) ($oc->units ?? 0),
+                'net_weight'      => (float) ($oc->net_weight ?? $oc->weight_kg ?? 0),
+                'gross_weight'    => (float) ($oc->gross_weight ?? $oc->weight_kg ?? 0),
+                'tonnes'          => (float) ($oc->tonnes ?? 0),
+                'volume'          => (float) ($oc->volume_m3 ?? 0),
+                'loading_meters'  => (float) ($oc->loading_meters ?? 0),
+                'hazmat'          => $oc->hazmat ?? '',
+                'temperature'     => $oc->temperature ?? '',
+                'stackable'       => (bool) ($oc->stackable ?? false),
+                'instructions'    => $oc->instructions ?? '',
+                'remarks'         => $oc->remarks ?? '',
+            ]);
+
+            $pivot = [];
+            if ($loadingStepId) {
+                $pivot[$loadingStepId] = ['role' => 'loading'];
+            }
+            if ($unloadingStepId && $unloadingStepId !== $loadingStepId) {
+                $pivot[$unloadingStepId] = ['role' => 'unloading'];
+            }
+            if ($pivot) {
+                $cargo->steps()->attach($pivot);
+            }
+        }
+
+        if ($order->cargos->isEmpty()) {
+            $cargo = TripCargo::create([
+                'trip_id'             => $this->id,
+                'transport_order_id'  => $order->id,
+                'customer_id'         => $customerId,
+                'shipper_id'          => $customerId,
+                'consignee_id'        => $customerId,
+                'price'               => 0,
+                'tax_percent'         => 21.0,
+                'total_tax_amount'    => 0,
+                'price_with_tax'      => 0,
+                'currency'            => 'EUR',
+                'payment_terms'       => null,
+                'payment_days'        => 30,
+                'payer_type_id'       => null,
+                'commercial_invoice_nr' => null,
+                'commercial_invoice_amount' => null,
+            ]);
+            $cargo->items()->create([
+                'description' => '', 'customs_code' => null, 'packages' => 0, 'pallets' => 0, 'units' => 0,
+                'net_weight' => 0, 'gross_weight' => 0, 'tonnes' => 0, 'volume' => 0, 'loading_meters' => 0,
+                'hazmat' => '', 'temperature' => '', 'stackable' => false, 'instructions' => '', 'remarks' => '',
+            ]);
+            $pivot = [];
+            if ($loadingStepId) {
+                $pivot[$loadingStepId] = ['role' => 'loading'];
+            }
+            if ($unloadingStepId && $unloadingStepId !== $loadingStepId) {
+                $pivot[$unloadingStepId] = ['role' => 'unloading'];
+            }
+            if ($pivot) {
+                $cargo->steps()->attach($pivot);
+            }
+        }
+
+        $order->update([
+            'trip_id' => $this->id,
+            'status'  => \App\Enums\OrderStatus::CONVERTED->value,
+        ]);
+    }
+
     /** Найти рейс по публичному токену отслеживания (без учёта глобального scope). */
     public static function findByTrackingToken(string $token): ?self
     {

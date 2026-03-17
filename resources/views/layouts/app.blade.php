@@ -66,7 +66,7 @@
             $statsEventsActive   = request()->routeIs('stats.events') || request()->routeIs('stats.events.*');
             $statsClientsActive   = request()->routeIs('stats.clients');
             $statsDowntimeActive   = request()->routeIs('stats.downtime');
-            $transportOpen = request()->routeIs('drivers.*') || request()->routeIs('trucks.*') || request()->routeIs('trailers.*') || request()->routeIs('map.*');
+            $transportOpen = request()->routeIs('drivers.*') || request()->routeIs('trucks.*') || request()->routeIs('trailers.*') || request()->routeIs('map.*') || request()->routeIs('maintenance.*');
             $tripsOrdersOpen = request()->routeIs('orders.*') || request()->routeIs('trips.*');
             $trucksActive = request()->routeIs('trucks.*');
             $trailersActive = request()->routeIs('trailers.*');
@@ -117,6 +117,11 @@
                     <a href="{{ route('map.index') }}" wire:navigate
                        @class([$navBase, $mapActive ? $navActive : $navIdle])>
                         🗺️ {{ __('app.nav.map') }}
+                    </a>
+
+                    <a href="{{ route('maintenance.index') }}" wire:navigate
+                       @class([$navBase, request()->routeIs('maintenance.*') ? $navActive : $navIdle])>
+                        🔧 {{ __('app.nav.maintenance') }}
                     </a>
                 </div>
             </details>

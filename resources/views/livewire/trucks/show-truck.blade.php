@@ -387,6 +387,49 @@
         @endif
     </div>
 
+    {{-- Следующее ТО / Записи ТО --}}
+    <div class="mb-8">
+        @if($truck->next_service_date || $truck->next_service_km)
+            <div class="rounded-xl bg-amber-50 border border-amber-200 p-4 mb-4">
+                <p class="text-sm font-medium text-amber-900 mb-1">{{ __('app.maintenance.next_service_title') }}</p>
+                <div class="flex flex-wrap gap-4 text-sm text-amber-800">
+                    @if($truck->next_service_date)
+                        <span class="tabular-nums">{{ __('app.maintenance.due_by_date') }}: {{ $truck->next_service_date->format('d.m.Y') }}</span>
+                    @endif
+                    @if($truck->next_service_km)
+                        <span class="tabular-nums">{{ __('app.maintenance.due_by_km') }}: {{ number_format($truck->next_service_km, 0, '.', ' ') }} km</span>
+                    @endif
+                </div>
+            </div>
+        @endif
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h2 class="text-xl font-semibold border-b pb-1">{{ __('app.maintenance_record.journal_title') }}</h2>
+            <a href="{{ route('maintenance.records.create', ['truck_id' => $truck->id]) }}" wire:navigate
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium min-h-[44px] inline-flex items-center">
+                {{ __('app.maintenance_record.add_record') }}
+            </a>
+        </div>
+        @if($truck->maintenanceRecords->isNotEmpty())
+            <ul class="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden bg-white">
+                @foreach($truck->maintenanceRecords as $rec)
+                    <li>
+                        <a href="{{ route('maintenance.records.show', $rec) }}" wire:navigate
+                           class="block px-4 py-3 hover:bg-gray-50 grid grid-cols-1 sm:grid-cols-[8rem_8rem_1fr] items-center gap-2">
+                            <span class="text-sm text-gray-900 tabular-nums">{{ $rec->performed_at->format('d.m.Y') }}</span>
+                            <span class="text-sm text-gray-600">{{ $rec->odometer_km !== null ? number_format($rec->odometer_km, 0, '.', ' ') . ' km' : '—' }}</span>
+                            <span class="text-sm text-gray-600 truncate">{{ Str::limit($rec->description, 40) }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+        @else
+            <p class="text-sm text-gray-500">{{ __('app.maintenance_record.no_records') }}</p>
+            <a href="{{ route('maintenance.records.create', ['truck_id' => $truck->id]) }}" wire:navigate class="text-sm text-blue-600 hover:underline mt-1 inline-block">
+                {{ __('app.maintenance_record.add_record') }} →
+            </a>
+        @endif
+    </div>
+
     {{-- Техосмотр --}}
    <div class="mb-8">
     <h2 class="text-xl font-semibold mb-2 border-b pb-1">{{ __('app.truck.show.inspection_title') }}</h2>

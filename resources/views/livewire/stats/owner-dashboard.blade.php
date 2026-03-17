@@ -61,6 +61,9 @@
                 <p class="mt-1 text-xl font-bold text-gray-900">
                     €{{ number_format($kpi->expenses, 2, '.', ' ') }}
                 </p>
+                @if(isset($kpi->maintenance_costs) && $kpi->maintenance_costs > 0)
+                    <p class="text-xs text-gray-500 mt-0.5">{{ __('app.owner_dashboard.incl_maintenance') }} €{{ number_format($kpi->maintenance_costs, 2, '.', ' ') }}</p>
+                @endif
             </div>
             <div class="rounded-xl bg-white border border-gray-200 p-4 shadow-sm">
                 <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">{{ __('app.owner_dashboard.profit') }}</p>
@@ -112,6 +115,119 @@
                 <a href="{{ route('dashboard') }}" wire:navigate class="mt-2 inline-block text-sm text-blue-600 hover:underline">
                     {{ __('app.nav.dashboard') }} →
                 </a>
+            </div>
+        </section>
+
+        {{-- Истекающие документы (короткий блок) --}}
+        <section class="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-semibold text-gray-800">{{ __('app.maintenance.expiring_documents') }}</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ __('app.maintenance.expiring_documents_hint') }}</p>
+                </div>
+                <a href="{{ route('maintenance.index') }}" wire:navigate class="text-sm text-blue-600 hover:underline min-h-[44px] inline-flex items-center touch-manipulation shrink-0">
+                    {{ __('app.owner_dashboard.view_all') }} →
+                </a>
+            </div>
+            <div class="p-3">
+                <input type="search" wire:model.live.debounce.300ms="expiringSearch"
+                       placeholder="{{ __('app.maintenance.search_placeholder') }}"
+                       class="w-full rounded-lg border-gray-300 text-sm min-h-[44px] mb-2">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs text-gray-500">{{ __('app.maintenance.sort') }}:</span>
+                    <select wire:model.live="expiringSort" class="rounded-lg border-gray-300 text-sm py-1.5 pr-6">
+                        <option value="expires_at">{{ __('app.maintenance.sort_by_date') }}</option>
+                        <option value="entity_name">{{ __('app.maintenance.sort_by_name') }}</option>
+                    </select>
+                    <button type="button" wire:click="$set('expiringDir', '{{ $expiringDir === 'asc' ? 'desc' : 'asc' }}')"
+                            class="p-1.5 rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 text-sm">
+                        {{ $expiringDir === 'asc' ? '↑' : '↓' }}
+                    </button>
+                </div>
+                @if($expiringDocuments->isEmpty())
+                    <p class="py-4 text-center text-gray-500 text-sm">{{ __('app.maintenance.no_expiring_docs') }}</p>
+                @else
+                    <ul class="divide-y divide-gray-100">
+                        @foreach($expiringDocuments as $item)
+                            <li class="py-1.5 first:pt-0">
+                                <a href="{{ $item->entity_type === 'truck' ? route('trucks.show', $item->entity_id) : ($item->entity_type === 'trailer' ? route('trailers.show', $item->entity_id) : route('drivers.show', $item->entity_id)) }}" wire:navigate
+                                   class="grid grid-cols-[1fr_auto] gap-2 items-center rounded-lg px-2 py-1.5 hover:bg-gray-50 active:bg-gray-100 touch-manipulation min-h-[44px] text-left">
+                                    <span class="font-medium text-gray-900 truncate min-w-0">{{ $item->entity_name }}</span>
+                                    <span class="text-sm text-gray-500 tabular-nums whitespace-nowrap">{{ __('app.' . $item->doc_label_key) }} · {{ $item->expires_at->format('d.m.Y') }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 mt-2 border-t border-gray-100">
+                        <span class="text-xs text-gray-500">{{ $expiringDocuments->firstItem() }}–{{ $expiringDocuments->lastItem() }} / {{ $expiringDocuments->total() }}</span>
+                        <div class="flex gap-1">
+                            @if($expiringDocuments->currentPage() > 1)
+                                <button type="button" wire:click="setExpiringPage({{ $expiringDocuments->currentPage() - 1 }})" class="px-2 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-xs min-h-[44px] touch-manipulation">{{ __('app.pagination.previous') }}</button>
+                            @endif
+                            @if($expiringDocuments->currentPage() < $expiringDocuments->lastPage())
+                                <button type="button" wire:click="setExpiringPage({{ $expiringDocuments->currentPage() + 1 }})" class="px-2 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-xs min-h-[44px] touch-manipulation">{{ __('app.pagination.next') }}</button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </section>
+
+        {{-- Предстоящее ТО (короткий блок) --}}
+        <section class="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-semibold text-gray-800">{{ __('app.owner_dashboard.upcoming_maintenance') }}</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">{{ __('app.owner_dashboard.upcoming_maintenance_hint') }}</p>
+                </div>
+                <a href="{{ route('maintenance.index') }}" wire:navigate class="text-sm text-blue-600 hover:underline min-h-[44px] inline-flex items-center touch-manipulation shrink-0">
+                    {{ __('app.owner_dashboard.view_all') }} →
+                </a>
+            </div>
+            <div class="p-3">
+                <input type="search" wire:model.live.debounce.300ms="upcomingSearch"
+                       placeholder="{{ __('app.maintenance.search_placeholder') }}"
+                       class="w-full rounded-lg border-gray-300 text-sm min-h-[44px] mb-2">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-xs text-gray-500">{{ __('app.maintenance.sort') }}:</span>
+                    <select wire:model.live="upcomingSort" class="rounded-lg border-gray-300 text-sm py-1.5 pr-6">
+                        <option value="expires_at">{{ __('app.maintenance.sort_by_date') }}</option>
+                        <option value="name">{{ __('app.maintenance.sort_by_name') }}</option>
+                    </select>
+                    <button type="button" wire:click="$set('upcomingDir', '{{ $upcomingDir === 'asc' ? 'desc' : 'asc' }}')"
+                            class="p-1.5 rounded border border-gray-300 bg-gray-50 hover:bg-gray-100 text-sm">
+                        {{ $upcomingDir === 'asc' ? '↑' : '↓' }}
+                    </button>
+                </div>
+                @if($upcomingMaintenance->isEmpty())
+                    <p class="py-4 text-center text-gray-500 text-sm">{{ __('app.maintenance.no_upcoming') }}</p>
+                @else
+                    <ul class="divide-y divide-gray-100">
+                        @foreach($upcomingMaintenance as $item)
+                            <li class="py-1.5 first:pt-0">
+                                <a href="{{ $item->type === 'truck' ? route('trucks.show', $item->id) : route('trailers.show', $item->id) }}" wire:navigate
+                                   class="grid grid-cols-[1fr_auto] gap-2 items-center rounded-lg px-2 py-1.5 hover:bg-gray-50 active:bg-gray-100 touch-manipulation min-h-[44px] text-left">
+                                    <span class="font-medium text-gray-900 truncate min-w-0">{{ $item->name }}</span>
+                                    <span class="text-sm text-gray-500 tabular-nums whitespace-nowrap">
+                                        @if($item->due_by_km && $item->next_service_km) {{ __('app.maintenance.due_by_km') }}: {{ number_format($item->next_service_km, 0, '.', ' ') }} km @endif
+                                        @if($item->due_by_date && $item->next_service_date) {{ __('app.maintenance.due_by_date') }}: {{ \Carbon\Carbon::parse($item->next_service_date)->format('d.m.Y') }} @endif
+                                    </span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 mt-2 border-t border-gray-100">
+                        <span class="text-xs text-gray-500">{{ $upcomingMaintenance->firstItem() }}–{{ $upcomingMaintenance->lastItem() }} / {{ $upcomingMaintenance->total() }}</span>
+                        <div class="flex gap-1">
+                            @if($upcomingMaintenance->currentPage() > 1)
+                                <button type="button" wire:click="setUpcomingPage({{ $upcomingMaintenance->currentPage() - 1 }})" class="px-2 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-xs min-h-[44px] touch-manipulation">{{ __('app.pagination.previous') }}</button>
+                            @endif
+                            @if($upcomingMaintenance->currentPage() < $upcomingMaintenance->lastPage())
+                                <button type="button" wire:click="setUpcomingPage({{ $upcomingMaintenance->currentPage() + 1 }})" class="px-2 py-1.5 rounded bg-gray-100 hover:bg-gray-200 text-xs min-h-[44px] touch-manipulation">{{ __('app.pagination.next') }}</button>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
         </section>
 

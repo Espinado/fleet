@@ -29,6 +29,9 @@ class EditTrailer extends Component
     public $tech_passport_photo, $current_photo;
     public $type_id;
 
+    /** Fleet Maintenance: следующее ТО и интервалы (все необязательные). */
+    public $next_service_km, $next_service_date, $service_interval_km, $service_interval_months;
+
     public function mount(Trailer $trailer)
     {
         $this->trailer = $trailer;
@@ -62,6 +65,11 @@ class EditTrailer extends Component
 
         $this->tech_passport_nr = $trailer->tech_passport_nr;
         $this->current_photo = $trailer->tech_passport_photo;
+
+        $this->next_service_km = $trailer->next_service_km;
+        $this->next_service_date = $trailer->next_service_date ? Carbon::parse($trailer->next_service_date)->format('Y-m-d') : null;
+        $this->service_interval_km = $trailer->service_interval_km;
+        $this->service_interval_months = $trailer->service_interval_months;
     }
 
     protected function rules()
@@ -95,6 +103,11 @@ class EditTrailer extends Component
             'tech_passport_photo' => 'nullable|image',
 
             'type_id' => 'required|integer|in:' . implode(',', array_keys(config('trailer-types.types'))),
+
+            'next_service_km' => 'nullable|integer|min:0',
+            'next_service_date' => 'nullable|date',
+            'service_interval_km' => 'nullable|integer|min:0',
+            'service_interval_months' => 'nullable|integer|min:0|max:120',
         ];
     }
 
@@ -135,6 +148,11 @@ class EditTrailer extends Component
             'tech_passport_photo' => $photoPath,
 
             'type_id' => $this->type_id,
+
+            'next_service_km' => $this->next_service_km ? (int) $this->next_service_km : null,
+            'next_service_date' => $this->next_service_date ?: null,
+            'service_interval_km' => $this->service_interval_km ? (int) $this->service_interval_km : null,
+            'service_interval_months' => $this->service_interval_months ? (int) $this->service_interval_months : null,
         ]);
 
         session()->flash('success', __('app.trailer.edit.save'));

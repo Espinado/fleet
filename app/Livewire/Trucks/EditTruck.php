@@ -28,6 +28,9 @@ class EditTruck extends Component
 
     public $license_number, $license_issued, $license_expired;
 
+    /** Fleet Maintenance: следующее ТО и интервалы (все необязательные). */
+    public $next_service_km, $next_service_date, $service_interval_km, $service_interval_months;
+
     public function mount(Truck $truck)
     {
         $this->truck = $truck;
@@ -61,6 +64,11 @@ class EditTruck extends Component
         $this->license_number  = $truck->license_number;
         $this->license_issued  = optional($truck->license_issued)->format('Y-m-d');
         $this->license_expired = optional($truck->license_expired)->format('Y-m-d');
+
+        $this->next_service_km = $truck->next_service_km;
+        $this->next_service_date = optional($truck->next_service_date)->format('Y-m-d');
+        $this->service_interval_km = $truck->service_interval_km;
+        $this->service_interval_months = $truck->service_interval_months;
     }
 
     public function save()
@@ -92,6 +100,11 @@ class EditTruck extends Component
             'license_number'  => 'nullable|string|max:50',
             'license_issued'  => 'nullable|date',
             'license_expired' => 'nullable|date|after_or_equal:license_issued',
+
+            'next_service_km' => 'nullable|integer|min:0',
+            'next_service_date' => 'nullable|date',
+            'service_interval_km' => 'nullable|integer|min:0',
+            'service_interval_months' => 'nullable|integer|min:0|max:120',
         ]);
 
         $this->dispatch('scroll-top');
@@ -103,6 +116,11 @@ class EditTruck extends Component
         } else {
             $validated['tech_passport_photo'] = $this->existing_photo;
         }
+
+        $validated['next_service_km'] = $this->next_service_km ? (int) $this->next_service_km : null;
+        $validated['next_service_date'] = $this->next_service_date ?: null;
+        $validated['service_interval_km'] = $this->service_interval_km ? (int) $this->service_interval_km : null;
+        $validated['service_interval_months'] = $this->service_interval_months ? (int) $this->service_interval_months : null;
 
         $this->truck->update($validated);
 
