@@ -12,6 +12,8 @@ return [
     'stats.search'          => 'Meklēt: reisa ID, vadītājs, numurzīme...',
     'stats.freight_total'   => 'Kravas pārvadājums (Σ)',
     'stats.expenses_total'  => 'Izdevumi (Σ)',
+    'stats.expenses_road'   => 'Ceļa izdevumi',
+    'stats.expenses_maintenance' => 'Apkope',
     'stats.profit'          => 'Peļņa',
     'stats.margin'          => 'Marža',
     'stats.cost_per_km'     => 'Izmaksas uz km',

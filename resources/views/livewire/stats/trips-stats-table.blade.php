@@ -129,6 +129,10 @@
                 <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
                     <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.expenses_total') }}</div>
                     <div class="text-lg font-bold text-gray-900">{{ number_format($summary->total_expenses, 2, '.', ' ') }} <span class="text-xs font-normal text-gray-500">EUR</span></div>
+                    <div class="mt-1.5 text-xs text-gray-600 space-y-0.5">
+                        <div>{{ __('app.stats.expenses_road') }}: {{ number_format($summary->expenses_road ?? 0, 2, '.', ' ') }} EUR</div>
+                        <div>{{ __('app.stats.expenses_maintenance') }}: {{ number_format($summary->expenses_maintenance ?? 0, 2, '.', ' ') }} EUR</div>
+                    </div>
                 </div>
                 <div class="rounded-xl bg-gray-50 border border-gray-100 p-3">
                     <div class="text-xs text-gray-500 mb-0.5">{{ __('app.stats.profit') }}</div>

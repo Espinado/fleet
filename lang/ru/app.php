@@ -5,6 +5,8 @@ return [
     'please_wait'           => 'Пожалуйста, подождите.',
 
     // Stats / Driver events (Notikumi)
+    'stats.expenses_road'   => 'Дорожные расходы',
+    'stats.expenses_maintenance' => 'Обслуживание (ТО)',
     'stats.events.title'        => 'События водителя',
     'stats.events.subtitle'     => 'Выезд / возврат / шаги / расходы водителя',
     'stats.events.search'       => 'Поиск: водитель, машина, расходы, заметка...',

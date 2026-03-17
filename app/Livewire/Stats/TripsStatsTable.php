@@ -7,6 +7,7 @@ use App\Models\Trip;
 use App\Models\TripCargo;
 use App\Models\TripExpense;
 use App\Models\TruckOdometerEvent;
+use App\Models\VehicleMaintenance;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -345,9 +346,9 @@ class TripsStatsTable extends Component
             return $ret > $dep ? $ret - $dep : 0;
         });
         $tripIds = $summaryQuery->pluck('id')->filter()->values()->all();
-        $totalExpensesExclSub = 0.0;
+        $expensesRoad = 0.0;
         if ($tripIds !== []) {
-            $totalExpensesExclSub = (float) TripExpense::query()
+            $expensesRoad = (float) TripExpense::query()
                 ->whereIn('trip_id', $tripIds)
                 ->where(function (Builder $qb) {
                     $qb->whereNull('category')
@@ -355,21 +356,33 @@ class TripsStatsTable extends Component
                 })
                 ->sum('amount');
         }
-        $costPerKm = $totalKm > 0 ? round($totalExpensesExclSub / $totalKm, 2) : null;
+
+        $expensesMaintenanceQuery = VehicleMaintenance::query()->whereNotNull('cost');
+        if ($this->dateFrom) {
+            $expensesMaintenanceQuery->whereDate('performed_at', '>=', $this->dateFrom);
+        }
+        if ($this->dateTo) {
+            $expensesMaintenanceQuery->whereDate('performed_at', '<=', $this->dateTo);
+        }
+        $expensesMaintenance = (float) $expensesMaintenanceQuery->sum('cost');
+        $totalExpenses = $expensesRoad + $expensesMaintenance;
+        $costPerKm = $totalKm > 0 ? round($expensesRoad / $totalKm, 2) : null;
 
         $summary = (object) [
-            'trips_count'        => $summaryQuery->count(),
-            'total_freight'      => round($summaryQuery->sum('freight_total'), 2),
-            'total_expenses'     => round($summaryQuery->sum('expenses_total'), 2),
-            'total_profit'       => round($summaryQuery->sum('profit'), 2),
-            'avg_margin_percent' => null,
-            'total_km'           => round($totalKm, 1),
-            'cost_per_km'        => $costPerKm,
+            'trips_count'         => $summaryQuery->count(),
+            'total_freight'       => round($summaryQuery->sum('freight_total'), 2),
+            'expenses_road'       => round($expensesRoad, 2),
+            'expenses_maintenance' => round($expensesMaintenance, 2),
+            'total_expenses'      => round($totalExpenses, 2),
+            'total_profit'        => round($summaryQuery->sum('freight_total') - $totalExpenses, 2),
+            'avg_margin_percent'  => null,
+            'total_km'            => round($totalKm, 1),
+            'cost_per_km'         => $costPerKm,
         ];
         $withFreight = $summaryQuery->filter(fn ($t) => (float) ($t->freight_total ?? 0) > 0);
-        if ($withFreight->isNotEmpty()) {
+        if ($withFreight->isNotEmpty() && $summary->total_freight > 0) {
             $summary->avg_margin_percent = round(
-                $withFreight->avg(fn ($t) => ((float) ($t->profit ?? 0) / (float) $t->freight_total) * 100),
+                ($summary->total_profit / $summary->total_freight) * 100,
                 1
             );
         }
