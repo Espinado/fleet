@@ -62,9 +62,36 @@
                 </a>
             </div>
         @else
-            <section class="rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
+            {{-- Мобильный вид: карточки --}}
+            <section class="sm:hidden space-y-3">
+                @foreach($records as $record)
+                    <a href="{{ route('maintenance.records.show', $record) }}" wire:navigate
+                       class="block rounded-xl bg-white border border-gray-200 shadow-sm p-4 active:bg-gray-50 min-h-[44px]">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="font-medium text-gray-900 flex items-center gap-1.5">
+                                {{ $record->vehicle_name }}
+                                <span class="text-xs {{ $record->vehicle_type === 'truck' ? 'text-blue-600' : 'text-amber-600' }}">{{ $record->vehicle_type === 'truck' ? '🚛' : '🚚' }}</span>
+                            </span>
+                            @if($record->cost !== null)
+                                <span class="text-sm font-semibold text-gray-900 tabular-nums shrink-0">€{{ number_format((float) $record->cost, 2, '.', ' ') }}</span>
+                            @else
+                                <span class="text-sm text-gray-400 shrink-0">—</span>
+                            @endif
+                        </div>
+                        <div class="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-600">
+                            <span class="tabular-nums">{{ __('app.maintenance_record.performed_at') }}: {{ $record->performed_at->format('d.m.Y') }}</span>
+                            @if($record->odometer_km !== null)
+                                <span class="tabular-nums">{{ number_format($record->odometer_km, 0, '.', ' ') }} km</span>
+                            @endif
+                        </div>
+                    </a>
+                @endforeach
+            </section>
+
+            {{-- Десктоп: таблица --}}
+            <section class="hidden sm:block rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-sm min-w-[500px]">
+                    <table class="w-full text-sm">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr>
                                 <th class="px-4 py-2 text-left font-medium text-gray-700">{{ __('app.maintenance_record.vehicle') }}</th>
@@ -102,10 +129,11 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-4 py-3 border-t border-gray-200">
-                    {{ $records->links() }}
-                </div>
             </section>
+
+            <div class="px-0 py-3 sm:px-4 sm:border-t sm:border-gray-200 sm:bg-white sm:rounded-b-xl sm:border-x sm:border-b sm:border-gray-200">
+                {{ $records->links() }}
+            </div>
         @endif
     </div>
 </div>
