@@ -47,7 +47,7 @@ class CreateTruck extends Component
         return [
             'brand' => 'required|string|max:255',
             'model' => 'required|string|max:255',
-            'plate' => ['required','string','max:255', Rule::unique('trucks','plate')],
+            'plate' => 'required|string|max:255',
             'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
 
             // ✅ company_id

@@ -68,7 +68,7 @@ class EditTrailer extends Component
     {
         return [
             'brand' => 'required|string|max:255',
-            'plate' => ['required','string','max:255', Rule::unique('trailers','plate')->ignore($this->trailer->id)],
+            'plate' => 'required|string|max:255',
             'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
 
             'inspection_issued'  => 'required|date',

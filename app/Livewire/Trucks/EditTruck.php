@@ -68,7 +68,7 @@ class EditTruck extends Component
         $validated = $this->validate([
             'brand' => 'required|string|max:255',
             'model' => 'required|string|max:255',
-            'plate' => ['required', 'string', 'max:255', Rule::unique('trucks', 'plate')->ignore($this->truck->id)],
+            'plate' => 'required|string|max:255',
             'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
 
             // ✅ company_id

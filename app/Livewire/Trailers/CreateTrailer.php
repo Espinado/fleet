@@ -35,7 +35,7 @@ class CreateTrailer extends Component
     {
         return [
             'brand' => 'required|string|max:255',
-            'plate' => ['required','string','max:255', Rule::unique('trailers','plate')],
+            'plate' => 'required|string|max:255',
             'year'  => 'required|integer|min:1900|max:' . (date('Y') + 1),
 
             // ✅ validate type_id from config

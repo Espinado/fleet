@@ -423,7 +423,6 @@ CREATE TABLE `trailers` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `trailers_plate_unique` (`plate`),
   UNIQUE KEY `trailers_vin_unique` (`vin`),
   KEY `trailers_type_id_index` (`type_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -795,7 +794,6 @@ CREATE TABLE `trucks` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `trucks_plate_unique` (`plate`),
   UNIQUE KEY `trucks_vin_unique` (`vin`),
   KEY `trucks_mapon_box_id_index` (`mapon_box_id`),
   KEY `trucks_mapon_unit_id_index` (`mapon_unit_id`)
