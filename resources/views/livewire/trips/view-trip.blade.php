@@ -491,8 +491,8 @@
                                     </span>
                                     @if($savedKm !== null && $savedKm > 0)
                                         <span class="text-emerald-700 dark:text-emerald-400 font-medium text-sm">{{ __('app.trip.show.route_optimal_saved', ['km' => number_format($savedKm, 0, '.', ' ')]) }}</span>
-                                    @elseif($savedKm !== null && $savedKm < 0)
-                                        <span class="text-amber-700 dark:text-amber-400 text-sm">{{ __('app.trip.show.route_optimal_longer', ['km' => number_format(-$savedKm, 0, '.', ' ')]) }}</span>
+                                    @elseif($savedKm !== null && $savedKm <= 0)
+                                        <span class="text-emerald-700 dark:text-emerald-400 font-medium text-sm">{{ __('app.trip.show.route_current_is_optimal') }}</span>
                                     @endif
                                 </div>
                                 @if(!empty($routeSuggestedOrderLabels))

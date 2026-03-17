@@ -680,6 +680,7 @@ return [
     'trip.show.route_optimal_title'=> 'Īsākais maršruts',
     'trip.show.route_optimal_saved'=> 'Ietaupījums :km km',
     'trip.show.route_optimal_longer'=> 'Garāks par :km km (pašreizējā secība īsāka)',
+    'trip.show.route_current_is_optimal'=> 'Izvēlētais maršruts ir optimāls.',
     'trip.show.route_optimal_suggested_order' => 'Ieteicamā secība:',
     'trip.show.driver'            => 'Vadītājs:',
     'trip.show.truck'             => 'Vilcējs:',

@@ -278,6 +278,7 @@ return [
     'trip.show.route_optimal_title'=> 'Кратчайший маршрут',
     'trip.show.route_optimal_saved'=> 'Экономия :km км',
     'trip.show.route_optimal_longer'=> 'Длиннее на :km км (текущий порядок короче)',
+    'trip.show.route_current_is_optimal'=> 'Выбранный маршрут оптимален.',
     'trip.show.route_optimal_suggested_order' => 'Рекомендуемый порядок:',
 
     // Driver app: offline (PWA)
