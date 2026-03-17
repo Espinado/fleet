@@ -5,6 +5,8 @@ namespace App\Livewire\Orders;
 use App\Enums\TripStatus;
 use App\Models\Trip;
 use App\Models\TransportOrder;
+use App\Services\OpenRouteService;
+use App\Services\HereRouteService;
 use Livewire\Component;
 
 class ShowOrder extends Component
@@ -19,6 +21,43 @@ class ShowOrder extends Component
 
     /** ID рейса, для которого идёт добавление заказа (спиннер только на этой кнопке). */
     public ?int $addingTripId = null;
+
+    /** Результат расчёта километража по маршруту: ['distance_km' => float, 'duration_minutes' => float] или null. */
+    public ?array $routeSummary = null;
+
+    /** Сообщение об ошибке расчёта маршрута. */
+    public ?string $routeSummaryError = null;
+
+    /** Показать подсказку «как настроить API key» (когда сервис не настроен). */
+    public bool $routeCalcConfigHint = false;
+    public ?string $routeProviderKey = null;
+    public ?string $routeProviderLink = null;
+
+    /** Идёт ли запрос расчёта маршрута. */
+    public bool $routeSummaryLoading = false;
+
+    /**
+     * Форматирует длительность в минутах в строку: "X d Y h Z min" (дни, часы, минуты).
+     */
+    public function formatRouteDuration(float $minutes): string
+    {
+        $total = (int) round($minutes);
+        $days = (int) ($total / (24 * 60));
+        $rest = $total % (24 * 60);
+        $hours = (int) ($rest / 60);
+        $mins = $rest % 60;
+
+        $parts = [];
+        if ($days > 0) {
+            $parts[] = $days . ' ' . __('app.orders.route_calc.duration_d');
+        }
+        if ($hours > 0 || $days > 0) {
+            $parts[] = $hours . ' ' . __('app.orders.route_calc.duration_h');
+        }
+        $parts[] = $mins . ' ' . __('app.orders.route_calc.duration_min');
+
+        return implode(' ', $parts);
+    }
 
     public function mount(TransportOrder $transportOrder): void
     {
@@ -87,6 +126,66 @@ class ShowOrder extends Component
 
         session()->flash('success', __('app.orders.add_to_trip.success'));
         $this->redirect(route('trips.show', $trip), navigate: true);
+    }
+
+    /** Рассчитать километраж и время по маршруту заказа (OpenRouteService). */
+    public function calculateRouteDistance(): void
+    {
+        $this->routeSummary = null;
+        $this->routeSummaryError = null;
+        $this->routeCalcConfigHint = false;
+        $this->routeProviderKey = null;
+        $this->routeProviderLink = null;
+        $this->routeSummaryLoading = true;
+
+        $serviceClass = config('route.provider') === 'here' ? HereRouteService::class : OpenRouteService::class;
+        $service = app($serviceClass);
+        if (!$service->isConfigured()) {
+            $this->routeProviderKey = config('route.provider') === 'here' ? 'HERE_API_KEY' : 'OPENROUTESERVICE_API_KEY';
+            $this->routeSummaryError = __('app.orders.route_calc.not_configured', ['key' => $this->routeProviderKey]);
+            $this->routeCalcConfigHint = true;
+            $this->routeProviderLink = config('route.provider') === 'here' ? 'https://developer.here.com' : 'https://openrouteservice.org/dev/#/login';
+            $this->routeSummaryLoading = false;
+            return;
+        }
+
+        $this->transportOrder->loadMissing(['steps' => fn ($q) => $q->orderBy('order')]);
+        $steps = $this->transportOrder->steps;
+        if ($steps->count() < 2) {
+            $this->routeSummaryError = __('app.orders.route_calc.need_two_steps');
+            $this->routeSummaryLoading = false;
+            return;
+        }
+
+        $result = $service->getRouteSummaryFromSteps($steps);
+        $this->routeSummaryLoading = false;
+
+        if (!empty($result['error'])) {
+            $errorKey = $result['error_key'] ?? null;
+            if ($errorKey === 'distance_limit') {
+                $this->routeSummaryError = __('app.orders.route_calc.distance_limit');
+                return;
+            }
+            if ($errorKey === 'point_not_routable') {
+                $this->routeSummaryError = __('app.orders.route_calc.point_not_routable');
+                return;
+            }
+            if (!empty($result['directions_failed'])) {
+                $this->routeSummaryError = __('app.orders.route_calc.directions_failed');
+                return;
+            }
+            $order = (int) ($result['failed_step_order'] ?? 0);
+            if ($order < 1) {
+                $this->routeSummaryError = __('app.orders.route_calc.failed');
+                return;
+            }
+            $address = trim((string) ($result['failed_address'] ?? ''));
+            $address = $address !== '' ? $address : __('app.orders.route_calc.empty_address');
+            $this->routeSummaryError = __('app.orders.route_calc.failed_step', ['order' => $order, 'address' => $address]);
+            return;
+        }
+
+        $this->routeSummary = $result;
     }
 
     public function render()

@@ -127,6 +127,43 @@
                         </li>
                     @endforeach
                 </ul>
+                {{-- Расчёт километража по маршруту (OpenRouteService) — помощник для тарифов --}}
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-xs text-gray-500 mb-2">{{ __('app.orders.route_calc.title') }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button type="button" wire:click="calculateRouteDistance"
+                                wire:loading.attr="disabled"
+                                class="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[44px] touch-manipulation disabled:opacity-50 transition-colors min-w-[18rem]">
+                            <span wire:loading.remove wire:target="calculateRouteDistance">📏 {{ __('app.orders.route_calc.btn') }}</span>
+                            <span wire:loading wire:target="calculateRouteDistance" class="inline-flex items-center gap-2">
+                                <span class="inline-block h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true"></span>
+                                {{ __('app.please_wait') }}
+                            </span>
+                        </button>
+                        @if($routeSummary)
+                            <span class="inline-flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                                <span class="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-blue-800">
+                                    <span class="text-blue-600 font-medium">{{ __('app.orders.route_calc.distance') }}:</span>
+                                    <strong>{{ number_format($routeSummary['distance_km'], 0, '.', ' ') }} km</strong>
+                                </span>
+                                <span class="text-gray-400" aria-hidden="true">·</span>
+                                <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-1 text-emerald-800">
+                                    <span class="text-emerald-600 font-medium">{{ __('app.orders.route_calc.duration') }}:</span>
+                                    <strong>{{ $this->formatRouteDuration($routeSummary['duration_minutes']) }}</strong>
+                                </span>
+                            </span>
+                        @endif
+                        @if($routeSummaryError)
+                            <span class="text-sm text-amber-700">{{ $routeSummaryError }}</span>
+                            @if($routeCalcConfigHint ?? false)
+                                <span class="text-xs text-gray-500 block mt-1">
+                                    {{ __('app.orders.route_calc.not_configured_hint', ['key' => $routeProviderKey ?? 'OPENROUTESERVICE_API_KEY']) }}
+                                    <a href="{{ $routeProviderLink ?? 'https://openrouteservice.org/dev/#/login' }}" target="_blank" rel="noopener" class="text-blue-600 hover:underline">{{ ($routeProviderKey ?? '') === 'HERE_API_KEY' ? 'developer.here.com' : 'openrouteservice.org' }}</a>
+                                </span>
+                            @endif
+                        @endif
+                    </div>
+                </div>
             </div>
         @endif
 

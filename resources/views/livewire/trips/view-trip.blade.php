@@ -388,7 +388,7 @@
                     </p>
                 @endif
 
-                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm">
+                <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs sm:text-sm">
                     <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 space-y-1">
                         <div class="text-gray-500 font-semibold">{{ __('app.trip.show.companies') }}</div>
                         <div class="text-gray-800 dark:text-gray-100">
@@ -433,6 +433,77 @@
                             <span class="text-gray-500">{{ __('app.trip.show.trailer') }}</span>
                             <span class="font-medium">{{ $trailerLabel }}</span>
                         </div>
+                    </div>
+
+                    {{-- Maršruta aprēķins: pašreizējā secība + iespēja iegūt īsāko maršrutu. --}}
+                    <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 space-y-2">
+                        <div class="text-gray-500 font-semibold">{{ __('app.trip.show.route_calc_title') }}</div>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">{{ __('app.trip.show.route_calc_optimal_hint') }}</p>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <button type="button" wire:click="calculateRouteDistance"
+                                    wire:loading.attr="disabled"
+                                    class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 min-h-[36px] touch-manipulation disabled:opacity-50 transition-colors min-w-[10rem]">
+                                <span wire:loading.remove wire:target="calculateRouteDistance">📏 {{ __('app.orders.route_calc.btn') }}</span>
+                                <span wire:loading wire:target="calculateRouteDistance" class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true"></span>
+                                    {{ __('app.please_wait') }}
+                                </span>
+                            </button>
+                            <button type="button" wire:click="calculateOptimalRoute"
+                                    wire:loading.attr="disabled"
+                                    class="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 min-h-[36px] touch-manipulation disabled:opacity-50 transition-colors min-w-[10rem]">
+                                <span wire:loading.remove wire:target="calculateOptimalRoute">🔄 {{ __('app.trip.show.route_optimal_btn') }}</span>
+                                <span wire:loading wire:target="calculateOptimalRoute" class="inline-flex items-center gap-2">
+                                    <span class="inline-block h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" aria-hidden="true"></span>
+                                    {{ __('app.please_wait') }}
+                                </span>
+                            </button>
+                            @if($routeSummary ?? null)
+                                <div class="shrink-0 inline-flex flex-wrap items-baseline gap-x-3 gap-y-1 text-base sm:text-lg">
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 text-blue-800 dark:text-blue-200">
+                                        <span class="text-blue-600 dark:text-blue-400 font-medium text-sm">{{ __('app.orders.route_calc.distance') }}:</span>
+                                        <strong class="text-lg sm:text-xl">{{ number_format($routeSummary['distance_km'], 0, '.', ' ') }} km</strong>
+                                    </span>
+                                    <span class="text-gray-400" aria-hidden="true">·</span>
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 text-emerald-800 dark:text-emerald-200">
+                                        <span class="text-emerald-600 dark:text-emerald-400 font-medium text-sm">{{ __('app.orders.route_calc.duration') }}:</span>
+                                        <strong class="text-lg sm:text-xl">{{ $this->formatRouteDuration($routeSummary['duration_minutes']) }}</strong>
+                                    </span>
+                                </div>
+                            @endif
+                            @if($routeSummaryError ?? null)
+                                <span class="block w-full text-xs text-amber-700 dark:text-amber-400 break-words mt-1">{{ $routeSummaryError }}</span>
+                                @if($routeCalcConfigHint ?? false)
+                                    <span class="text-[11px] text-gray-500 dark:text-gray-400 block w-full">
+                                        {{ __('app.orders.route_calc.not_configured_hint', ['key' => $routeProviderKey ?? 'OPENROUTESERVICE_API_KEY']) }}
+                                        <a href="{{ $routeProviderLink ?? 'https://openrouteservice.org/dev/#/login' }}" target="_blank" rel="noopener" class="text-blue-600 dark:text-blue-400 hover:underline">{{ ($routeProviderKey ?? '') === 'HERE_API_KEY' ? 'developer.here.com' : 'openrouteservice.org' }}</a>
+                                    </span>
+                                @endif
+                            @endif
+                        </div>
+                        @if($routeSummaryOptimal !== null)
+                            <div class="pt-2 border-t border-gray-200 dark:border-gray-600 space-y-1.5">
+                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('app.trip.show.route_optimal_title') }}</div>
+                                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-base">
+                                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-violet-50 dark:bg-violet-900/30 px-2.5 py-1 text-violet-800 dark:text-violet-200">
+                                        <strong>{{ number_format($routeSummaryOptimal['distance_km'], 0, '.', ' ') }} km</strong>
+                                        <span class="text-violet-600 dark:text-violet-400 text-sm">{{ __('app.orders.route_calc.duration') }}: {{ $this->formatRouteDuration($routeSummaryOptimal['duration_minutes']) }}</span>
+                                    </span>
+                                    @if($savedKm !== null && $savedKm > 0)
+                                        <span class="text-emerald-700 dark:text-emerald-400 font-medium text-sm">{{ __('app.trip.show.route_optimal_saved', ['km' => number_format($savedKm, 0, '.', ' ')]) }}</span>
+                                    @elseif($savedKm !== null && $savedKm < 0)
+                                        <span class="text-amber-700 dark:text-amber-400 text-sm">{{ __('app.trip.show.route_optimal_longer', ['km' => number_format(-$savedKm, 0, '.', ' ')]) }}</span>
+                                    @endif
+                                </div>
+                                @if(!empty($routeSuggestedOrderLabels))
+                                    <p class="text-[11px] text-gray-500 dark:text-gray-400">{{ __('app.trip.show.route_optimal_suggested_order') }}</p>
+                                    <p class="text-xs text-gray-700 dark:text-gray-300 break-words">{{ implode(' → ', array_map('e', $routeSuggestedOrderLabels)) }}</p>
+                                @endif
+                            </div>
+                        @endif
+                        @if($routeOptimalError)
+                            <span class="block w-full text-xs text-amber-700 dark:text-amber-400 break-words">{{ $routeOptimalError }}</span>
+                        @endif
                     </div>
                 </div>
             </div>

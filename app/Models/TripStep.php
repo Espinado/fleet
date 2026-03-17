@@ -106,8 +106,8 @@ public function typeLabel(): string
 public function addressLine(): string
 {
     // подстрой под свои поля/формат
-    $country = $this->country_id ? (getCountryNameById((int)$this->country_id) ?? null) : null;
-    $city    = $this->city_id    ? (getCityNameById((int)$this->city_id) ?? null)       : null;
+    $country = $this->country_id ? (\getCountryById((int)$this->country_id) ?? null) : null;
+    $city    = $this->city_id    ? (\getCityById((int)$this->city_id, $this->country_id ? (int)$this->country_id : null) ?? null) : null;
 
     return collect([
         $city,
