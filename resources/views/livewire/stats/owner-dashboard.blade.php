@@ -208,9 +208,13 @@
                                 <a href="{{ $item->type === 'truck' ? route('trucks.show', $item->id) : route('trailers.show', $item->id) }}" wire:navigate
                                    class="grid grid-cols-[1fr_auto] gap-2 items-center rounded-lg px-2 py-1.5 hover:bg-gray-50 active:bg-gray-100 touch-manipulation min-h-[44px] text-left">
                                     <span class="font-medium text-gray-900 truncate min-w-0">{{ $item->name }}</span>
-                                    <span class="text-sm text-gray-500 tabular-nums whitespace-nowrap">
-                                        @if($item->due_by_km && $item->next_service_km) {{ __('app.maintenance.due_by_km') }}: {{ number_format($item->next_service_km, 0, '.', ' ') }} km @endif
-                                        @if($item->due_by_date && $item->next_service_date) {{ __('app.maintenance.due_by_date') }}: {{ \Carbon\Carbon::parse($item->next_service_date)->format('d.m.Y') }} @endif
+                                    <span class="text-sm text-gray-500 flex flex-wrap gap-1.5 tabular-nums">
+                                        @if($item->due_by_km && $item->next_service_km)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-blue-800">{{ __('app.maintenance.due_by_km') }}: {{ number_format($item->next_service_km, 0, '.', ' ') }} km</span>
+                                        @endif
+                                        @if($item->due_by_date && $item->next_service_date)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded bg-amber-100 text-amber-800">{{ __('app.maintenance.due_by_date') }}: {{ \Carbon\Carbon::parse($item->next_service_date)->format('d.m.Y') }}</span>
+                                        @endif
                                     </span>
                                 </a>
                             </li>
