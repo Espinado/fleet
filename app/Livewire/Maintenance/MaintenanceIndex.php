@@ -100,6 +100,7 @@ class MaintenanceIndex extends Component
             ->pluck('last_km', 'truck_id');
 
         $trucks = Truck::query()
+            ->whereHas('company', fn ($c) => $c->where(fn ($q) => $q->where('is_third_party', false)->orWhereNull('is_third_party')))
             ->where(function ($q) use ($today, $dateLimit) {
                 $q->whereNotNull('next_service_km')
                     ->orWhereNotNull('next_service_date');
@@ -126,6 +127,7 @@ class MaintenanceIndex extends Component
         }
 
         $trailers = Trailer::query()
+            ->whereHas('company', fn ($c) => $c->where(fn ($q) => $q->where('is_third_party', false)->orWhereNull('is_third_party')))
             ->whereNotNull('next_service_date')
             ->whereDate('next_service_date', '<=', $dateLimit)
             ->get();

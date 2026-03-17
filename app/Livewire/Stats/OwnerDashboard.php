@@ -331,6 +331,7 @@ class OwnerDashboard extends Component
             ->groupBy('truck_id')
             ->pluck('last_km', 'truck_id');
         $trucks = Truck::query()
+            ->whereHas('company', fn ($c) => $c->where(fn ($q) => $q->where('is_third_party', false)->orWhereNull('is_third_party')))
             ->where(fn ($q) => $q->whereNotNull('next_service_km')->orWhereNotNull('next_service_date'))
             ->get();
         foreach ($trucks as $truck) {
@@ -350,7 +351,11 @@ class OwnerDashboard extends Component
                 ]);
             }
         }
-        $trailers = Trailer::query()->whereNotNull('next_service_date')->whereDate('next_service_date', '<=', $dateLimit)->get();
+        $trailers = Trailer::query()
+            ->whereHas('company', fn ($c) => $c->where(fn ($q) => $q->where('is_third_party', false)->orWhereNull('is_third_party')))
+            ->whereNotNull('next_service_date')
+            ->whereDate('next_service_date', '<=', $dateLimit)
+            ->get();
         foreach ($trailers as $trailer) {
             $list->push((object) [
                 'type' => 'trailer',
