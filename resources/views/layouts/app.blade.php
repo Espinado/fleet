@@ -480,7 +480,7 @@
     <script src="/pwa/push.js"></script>
     @endif
 
-    {{-- Общая карта (страница /map): инициализация из layout, т.к. при wire:navigate скрипты из контента не выполняются --}}
+    {{-- Общая карта (страница /map): Leaflet или Google Maps в зависимости от MAP_PROVIDER --}}
     <script>
     (function() {
         var leafletUrl = @json(config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.js') : config('mapon.leaflet_js_url'));
@@ -506,20 +506,173 @@
                 }
             }
         }
+        function fleetMapLabelText(u) {
+            var num = (u.number || '').trim();
+            var moving = (u.state_name || '') === 'moving';
+            if (moving && u.speed != null && !isNaN(u.speed)) {
+                return num + ' · ' + Math.round(u.speed) + ' km/h';
+            }
+            return num + ' · Stāv';
+        }
+        function fleetMapEscapeHtml(s) {
+            var div = document.createElement('div');
+            div.textContent = s;
+            return div.innerHTML;
+        }
+        function fleetMapMarkerIcon(isMoving) {
+            if (typeof google === 'undefined' || !google.maps) return null;
+            var color = isMoving ? '#22c55e' : '#6b7280';
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="10" fill="' + color + '" stroke="#fff" stroke-width="2"/></svg>';
+            return { url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg), scaledSize: new google.maps.Size(22, 22), anchor: new google.maps.Point(11, 11) };
+        }
+        function FleetMapLabelOverlay(position, content, map) {
+            this.position = position;
+            this.content = content;
+            this.map = map;
+            this.div = null;
+            this.setMap(map);
+        }
+        function FleetMapLabelOverlayInitProto() {
+            if (typeof google === 'undefined' || !google.maps || !google.maps.OverlayView) return false;
+            if (FleetMapLabelOverlay.prototype._fleetMapInited) return true;
+            FleetMapLabelOverlay.prototype = new google.maps.OverlayView();
+            FleetMapLabelOverlay.prototype._fleetMapInited = true;
+            FleetMapLabelOverlay.prototype.onAdd = function() {
+            this.div = document.createElement('div');
+            this.div.className = 'fleet-marker-tooltip fleet-map-google-label';
+            this.div.style.cssText = 'position:absolute;white-space:nowrap;font-weight:600;font-size:12px;padding:2px 6px;border-radius:4px;background:#fff;border:1px solid #e5e7eb;box-shadow:0 1px 2px rgba(0,0,0,0.1);pointer-events:none;';
+            this.div.innerHTML = this.content;
+            var panes = this.getPanes();
+            if (panes && panes.overlayMouseTarget) panes.overlayMouseTarget.appendChild(this.div);
+        };
+        FleetMapLabelOverlay.prototype.draw = function() {
+            if (!this.div || !this.position) return;
+            var proj = this.getProjection();
+            if (!proj) return;
+            var point = proj.fromLatLngToDivPixel(this.position);
+            if (!point) return;
+            this.div.style.left = (point.x - this.div.offsetWidth / 2) + 'px';
+            this.div.style.top = (point.y - 28) + 'px';
+        };
+        FleetMapLabelOverlay.prototype.onRemove = function() {
+            if (this.div && this.div.parentNode) this.div.parentNode.removeChild(this.div);
+            this.div = null;
+        };
+        }
         function updateFleetMapMarkers() {
             var dataEl = document.getElementById('fleet-map-data');
-            var map = window.__fleetMapInstance;
-            var layer = window.__fleetMapMarkersLayer;
-            if (!dataEl || !map || !layer) return;
+            if (!dataEl) return;
             var data = { units: [] };
             try {
                 var raw = (dataEl.textContent || dataEl.innerText || '').trim();
                 if (raw) data = JSON.parse(raw);
             } catch (e) { return; }
             var units = data.units || [];
+            if (window.__fleetMapGoogleMarkers) {
+                if (typeof google === 'undefined' || !google.maps) return;
+                var i;
+                for (i = 0; i < window.__fleetMapGoogleMarkers.length; i++) {
+                    window.__fleetMapGoogleMarkers[i].setMap(null);
+                }
+                window.__fleetMapGoogleMarkers = [];
+                if (window.__fleetMapGoogleLabels) {
+                    for (i = 0; i < window.__fleetMapGoogleLabels.length; i++) {
+                        window.__fleetMapGoogleLabels[i].setMap(null);
+                    }
+                    window.__fleetMapGoogleLabels = [];
+                }
+                var map = window.__fleetMapInstance;
+                var labelsOk = FleetMapLabelOverlayInitProto();
+                if (map && typeof map.addListener === 'function') {
+                    for (var j = 0; j < units.length; j++) {
+                        var u = units[j];
+                        var isMoving = (u.state_name || '') === 'moving';
+                        var icon = fleetMapMarkerIcon(isMoving);
+                        var m = new google.maps.Marker({
+                            position: { lat: u.lat, lng: u.lng },
+                            map: map,
+                            title: u.tooltip || '',
+                            icon: icon || undefined
+                        });
+                        window.__fleetMapGoogleMarkers.push(m);
+                        if (labelsOk) {
+                            try {
+                                var label = new FleetMapLabelOverlay(new google.maps.LatLng(u.lat, u.lng), fleetMapEscapeHtml(fleetMapLabelText(u)), map);
+                                if (!window.__fleetMapGoogleLabels) window.__fleetMapGoogleLabels = [];
+                                window.__fleetMapGoogleLabels.push(label);
+                            } catch (e) {}
+                        }
+                    }
+                }
+                return;
+            }
+            var layer = window.__fleetMapMarkersLayer;
+            if (!window.__fleetMapInstance || !layer) return;
             layer.clearLayers();
             addMarkersToLayer(layer, units);
-            /* Не меняем центр и зум — только перерисовываем маркеры */
+        }
+        function initGoogleFleetMap(el, data) {
+            if (typeof google === 'undefined' || !google.maps) return;
+            var units = data.units || [];
+            if (units.length === 0) return;
+            var labelsOk = FleetMapLabelOverlayInitProto();
+            var map = new google.maps.Map(el, {
+                center: { lat: units[0].lat, lng: units[0].lng },
+                zoom: 6,
+                mapTypeControl: true,
+                streetViewControl: false,
+                fullscreenControl: true,
+                zoomControl: true
+            });
+            var markers = [];
+            var labels = [];
+            for (var i = 0; i < units.length; i++) {
+                var u = units[i];
+                var isMoving = (u.state_name || '') === 'moving';
+                var icon = fleetMapMarkerIcon(isMoving);
+                var m = new google.maps.Marker({
+                    position: { lat: u.lat, lng: u.lng },
+                    map: map,
+                    title: u.tooltip || '',
+                    icon: icon || undefined
+                });
+                markers.push(m);
+                if (labelsOk) {
+                    try {
+                        var label = new FleetMapLabelOverlay(new google.maps.LatLng(u.lat, u.lng), fleetMapEscapeHtml(fleetMapLabelText(u)), map);
+                        labels.push(label);
+                    } catch (e) {}
+                }
+            }
+            if (labelsOk && labels.length > 0) {
+                google.maps.event.addListener(map, 'projection_changed', function() {
+                    for (var l = 0; l < labels.length; l++) if (labels[l].draw) labels[l].draw();
+                });
+                google.maps.event.addListener(map, 'zoom_changed', function() {
+                    setTimeout(function() { for (var l = 0; l < labels.length; l++) if (labels[l].draw) labels[l].draw(); }, 50);
+                });
+            }
+            if (units.length > 1) {
+                var bounds = new google.maps.LatLngBounds();
+                for (var k = 0; k < units.length; k++) {
+                    bounds.extend({ lat: units[k].lat, lng: units[k].lng });
+                }
+                map.fitBounds(bounds, { top: 40, right: 40, bottom: 40, left: 40 });
+                var listener = google.maps.event.addListener(map, 'idle', function() {
+                    if (map.getZoom() > 12) map.setZoom(12);
+                    google.maps.event.removeListener(listener);
+                    if (labels.length > 0) { for (var l = 0; l < labels.length; l++) if (labels[l].draw) labels[l].draw(); }
+                });
+            }
+            window.__fleetMapInstance = map;
+            window.__fleetMapGoogleMarkers = markers;
+            window.__fleetMapGoogleLabels = labels;
+            window.__fleetMapFocusOn = function(lat, lng) {
+                if (window.__fleetMapInstance && typeof lat === 'number' && typeof lng === 'number') {
+                    window.__fleetMapInstance.setCenter({ lat: lat, lng: lng });
+                    window.__fleetMapInstance.setZoom(15);
+                }
+            };
         }
         function runFleetMapInit() {
             var el = document.getElementById('fleet-map-container');
@@ -529,26 +682,7 @@
                 setTimeout(tryFleetMap, 100);
                 return;
             }
-            if (window.__fleetMapInstance) {
-                var container = window.__fleetMapInstance.getContainer ? window.__fleetMapInstance.getContainer() : null;
-                if (container && container === el) {
-                    updateFleetMapMarkers();
-                    return;
-                }
-                try { window.__fleetMapInstance.remove(); } catch (e) {}
-                window.__fleetMapInstance = null;
-                window.__fleetMapMarkersLayer = null;
-                el._fleetMapInited = false;
-            }
-            if (el._fleetMapInited) return;
-            if (typeof L === 'undefined') {
-                var s = document.createElement('script');
-                s.src = leafletUrl;
-                s.onload = function() { runFleetMapInit(); };
-                document.head.appendChild(s);
-                return;
-            }
-            var data = { units: [], tile_url: '', tile_attribution: '' };
+            var data = { units: [], tile_url: '', tile_attribution: '', map_provider: 'leaflet' };
             try {
                 var raw = (dataEl.textContent || dataEl.innerText || '').trim();
                 if (raw) data = JSON.parse(raw);
@@ -556,6 +690,55 @@
             var units = data.units || [];
             if (units.length === 0) {
                 setTimeout(tryFleetMap, 400);
+                return;
+            }
+            if (window.__fleetMapInstance) {
+                var container = window.__fleetMapInstance.getContainer ? window.__fleetMapInstance.getContainer() : null;
+                if (container && container === el) {
+                    updateFleetMapMarkers();
+                    return;
+                }
+                if (window.__fleetMapGoogleMarkers) {
+                    for (var g = 0; g < window.__fleetMapGoogleMarkers.length; g++) {
+                        window.__fleetMapGoogleMarkers[g].setMap(null);
+                    }
+                    window.__fleetMapGoogleMarkers = null;
+                }
+                if (window.__fleetMapGoogleLabels) {
+                    for (var g = 0; g < window.__fleetMapGoogleLabels.length; g++) {
+                        window.__fleetMapGoogleLabels[g].setMap(null);
+                    }
+                    window.__fleetMapGoogleLabels = null;
+                }
+                try { if (window.__fleetMapInstance.remove) window.__fleetMapInstance.remove(); } catch (e) {}
+                window.__fleetMapInstance = null;
+                window.__fleetMapMarkersLayer = null;
+                el._fleetMapInited = false;
+            }
+            if (el._fleetMapInited) return;
+            if (data.map_provider === 'google' && data.google_api_key) {
+                el._fleetMapInited = true;
+                if (window.google && window.google.maps) {
+                    initGoogleFleetMap(el, data);
+                } else {
+                    var cb = '__fleetMapGoogleCb_' + Date.now();
+                    window[cb] = function() {
+                        delete window[cb];
+                        initGoogleFleetMap(el, data);
+                    };
+                    var s = document.createElement('script');
+                    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(data.google_api_key) + '&callback=' + cb;
+                    s.async = true;
+                    s.defer = true;
+                    document.head.appendChild(s);
+                }
+                return;
+            }
+            if (typeof L === 'undefined') {
+                var s = document.createElement('script');
+                s.src = leafletUrl;
+                s.onload = function() { runFleetMapInit(); };
+                document.head.appendChild(s);
                 return;
             }
             el._fleetMapInited = true;

@@ -156,6 +156,7 @@ return [
     'orders.add_to_trip.success'  => 'Заказ добавлен в рейс.',
 
     'orders.route_calc.title'     => 'Расчёт маршрута (для ориентира тарифа по км)',
+    'orders.route_calc.vehicle_type' => 'Тип машины: грузовик',
     'orders.route_calc.btn'       => 'Рассчитать километраж',
     'orders.route_calc.distance'  => 'Расчётный км',
     'orders.route_calc.duration'  => 'Время в пути',
@@ -470,6 +471,7 @@ return [
     'inv.receivables_with_balance' => 'Счётов с остатком',
     'inv.receivables_overdue'      => 'Просрочено',
 
+    'truck.show.mapon_configure_google' => 'Чтобы отобразить карту, задайте в .env: MAP_PROVIDER=google и GOOGLE_MAPS_API_KEY (Maps JavaScript API).',
     'truck.show.mileage_expenses_total' => 'Расходы за период',
     'truck.show.mileage_cost_per_km'   => 'Стоимость за км',
     'truck.show.mileage_date_departure' => 'Выезд из гаража (с)',

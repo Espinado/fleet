@@ -7,6 +7,7 @@ use App\Models\Trip;
 use App\Models\TransportOrder;
 use App\Services\OpenRouteService;
 use App\Services\HereRouteService;
+use App\Services\GoogleMapsRouteService;
 use Livewire\Component;
 
 class ShowOrder extends Component
@@ -128,7 +129,7 @@ class ShowOrder extends Component
         $this->redirect(route('trips.show', $trip), navigate: true);
     }
 
-    /** Рассчитать километраж и время по маршруту заказа (OpenRouteService). */
+    /** Рассчитать километраж и время по маршруту заказа (Google Maps / HERE / OpenRouteService по ROUTE_PROVIDER). */
     public function calculateRouteDistance(): void
     {
         $this->routeSummary = null;
@@ -138,13 +139,26 @@ class ShowOrder extends Component
         $this->routeProviderLink = null;
         $this->routeSummaryLoading = true;
 
-        $serviceClass = config('route.provider') === 'here' ? HereRouteService::class : OpenRouteService::class;
+        $provider = config('route.provider');
+        $serviceClass = match ($provider) {
+            'google' => GoogleMapsRouteService::class,
+            'here' => HereRouteService::class,
+            default => OpenRouteService::class,
+        };
         $service = app($serviceClass);
         if (!$service->isConfigured()) {
-            $this->routeProviderKey = config('route.provider') === 'here' ? 'HERE_API_KEY' : 'OPENROUTESERVICE_API_KEY';
+            $this->routeProviderKey = match ($provider) {
+                'google' => 'GOOGLE_MAPS_API_KEY',
+                'here' => 'HERE_API_KEY',
+                default => 'OPENROUTESERVICE_API_KEY',
+            };
             $this->routeSummaryError = __('app.orders.route_calc.not_configured', ['key' => $this->routeProviderKey]);
             $this->routeCalcConfigHint = true;
-            $this->routeProviderLink = config('route.provider') === 'here' ? 'https://developer.here.com' : 'https://openrouteservice.org/dev/#/login';
+            $this->routeProviderLink = match ($provider) {
+                'google' => 'https://console.cloud.google.com/apis/credentials',
+                'here' => 'https://developer.here.com',
+                default => 'https://openrouteservice.org/dev/#/login',
+            };
             $this->routeSummaryLoading = false;
             return;
         }

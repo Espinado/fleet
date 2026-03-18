@@ -329,6 +329,7 @@ return [
     'truck.show.mapon_loading'       => 'Ielādē Mapon datus...',
     'truck.show.mapon_map_title'     => 'Pozīcija kartē',
     'truck.show.mapon_no_position'   => 'Pozīcija nav pieejama',
+    'truck.show.mapon_configure_google' => 'Lai rādītu karti, iestatiet .env failā: MAP_PROVIDER=google un GOOGLE_MAPS_API_KEY (Maps JavaScript API).',
 
     'map.title'      => 'Karte — visi transportlīdzekļi',
     'map.refresh'    => 'Atjaunot',
@@ -606,6 +607,7 @@ return [
     'orders.add_to_trip.success'  => 'Pasūtījums pievienots reisam.',
 
     'orders.route_calc.title'     => 'Maršruta aprēķins (tarifa orientierim pēc km)',
+    'orders.route_calc.vehicle_type' => 'Transportlīdzekļa tips: kravas automašīna',
     'orders.route_calc.btn'       => 'Aprēķināt nobraukumu',
     'orders.route_calc.distance'  => 'Aprēķinātais km',
     'orders.route_calc.duration'  => 'Braukšanas laiks',

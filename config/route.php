@@ -1,6 +1,6 @@
 <?php
 
 return [
-    // openrouteservice (лимит 6000 км) | here (без этого лимита)
-    'provider' => env('ROUTE_PROVIDER', 'here'),
+    // google | here | openrouteservice (расчёт расстояния по заказу и в карточке рейса)
+    'provider' => env('ROUTE_PROVIDER', 'google'),
 ];

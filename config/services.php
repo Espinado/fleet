@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'google' => [
+        // Maps JavaScript API key (карты в браузере: /map, карточка тягача). Для расчёта маршрутов также используются Geocoding API и Directions API (сервер) — тот же ключ, если включены в Google Cloud.
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY', ''),
+        'maps_timeout' => (int) env('GOOGLE_MAPS_TIMEOUT', 15),
+    ],
+
 ];

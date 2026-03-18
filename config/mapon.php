@@ -63,4 +63,12 @@ return [
     'tile_attribution'    => env('MAPON_TILE_ATTRIBUTION', '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'),
     'tile_use_proxy'      => env('MAPON_TILE_USE_PROXY', false),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Провайдер карты (раздел Карты + позиция тягача)
+    |--------------------------------------------------------------------------
+    | google  — Google Maps JavaScript API (ключ: services.google.maps_api_key)
+    */
+    'map_provider' => env('MAP_PROVIDER', 'google'),
+
 ];

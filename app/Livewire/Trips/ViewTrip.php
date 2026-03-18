@@ -19,6 +19,7 @@ use App\Http\Controllers\CmrController;
 use App\Helpers\CalculateTax;
 use App\Services\OpenRouteService;
 use App\Services\HereRouteService;
+use App\Services\GoogleMapsRouteService;
 
 class ViewTrip extends Component
 {
@@ -84,7 +85,7 @@ class ViewTrip extends Component
         return implode(' ', $parts);
     }
 
-    /** Рассчитать километраж и время по маршруту рейса (все шаги по порядку). */
+    /** Рассчитать километраж и время по маршруту рейса (Google/HERE/ORS по ROUTE_PROVIDER). При пересчёте блок оптимального пути скрывается. */
     public function calculateRouteDistance(): void
     {
         $this->routeSummary = null;
@@ -93,14 +94,32 @@ class ViewTrip extends Component
         $this->routeProviderKey = null;
         $this->routeProviderLink = null;
         $this->routeSummaryLoading = true;
+        // Скрыть блок оптимального маршрута при новом расчёте километража
+        $this->routeSummaryOptimal = null;
+        $this->routeSuggestedOrderLabels = [];
+        $this->routeOptimalError = null;
+        $this->savedKm = null;
 
-        $serviceClass = config('route.provider') === 'here' ? HereRouteService::class : OpenRouteService::class;
+        $provider = config('route.provider');
+        $serviceClass = match ($provider) {
+            'google' => GoogleMapsRouteService::class,
+            'here' => HereRouteService::class,
+            default => OpenRouteService::class,
+        };
         $service = app($serviceClass);
         if (!$service->isConfigured()) {
-            $this->routeProviderKey = config('route.provider') === 'here' ? 'HERE_API_KEY' : 'OPENROUTESERVICE_API_KEY';
+            $this->routeProviderKey = match ($provider) {
+                'google' => 'GOOGLE_MAPS_API_KEY',
+                'here' => 'HERE_API_KEY',
+                default => 'OPENROUTESERVICE_API_KEY',
+            };
             $this->routeSummaryError = __('app.orders.route_calc.not_configured', ['key' => $this->routeProviderKey]);
             $this->routeCalcConfigHint = true;
-            $this->routeProviderLink = config('route.provider') === 'here' ? 'https://developer.here.com' : 'https://openrouteservice.org/dev/#/login';
+            $this->routeProviderLink = match ($provider) {
+                'google' => 'https://console.cloud.google.com/apis/credentials',
+                'here' => 'https://developer.here.com',
+                default => 'https://openrouteservice.org/dev/#/login',
+            };
             $this->routeSummaryLoading = false;
             return;
         }
@@ -152,11 +171,20 @@ class ViewTrip extends Component
         $this->savedKm = null;
         $this->routeOptimalLoading = true;
 
-        $serviceClass = config('route.provider') === 'here' ? HereRouteService::class : OpenRouteService::class;
+        $provider = config('route.provider');
+        $serviceClass = match ($provider) {
+            'google' => GoogleMapsRouteService::class,
+            'here' => HereRouteService::class,
+            default => OpenRouteService::class,
+        };
         $service = app($serviceClass);
         if (!$service->isConfigured()) {
             $this->routeOptimalError = __('app.orders.route_calc.not_configured', [
-                'key' => config('route.provider') === 'here' ? 'HERE_API_KEY' : 'OPENROUTESERVICE_API_KEY',
+                'key' => match ($provider) {
+                    'google' => 'GOOGLE_MAPS_API_KEY',
+                    'here' => 'HERE_API_KEY',
+                    default => 'OPENROUTESERVICE_API_KEY',
+                },
             ]);
             $this->routeOptimalLoading = false;
             return;

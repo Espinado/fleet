@@ -46,7 +46,9 @@
             </template>
         </div>
         @php
-            $leafletCss = config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.css') : config('mapon.leaflet_css_url');
+            $mapProvider = config('mapon.map_provider', 'leaflet');
+            $useGoogle = $mapProvider === 'google' && config('services.google.maps_api_key');
+            $leafletCss = !$useGoogle && (config('mapon.use_local_leaflet') ? asset('vendor/leaflet/leaflet.css') : config('mapon.leaflet_css_url'));
             $tileUrl = config('mapon.tile_layer_url');
             if (config('mapon.tile_use_proxy')) {
                 $tileUrl = url('/map/tiles/{z}/{x}/{y}.png');
@@ -55,10 +57,16 @@
                 $tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
             }
             $tileAttribution = config('mapon.tile_attribution', '');
+            $fleetMapData = ['units' => $unitsForMap, 'tile_url' => $tileUrl, 'tile_attribution' => $tileAttribution, 'map_provider' => $mapProvider];
+            if ($useGoogle) {
+                $fleetMapData['google_api_key'] = config('services.google.maps_api_key');
+            }
         @endphp
+        @if(!$useGoogle)
         <link rel="stylesheet" href="{{ $leafletCss }}" crossorigin=""/>
+        @endif
         <style>.fleet-marker-tooltip { font-weight: 600; font-size: 12px; white-space: nowrap; }.fleet-map-circle-marker { background: none !important; border: none !important; }</style>
-        <script type="application/json" id="fleet-map-data">{!! json_encode(['units' => $unitsForMap, 'tile_url' => $tileUrl, 'tile_attribution' => $tileAttribution]) !!}</script>
+        <script type="application/json" id="fleet-map-data">{!! json_encode($fleetMapData) !!}</script>
         <div id="fleet-map-container"
              wire:ignore
              class="relative z-0 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-50"

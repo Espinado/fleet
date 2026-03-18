@@ -127,9 +127,10 @@
                         </li>
                     @endforeach
                 </ul>
-                {{-- Расчёт километража по маршруту (OpenRouteService) — помощник для тарифов --}}
+                {{-- Расчёт километража по маршруту (Google/HERE/ORS) — помощник для тарифов, тип ТС: грузовик --}}
                 <div class="mt-4 pt-4 border-t border-gray-100">
                     <p class="text-xs text-gray-500 mb-2">{{ __('app.orders.route_calc.title') }}</p>
+                    <p class="text-xs text-gray-500 mb-2">{{ __('app.orders.route_calc.vehicle_type') }}</p>
                     <div class="flex flex-wrap items-center gap-2">
                         <button type="button" wire:click="calculateRouteDistance"
                                 wire:loading.attr="disabled"
